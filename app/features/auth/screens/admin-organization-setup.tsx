@@ -148,6 +148,26 @@ export async function action({ request }: Route.ActionArgs) {
     return data({ error: memberError.message }, { status: 400 });
   }
 
+  // Mark signup as complete
+  const { error: profileUpdateError } = await adminClient
+    .from("profiles")
+    .update({ is_signup_complete: true })
+    .eq("profile_id", user.id);
+
+  if (profileUpdateError) {
+    // Rollback: delete membership and organization
+    await adminClient
+      .from("organization_members")
+      .delete()
+      .eq("organization_id", organization.organization_id)
+      .eq("profile_id", user.id);
+    await adminClient
+      .from("organizations")
+      .delete()
+      .eq("organization_id", organization.organization_id);
+    return data({ error: profileUpdateError.message }, { status: 400 });
+  }
+
   // Redirect to admin dashboard
   return redirect("/admin");
 }

@@ -26,56 +26,39 @@ SECURITY DEFINER
 SET SEARCH_PATH = ''
 AS $$
 BEGIN
-    -- Check if the user record has provider information in the metadata
-    IF new.raw_app_meta_data IS NOT NULL AND new.raw_app_meta_data ? 'provider' THEN
-        -- Skip profile creation for admin-created users (handled separately)
-        IF (new.raw_app_meta_data ->> 'admin_created')::boolean = true THEN
-            RETURN NEW;
-        END IF;
+      -- admin_created인 경우 프로필 생성 스킵 (API에서 직접 생성)
+      IF new.raw_app_meta_data ? 'admin_created'
+         AND (new.raw_app_meta_data ->> 'admin_created') = 'true' THEN
+          RETURN NEW;
+      END IF;
 
-        -- Handle admin signup (is_admin_signup flag in user metadata)
+     -- Handle admin signup (is_admin_signup flag in user metadata)
         -- Only creates profile; organization_members entry is created in app layer
+        -- Set is_signup_complete = false since signup is not yet complete
         IF (new.raw_user_meta_data ->> 'is_admin_signup')::boolean = true THEN
-            INSERT INTO public.profiles (profile_id, name, marketing_consent)
+            INSERT INTO public.profiles (profile_id, name, marketing_consent, is_signup_complete)
             VALUES (
                 new.id,
                 COALESCE(new.raw_user_meta_data ->> 'name', 'Admin'),
-                COALESCE((new.raw_user_meta_data ->> 'marketing_consent')::boolean, FALSE)
+                COALESCE((new.raw_user_meta_data ->> 'marketing_consent')::boolean, FALSE),
+                FALSE  -- Admin signup not complete until organization setup
             );
             RETURN NEW;
         END IF;
 
-        -- Handle email or phone authentication (regular signup)
-        -- Organization membership will be added when user joins an organization
-        IF new.raw_app_meta_data ->> 'provider' = 'email' OR new.raw_app_meta_data ->> 'provider' = 'phone' THEN
-            -- If user provided a name during registration, use it
-            IF new.raw_user_meta_data ? 'name' THEN
-                INSERT INTO public.profiles (profile_id, name, marketing_consent)
-                VALUES (
-                    new.id,
-                    new.raw_user_meta_data ->> 'name',
-                    COALESCE((new.raw_user_meta_data ->> 'marketing_consent')::boolean, TRUE)
-                );
-            ELSE
-                -- Otherwise, set a default name and opt-in to marketing
-                INSERT INTO public.profiles (profile_id, name, marketing_consent)
-                VALUES (new.id, 'Anonymous', TRUE);
-            END IF;
-        ELSE
-            -- Handle OAuth providers (Google, GitHub, etc.)
-            -- Use the profile data provided by the OAuth provider
-            INSERT INTO public.profiles (profile_id, name, avatar_url, marketing_consent)
-            VALUES (
-                new.id,
-                new.raw_user_meta_data ->> 'full_name',
-                new.raw_user_meta_data ->> 'avatar_url',
-                TRUE
-            );
-        END IF;
-    END IF;
-    RETURN NEW; -- Return the user record that triggered this function
-END;
-$$;
+      -- 일반 회원가입
+      IF new.raw_app_meta_data ? 'provider' THEN
+          INSERT INTO public.profiles (profile_id, name, avatar_url, marketing_consent)
+          VALUES (
+              new.id,
+              COALESCE(new.raw_user_meta_data ->> 'name', new.raw_user_meta_data ->> 'full_name', 'User'),
+              new.raw_user_meta_data ->> 'avatar_url',
+              TRUE
+          );
+      END IF;
+
+      RETURN NEW;
+  END;
 
 /**
  * Database Trigger: handle_sign_up

@@ -65,6 +65,9 @@ export async function action({ request }: Route.ActionArgs) {
     email: validData.email,
     options: {
       shouldCreateUser: true,
+      data: {
+        is_admin_signup: true,
+      },
     },
   });
 

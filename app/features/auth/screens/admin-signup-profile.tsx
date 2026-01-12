@@ -10,7 +10,8 @@
  */
 import type { Route } from "./+types/admin-signup-profile";
 
-import { CalendarIcon, UserIcon } from "lucide-react";
+import { CalendarIcon, UserIcon, XCircleIcon } from "lucide-react";
+import { useState } from "react";
 import { Form, Link, data, redirect } from "react-router";
 import { z } from "zod";
 
@@ -150,6 +151,9 @@ export default function AdminSignupProfile({
   loaderData,
   actionData,
 }: Route.ComponentProps) {
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+
   return (
     <div className="flex min-h-screen">
       {/* 왼쪽 패널 - 서비스 소개 (데스크톱만 표시) */}
@@ -235,6 +239,8 @@ export default function AdminSignupProfile({
                     type="password"
                     placeholder="비밀번호를 입력하세요"
                     autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                   {actionData &&
                   "fieldErrors" in actionData &&
@@ -257,7 +263,15 @@ export default function AdminSignupProfile({
                     type="password"
                     placeholder="비밀번호를 다시 입력하세요"
                     autoComplete="new-password"
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
                   />
+                  {passwordConfirm && password !== passwordConfirm && (
+                    <p className="text-sm text-red-500 flex items-center gap-2">
+                      <XCircleIcon className="size-4" />
+                      비밀번호가 일치하지 않습니다
+                    </p>
+                  )}
                   {actionData &&
                   "fieldErrors" in actionData &&
                   actionData.fieldErrors?.passwordConfirm ? (
@@ -277,7 +291,7 @@ export default function AdminSignupProfile({
                       <Link
                         to="/legal/terms"
                         target="_blank"
-                        className="text-primary hover:underline"
+                        className="text-primary hover:underline font-semibold"
                       >
                         서비스 이용약관
                       </Link>
@@ -285,7 +299,7 @@ export default function AdminSignupProfile({
                       <Link
                         to="/legal/privacy"
                         target="_blank"
-                        className="text-primary hover:underline"
+                        className="text-primary hover:underline font-semibold"
                       >
                         개인정보 처리방침
                       </Link>

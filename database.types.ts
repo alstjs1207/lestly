@@ -44,14 +44,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "organization_members_organization_id_fkey"
+            foreignKeyName: "organization_members_organization_id_organizations_organization"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["organization_id"]
           },
           {
-            foreignKeyName: "organization_members_profile_id_fkey"
+            foreignKeyName: "organization_members_profile_id_profiles_fk"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -143,6 +143,7 @@ export type Database = {
           color: string | null
           created_at: string
           description: string | null
+          is_signup_complete: boolean
           marketing_consent: boolean
           name: string
           parent_name: string | null
@@ -160,6 +161,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          is_signup_complete?: boolean
           marketing_consent?: boolean
           name: string
           parent_name?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          is_signup_complete?: boolean
           marketing_consent?: boolean
           name?: string
           parent_name?: string | null
@@ -236,7 +239,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "programs_organization_id_fkey"
+            foreignKeyName: "programs_organization_id_organizations_organization_id_fk"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -286,14 +289,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "schedules_organization_id_fkey"
+            foreignKeyName: "schedules_organization_id_organizations_organization_id_fk"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["organization_id"]
           },
           {
-            foreignKeyName: "schedules_program_id_fkey"
+            foreignKeyName: "schedules_program_id_programs_program_id_fk"
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "programs"
@@ -332,7 +335,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "settings_organization_id_fkey"
+            foreignKeyName: "settings_organization_id_organizations_organization_id_fk"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -345,28 +348,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_organizations: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
-      is_org_admin: {
-        Args: {
-          org_id: string
-        }
-        Returns: boolean
-      }
-      is_org_member: {
-        Args: {
-          org_id: string
-        }
-        Returns: boolean
-      }
-      is_same_organization: {
-        Args: {
-          org_id: string
-        }
-        Returns: boolean
-      }
+      get_user_organization_id: { Args: never; Returns: string }
+      is_org_admin: { Args: { org_id: string }; Returns: boolean }
+      is_org_member: { Args: { org_id: string }; Returns: boolean }
     }
     Enums: {
       program_level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"

@@ -55,6 +55,23 @@ export async function requireAdminRole(
     throw redirect("/login");
   }
 
+  // Check if signup is complete (for admin signup flow)
+  const { data: profile, error: profileError } = await adminClient
+    .from("profiles")
+    .select("is_signup_complete")
+    .eq("profile_id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    // Profile doesn't exist, redirect to signup
+    throw redirect("/admin/signup");
+  }
+
+  if (!profile.is_signup_complete) {
+    // Signup not complete, redirect to profile setup
+    throw redirect("/admin/signup/profile");
+  }
+
   // Get user's admin memberships from organization_members
   // Using adminClient to bypass RLS for this server-side check
   const { data: memberships, error } = await adminClient

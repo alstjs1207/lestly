@@ -54,6 +54,7 @@ export const profiles = pgTable(
     parent_name: text("parent_name"),
     parent_phone: text("parent_phone"),
     color: text().default("#3B82F6"),
+    is_signup_complete: boolean("is_signup_complete").notNull().default(true),
 
     // Adds created_at and updated_at timestamp columns
     ...timestamps,

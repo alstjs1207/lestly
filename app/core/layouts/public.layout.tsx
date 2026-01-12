@@ -9,7 +9,20 @@ export async function loader({ request }: Route.LoaderArgs) {
   const {
     data: { user },
   } = await client.auth.getUser();
+
   if (user) {
+    // Check if signup is complete for admin users
+    const { data: profile } = await client
+      .from("profiles")
+      .select("is_signup_complete")
+      .eq("profile_id", user.id)
+      .single();
+
+    if (profile && !profile.is_signup_complete) {
+      // Signup not complete, redirect to profile setup
+      throw redirect("/admin/signup/profile");
+    }
+
     throw redirect("/dashboard");
   }
 
