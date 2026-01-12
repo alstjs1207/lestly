@@ -198,11 +198,7 @@ export default async function handleRequest(
  * @param context - Context object containing the request and other information
  */
 export const handleError: HandleErrorFunction = (error, { request }) => {
-  if (
-    !request.signal.aborted &&
-    process.env.SENTRY_DSN &&
-    process.env.NODE_ENV === "production"
-  ) {
+  if (!request.signal.aborted && process.env.SENTRY_DSN && process.env.MODE === "debug") {
     // Send the error to Sentry for monitoring and alerting
     Sentry.captureException(error);
     // Also log to console for server-side visibility

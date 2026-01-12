@@ -305,11 +305,8 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     details = error.statusText || details;
   } else if (error && error instanceof Error) {
     // Handle JavaScript errors
-    if (
-      import.meta.env.VITE_SENTRY_DSN &&
-      import.meta.env.MODE === "production"
-    ) {
-      // Report error to Sentry in production
+    if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_MODE === "debug") {
+      // Report error to Sentry (only when MODE=debug)
       Sentry.captureException(error);
     }
     if (import.meta.env.DEV) {
