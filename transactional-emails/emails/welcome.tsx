@@ -10,44 +10,68 @@ import {
   Text,
 } from "@react-email/components";
 
-export default function Welcome({ profile }: { profile: string }) {
+export default function Welcome({ name }: { name: string }) {
   return (
     <Tailwind>
       <Html>
         <Head />
         <Body className="bg-white font-sans">
-          <Preview>Welcome to Lestly</Preview>
+          <Preview>Lestly에 오신 것을 환영합니다</Preview>
           <Container className="mx-auto max-w-[560px] py-5 pb-12">
-            <Heading className="pt-4 text-center text-2xl leading-tight font-normal tracking-[-0.5px] text-black">
-              Welcome to Lestly
+            {/* 로고 */}
+            <Section className="text-center pt-4 pb-6">
+              <table cellPadding="0" cellSpacing="0" className="mx-auto">
+                <tr>
+                  <td
+                    className="bg-black rounded-lg"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                    }}
+                  >
+                    <span style={{ fontSize: "20px" }}>📅</span>
+                  </td>
+                  <td style={{ paddingLeft: "8px" }}>
+                    <span className="text-2xl font-bold text-black">
+                      Lestly
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </Section>
+
+            <Heading className="text-center text-2xl leading-tight font-normal tracking-[-0.5px] text-black">
+              Lestly에 오신 것을 환영합니다!
             </Heading>
+
             <Section>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                This is an automated email sent to all users who have signed up
-                to Lestly.
+                안녕하세요, {name}님!
               </Text>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                To send this email we used Supabase Queues, Supabase CRON Jobs
-                and Resend.
+                Lestly에 가입해주셔서 감사합니다.
               </Text>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                Here's a profile of the user who signed up:
+                이제 레슨 일정을 손쉽게 관리하고, 수강생들과 효율적으로 소통할
+                수 있습니다.
               </Text>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                <code className="py-2font-mono mx-auto inline-block rounded bg-[#dfe1e4] px-1 font-bold tracking-[-0.3px] text-black">
-                  {profile}
-                </code>
+                궁금한 점이 있으시면 언제든지 문의해주세요.
+              </Text>
+              <Text className="mb-2 text-[15px] leading-relaxed text-black">
+                감사합니다,
               </Text>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                We are appy to have you on board!
-              </Text>
-              <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                Best regards,
-              </Text>
-              <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                The Lestly Team
+                Lestly 팀
               </Text>
             </Section>
+
+            {/* 푸터 */}
+            <Text className="mt-8 text-center text-[13px] text-gray-400">
+              © 2025 Lestly. All rights reserved.
+            </Text>
           </Container>
         </Body>
       </Html>
@@ -56,9 +80,5 @@ export default function Welcome({ profile }: { profile: string }) {
 }
 
 Welcome.PreviewProps = {
-  profile: JSON.stringify({
-    email: "test@test.com",
-    name: "Test User",
-    avatarUrl: "https://example.com/avatar.png",
-  }),
+  name: "홍길동",
 };

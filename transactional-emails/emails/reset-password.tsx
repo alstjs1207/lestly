@@ -17,41 +17,74 @@ export default function ResetPassword() {
       <Html>
         <Head />
         <Body className="bg-white font-sans">
-          <Preview>Reset Password</Preview>
+          <Preview>비밀번호 재설정</Preview>
           <Container className="mx-auto max-w-[560px] py-5 pb-12">
-            <Heading className="pt-4 text-center text-2xl leading-tight font-normal tracking-[-0.5px] text-black">
-              Reset Password
+            {/* 로고 */}
+            <Section className="text-center pt-4 pb-6">
+              <table cellPadding="0" cellSpacing="0" className="mx-auto">
+                <tr>
+                  <td
+                    className="bg-black rounded-lg"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                    }}
+                  >
+                    <span style={{ fontSize: "20px" }}>📅</span>
+                  </td>
+                  <td style={{ paddingLeft: "8px" }}>
+                    <span className="text-2xl font-bold text-black">
+                      Lestly
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </Section>
+
+            <Heading className="text-center text-2xl leading-tight font-normal tracking-[-0.5px] text-black">
+              비밀번호를 재설정해주세요
             </Heading>
+
             <Section>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                Click the button below to reset your password:
+                안녕하세요,
+              </Text>
+              <Text className="mb-4 text-[15px] leading-relaxed text-black">
+                아래 버튼을 클릭하여 비밀번호를 재설정해주세요.
               </Text>
               <Button
-                className="block rounded-xl bg-black px-6 py-3 text-center text-[15px] font-semibold text-white no-underline"
+                className="block rounded-xl bg-[#2563eb] px-6 py-3 text-center text-[15px] font-semibold text-white no-underline"
                 href={`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/forgot-password/create`}
               >
-                Reset Password
+                비밀번호 재설정하기
               </Button>
             </Section>
+
             <Section>
-              <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                If the button above does not work, you can copy and paste the
-                URL below into your browser:
+              <Text className="mt-6 mb-4 text-[15px] leading-relaxed text-black">
+                버튼이 작동하지 않으면 아래 링크를 브라우저에 복사하여
+                붙여넣으세요:
               </Text>
-              <Text className="mb-4 text-[15px] leading-relaxed text-blue-500">
+              <Text className="mb-4 text-[13px] leading-relaxed text-blue-500 break-all">
                 {`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/forgot-password/create`}
               </Text>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                If you did not request a password reset, you can safely ignore
-                this email.
+                본인이 요청하지 않으셨다면 이 이메일을 무시해주세요.
+              </Text>
+              <Text className="mb-2 text-[15px] leading-relaxed text-black">
+                감사합니다,
               </Text>
               <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                Best regards,
-              </Text>
-              <Text className="mb-4 text-[15px] leading-relaxed text-black">
-                The Lestly Team
+                Lestly 팀
               </Text>
             </Section>
+
+            {/* 푸터 */}
+            <Text className="mt-8 text-center text-[13px] text-gray-400">
+              © 2025 Lestly. All rights reserved.
+            </Text>
           </Container>
         </Body>
       </Html>
