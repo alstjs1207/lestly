@@ -46,6 +46,9 @@ export default [
   // Redirect root to login page
   index("core/screens/redirect-to-login.tsx"),
 
+  // 공개 클래스 소개 페이지 (로그인 없이 접근 가능)
+  route("/class/:slug", "features/class/screens/class-detail.tsx"),
+
   // Full-screen auth routes (without navigation bar)
   layout("core/layouts/public.layout.tsx", { id: "public-fullscreen" }, [
     route("/login", "features/auth/screens/login.tsx"),
@@ -140,6 +143,11 @@ export default [
           route("/:programId", "features/admin/screens/programs/detail.tsx"),
           route("/:programId/edit", "features/admin/screens/programs/edit.tsx"),
         ]),
+        ...prefix("/instructors", [
+          index("features/admin/screens/instructors/list.tsx"),
+          route("/new", "features/admin/screens/instructors/create.tsx"),
+          route("/:instructorId/edit", "features/admin/screens/instructors/edit.tsx"),
+        ]),
         route("/organization", "features/admin/screens/organization.tsx"),
         route("/settings", "features/admin/screens/settings.tsx"),
         route("/account", "features/admin/screens/account.tsx"),
@@ -175,6 +183,11 @@ export default [
       route("/create", "features/admin/api/programs/create.tsx"),
       route("/:programId/update", "features/admin/api/programs/update.tsx"),
       route("/:programId/delete", "features/admin/api/programs/delete.tsx"),
+    ]),
+    ...prefix("/instructors", [
+      route("/create", "features/admin/api/instructors/create.tsx"),
+      route("/:instructorId/update", "features/admin/api/instructors/update.tsx"),
+      route("/:instructorId/delete", "features/admin/api/instructors/delete.tsx"),
     ]),
     route("/settings", "features/admin/api/settings/update.tsx"),
     route("/organization", "features/admin/api/organization/update.tsx"),

@@ -17,10 +17,10 @@ type ProgramUpdate = Database["public"]["Tables"]["programs"]["Update"];
 export async function getPrograms(
   client: SupabaseClient<Database>,
   { organizationId }: { organizationId: string },
-): Promise<Program[]> {
+) {
   const { data, error } = await client
     .from("programs")
-    .select("*")
+    .select("*, instructor:instructors(*)")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
 
@@ -58,10 +58,10 @@ export async function getActivePrograms(
 export async function getProgram(
   client: SupabaseClient<Database>,
   { programId }: { programId: number },
-): Promise<Program | null> {
+) {
   const { data, error } = await client
     .from("programs")
-    .select("*")
+    .select("*, instructor:instructors(*)")
     .eq("program_id", programId)
     .single();
 

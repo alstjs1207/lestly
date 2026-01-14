@@ -152,7 +152,7 @@ export default function ProgramListScreen({
                       {statusLabels[program.status]?.label || program.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{program.instructor_name || "-"}</TableCell>
+                  <TableCell>{program.instructor?.name || "-"}</TableCell>
                   <TableCell>
                     {program.level ? levelLabels[program.level] || program.level : "-"}
                   </TableCell>

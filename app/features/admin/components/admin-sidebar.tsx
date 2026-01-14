@@ -6,6 +6,7 @@ import {
   CalendarDaysIcon,
   BookOpenIcon,
   BuildingIcon,
+  UserIcon,
 } from "lucide-react";
 import { Link, useLocation } from "react-router";
 
@@ -62,6 +63,11 @@ const menuItems = [
     title: "클래스 관리",
     url: "/admin/programs",
     icon: BookOpenIcon,
+  },
+  {
+    title: "강사 관리",
+    url: "/admin/instructors",
+    icon: UserIcon,
   },
 ];
 

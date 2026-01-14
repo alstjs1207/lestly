@@ -7,16 +7,20 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   doublePrecision,
+  integer,
+  jsonb,
   pgEnum,
   pgPolicy,
   pgTable,
   text,
   uuid,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
+import { instructors } from "~/features/instructors/schema";
 import { organizations } from "~/features/organizations/schema";
 
 /**
@@ -56,15 +60,25 @@ export const programs = pgTable(
     organization_id: uuid("organization_id")
       .notNull()
       .references(() => organizations.organization_id, { onDelete: "cascade" }),
+    instructor_id: bigint("instructor_id", { mode: "number" })
+      .references(() => instructors.instructor_id, { onDelete: "set null" }),
     title: text().notNull(),
     subtitle: text(),
     description: text(),
-    instructor_name: text("instructor_name"),
-    instructor_info: text("instructor_info"),
     thumbnail_url: text("thumbnail_url"),
     status: programStatusEnum().notNull().default("DRAFT"),
     level: programLevelEnum(),
     price: doublePrecision(),
+    // 공개 페이지용 필드
+    slug: text().unique(),
+    cover_image_url: text("cover_image_url"),
+    location_type: text("location_type").default("offline"),
+    location_address: text("location_address"),
+    duration_minutes: integer("duration_minutes").default(120),
+    total_sessions: integer("total_sessions").default(4),
+    curriculum: jsonb().default([]),
+    max_capacity: integer("max_capacity"),
+    is_public: boolean("is_public").default(false),
     ...timestamps,
   },
   (table) => [
@@ -103,6 +117,13 @@ export const programs = pgTable(
       to: authenticatedRole,
       as: "permissive",
       using: sql`is_org_admin(${table.organization_id})`,
+    }),
+    // RLS Policy: Public programs are viewable by anyone (anon + authenticated)
+    pgPolicy("public-programs-select-policy", {
+      for: "select",
+      to: [anonRole, authenticatedRole],
+      as: "permissive",
+      using: sql`${table.is_public} = true AND ${table.status} = 'ACTIVE'`,
     }),
   ],
 );

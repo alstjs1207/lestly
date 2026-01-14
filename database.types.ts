@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      instructors: {
+        Row: {
+          career: Json | null
+          created_at: string
+          info: string | null
+          instructor_id: number
+          name: string
+          organization_id: string
+          photo_url: string | null
+          sns: Json | null
+          updated_at: string
+        }
+        Insert: {
+          career?: Json | null
+          created_at?: string
+          info?: string | null
+          instructor_id?: never
+          name: string
+          organization_id: string
+          photo_url?: string | null
+          sns?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          career?: Json | null
+          created_at?: string
+          info?: string | null
+          instructor_id?: never
+          name?: string
+          organization_id?: string
+          photo_url?: string | null
+          sns?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructors_organization_id_organizations_organization_id_fk"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["organization_id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -193,51 +237,82 @@ export type Database = {
       }
       programs: {
         Row: {
+          cover_image_url: string | null
           created_at: string
+          curriculum: Json | null
           description: string | null
-          instructor_info: string | null
-          instructor_name: string | null
+          duration_minutes: number | null
+          instructor_id: number | null
+          is_public: boolean | null
           level: Database["public"]["Enums"]["program_level"] | null
+          location_address: string | null
+          location_type: string | null
+          max_capacity: number | null
           organization_id: string
           price: number | null
           program_id: number
+          slug: string | null
           status: Database["public"]["Enums"]["program_status"]
           subtitle: string | null
           thumbnail_url: string | null
           title: string
+          total_sessions: number | null
           updated_at: string
         }
         Insert: {
+          cover_image_url?: string | null
           created_at?: string
+          curriculum?: Json | null
           description?: string | null
-          instructor_info?: string | null
-          instructor_name?: string | null
+          duration_minutes?: number | null
+          instructor_id?: number | null
+          is_public?: boolean | null
           level?: Database["public"]["Enums"]["program_level"] | null
+          location_address?: string | null
+          location_type?: string | null
+          max_capacity?: number | null
           organization_id: string
           price?: number | null
           program_id?: never
+          slug?: string | null
           status?: Database["public"]["Enums"]["program_status"]
           subtitle?: string | null
           thumbnail_url?: string | null
           title: string
+          total_sessions?: number | null
           updated_at?: string
         }
         Update: {
+          cover_image_url?: string | null
           created_at?: string
+          curriculum?: Json | null
           description?: string | null
-          instructor_info?: string | null
-          instructor_name?: string | null
+          duration_minutes?: number | null
+          instructor_id?: number | null
+          is_public?: boolean | null
           level?: Database["public"]["Enums"]["program_level"] | null
+          location_address?: string | null
+          location_type?: string | null
+          max_capacity?: number | null
           organization_id?: string
           price?: number | null
           program_id?: never
+          slug?: string | null
           status?: Database["public"]["Enums"]["program_status"]
           subtitle?: string | null
           thumbnail_url?: string | null
           title?: string
+          total_sessions?: number | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "programs_instructor_id_instructors_instructor_id_fk"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["instructor_id"]
+          },
           {
             foreignKeyName: "programs_organization_id_organizations_organization_id_fk"
             columns: ["organization_id"]

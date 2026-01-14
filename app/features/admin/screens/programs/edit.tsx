@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "~/core/components/ui/card";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getInstructors } from "~/features/instructors/queries";
 import { getProgram } from "~/features/programs/queries";
 
 import ProgramForm from "../../components/program-form";
@@ -19,20 +20,23 @@ import { requireAdminRole } from "../../guards.server";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAdminRole(client);
+  const { organizationId } = await requireAdminRole(client);
 
   const programId = parseInt(params.programId);
-  const program = await getProgram(client, { programId });
+  const [program, instructors] = await Promise.all([
+    getProgram(client, { programId }),
+    getInstructors(client, { organizationId }),
+  ]);
 
   if (!program) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  return { program };
+  return { program, instructors };
 }
 
 export default function ProgramEditScreen({ loaderData }: Route.ComponentProps) {
-  const { program } = loaderData;
+  const { program, instructors } = loaderData;
 
   return (
     <div className="space-y-6">
@@ -58,16 +62,25 @@ export default function ProgramEditScreen({ loaderData }: Route.ComponentProps) 
         <CardContent>
           <ProgramForm
             mode="edit"
+            instructors={instructors}
             defaultValues={{
               program_id: program.program_id,
+              instructor_id: program.instructor_id || undefined,
               title: program.title,
               subtitle: program.subtitle || undefined,
               description: program.description || undefined,
-              instructor_name: program.instructor_name || undefined,
-              instructor_info: program.instructor_info || undefined,
               status: program.status,
               level: program.level || undefined,
               price: program.price || undefined,
+              slug: program.slug || undefined,
+              cover_image_url: program.cover_image_url || undefined,
+              location_type: program.location_type || undefined,
+              location_address: program.location_address || undefined,
+              duration_minutes: program.duration_minutes || undefined,
+              total_sessions: program.total_sessions || undefined,
+              curriculum: (program.curriculum as any[]) || undefined,
+              max_capacity: program.max_capacity || undefined,
+              is_public: program.is_public || undefined,
             }}
           />
         </CardContent>

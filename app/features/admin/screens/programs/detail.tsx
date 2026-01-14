@@ -1,7 +1,7 @@
 import type { Route } from "./+types/detail";
 
 import { Link, useFetcher } from "react-router";
-import { ChevronLeftIcon, EditIcon, TrashIcon } from "lucide-react";
+import { ChevronLeftIcon, EditIcon, ExternalLinkIcon, TrashIcon } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -59,6 +59,17 @@ const levelLabels: Record<string, string> = {
   INTERMEDIATE: "중급",
   ADVANCED: "고급",
 };
+
+const locationTypeLabels: Record<string, string> = {
+  online: "온라인",
+  offline: "오프라인",
+};
+
+interface CurriculumItem {
+  session: number;
+  title: string;
+  description?: string;
+}
 
 export default function ProgramDetailScreen({
   loaderData,
@@ -196,19 +207,154 @@ export default function ProgramDetailScreen({
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">강사명</p>
-              <p className="font-medium">{program.instructor_name || "-"}</p>
+              <p className="font-medium">{program.instructor?.name || "-"}</p>
             </div>
-            {program.instructor_info && (
+            {program.instructor?.info && (
               <div>
                 <p className="text-sm text-muted-foreground">강사 소개</p>
                 <p className="font-medium whitespace-pre-wrap">
-                  {program.instructor_info}
+                  {program.instructor.info}
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* 공개 설정 & 클래스 운영 정보 */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>공개 설정</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">공개 여부</p>
+                <Badge variant={program.is_public ? "default" : "outline"}>
+                  {program.is_public ? "공개" : "비공개"}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">공개 URL</p>
+                {program.slug ? (
+                  <a
+                    href={`/class/${program.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    /class/{program.slug}
+                    <ExternalLinkIcon className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <p className="font-medium text-muted-foreground">-</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>클래스 운영 정보</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">진행 방식</p>
+                <p className="font-medium">
+                  {program.location_type ? locationTypeLabels[program.location_type] || program.location_type : "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">최대 인원</p>
+                <p className="font-medium">
+                  {program.max_capacity ? `${program.max_capacity}명` : "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">수업 시간</p>
+                <p className="font-medium">
+                  {program.duration_minutes ? `${program.duration_minutes}분` : "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">총 회차</p>
+                <p className="font-medium">
+                  {program.total_sessions ? `${program.total_sessions}회` : "-"}
+                </p>
+              </div>
+            </div>
+            {program.location_type === "offline" && program.location_address && (
+              <div>
+                <p className="text-sm text-muted-foreground">장소</p>
+                <p className="font-medium">{program.location_address}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 이미지 정보 */}
+      {(program.thumbnail_url || program.cover_image_url) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>이미지</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {program.thumbnail_url && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">썸네일</p>
+                  <img
+                    src={program.thumbnail_url}
+                    alt="썸네일"
+                    className="w-full max-w-xs rounded-lg border object-cover"
+                  />
+                </div>
+              )}
+              {program.cover_image_url && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">커버 이미지</p>
+                  <img
+                    src={program.cover_image_url}
+                    alt="커버 이미지"
+                    className="w-full max-w-md rounded-lg border object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 커리큘럼 */}
+      {program.curriculum && (program.curriculum as unknown as CurriculumItem[]).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>커리큘럼</CardTitle>
+            <CardDescription>총 {(program.curriculum as unknown as CurriculumItem[]).length}개 세션</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(program.curriculum as unknown as CurriculumItem[]).map((item, index) => (
+                <div key={index} className="flex gap-4 p-3 rounded-lg bg-muted/50">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                    {item.session}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{item.title}</p>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
