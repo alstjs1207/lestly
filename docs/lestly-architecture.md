@@ -149,6 +149,24 @@ CREATE TYPE program_level AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED');
 > 한 사용자가 여러 조직에 소속될 수 있으며, 각 조직에서 다른 역할을 가질 수 있습니다.
 > 예: A조직에서 ADMIN, B조직에서 STUDENT
 
+#### instructors
+
+```
+┌─────────────────────┬──────────────┬─────────────────────────────────┐
+│ Column              │ Type         │ Description                     │
+├─────────────────────┼──────────────┼─────────────────────────────────┤
+│ instructor_id       │ bigint (PK)  │ Auto-increment ID               │
+│ organization_id     │ uuid (FK)    │ 소속 조직 ID                    │
+│ name                │ text         │ 강사명                          │
+│ info                │ text         │ 강사 소개                       │
+│ photo_url           │ text         │ 프로필 사진 URL                 │
+│ career              │ jsonb        │ 경력 배열 ["경력1", "경력2"]    │
+│ sns                 │ jsonb        │ SNS {instagram, youtube}        │
+│ created_at          │ timestamp    │ 생성일                          │
+│ updated_at          │ timestamp    │ 수정일                          │
+└─────────────────────┴──────────────┴─────────────────────────────────┘
+```
+
 #### programs
 
 ```
@@ -157,12 +175,20 @@ CREATE TYPE program_level AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED');
 ├─────────────────────┼──────────────┼─────────────────────────────────┤
 │ program_id          │ bigint (PK)  │ Auto-increment ID               │
 │ organization_id     │ uuid (FK)    │ 소속 조직 ID                    │
+│ instructor_id       │ bigint (FK)  │ 담당 강사 ID                    │
 │ title               │ text         │ 프로그램명                      │
 │ subtitle            │ text         │ 부제목                          │
 │ description         │ text         │ 설명                            │
-│ instructor_name     │ text         │ 강사명                          │
-│ instructor_info     │ text         │ 강사 정보                       │
+│ slug                │ text         │ URL 슬러그 (/class/:slug)       │
+│ cover_image_url     │ text         │ 커버 이미지 URL                 │
 │ thumbnail_url       │ text         │ 썸네일 URL                      │
+│ location_type       │ text         │ offline / online                │
+│ location_address    │ text         │ 수업 장소 주소                  │
+│ duration_minutes    │ integer      │ 1회 수업 시간 (분)              │
+│ total_sessions      │ integer      │ 총 회차                         │
+│ max_capacity        │ integer      │ 모집 정원                       │
+│ curriculum          │ jsonb        │ 커리큘럼 배열                   │
+│ is_public           │ boolean      │ 공개 페이지 게시 여부           │
 │ status              │ program_status│ DRAFT / ACTIVE / ARCHIVED      │
 │ level               │ program_level│ BEGINNER / INTERMEDIATE / ADVANCED │
 │ price               │ double       │ 가격                            │
@@ -420,7 +446,52 @@ CREATE POLICY "Admins can update org settings"
 
 ---
 
-## 4. 디렉토리 구조
+## 4. Supabase Storage
+
+### 4.1 버킷 구조
+
+| 버킷명 | 용도 | 경로 패턴 |
+|--------|------|-----------|
+| `coverimages` | 클래스 커버 이미지 | `programs/{program_id}/cover.{ext}` |
+| `instructors` | 강사 프로필 사진 | `{instructor_id}/photo.{ext}` |
+
+### 4.2 RLS 정책
+
+```sql
+-- 인증된 사용자 업로드 허용
+CREATE POLICY "Authenticated users can upload" ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'coverimages');
+
+-- 본인이 올린 파일만 수정/삭제
+CREATE POLICY "Users can update own files" ON storage.objects
+FOR UPDATE TO authenticated
+USING (bucket_id = 'coverimages' AND owner_id = auth.uid());
+
+CREATE POLICY "Users can delete own files" ON storage.objects
+FOR DELETE TO authenticated
+USING (bucket_id = 'coverimages' AND owner_id = auth.uid());
+
+-- 공개 읽기
+CREATE POLICY "Public read access" ON storage.objects
+FOR SELECT TO public
+USING (bucket_id = 'coverimages');
+```
+
+> `instructors` 버킷도 동일한 정책 적용
+
+### 4.3 캐시 무효화
+
+이미지 URL에 타임스탬프 쿼리 파라미터를 추가하여 브라우저 캐시 무효화:
+
+```typescript
+// 이미지 업로드 후 URL 저장 시
+const photoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+```
+
+---
+
+## 5. 디렉토리 구조
 
 ```
 app/
@@ -439,16 +510,23 @@ app/
 │   │   │   │   ├── detail.tsx          # 수강생 상세
 │   │   │   │   ├── create.tsx          # 수강생 등록
 │   │   │   │   └── edit.tsx            # 수강생 수정
-│   │   │   └── schedules/
-│   │   │       ├── calendar.tsx        # 스케쥴 캘린더
-│   │   │       ├── list.tsx            # 스케쥴 목록
-│   │   │       ├── create.tsx          # 스케쥴 등록
-│   │   │       └── edit.tsx            # 스케쥴 수정
+│   │   │   ├── schedules/
+│   │   │   │   ├── calendar.tsx        # 스케쥴 캘린더
+│   │   │   │   ├── list.tsx            # 스케쥴 목록
+│   │   │   │   ├── create.tsx          # 스케쥴 등록
+│   │   │   │   └── edit.tsx            # 스케쥴 수정
+│   │   │   └── instructors/
+│   │   │       ├── list.tsx            # 강사 목록
+│   │   │       ├── detail.tsx          # 강사 상세
+│   │   │       ├── create.tsx          # 강사 등록
+│   │   │       └── edit.tsx            # 강사 수정
 │   │   ├── components/
 │   │   │   ├── admin-sidebar.tsx       # 관리자 사이드바
 │   │   │   ├── admin-calendar.tsx      # FullCalendar 래퍼
 │   │   │   ├── student-form.tsx        # 수강생 폼
-│   │   │   └── schedule-form.tsx       # 스케쥴 폼
+│   │   │   ├── schedule-form.tsx       # 스케쥴 폼
+│   │   │   ├── program-form.tsx        # 클래스 폼 (이미지 업로드)
+│   │   │   └── instructor-form.tsx     # 강사 폼 (이미지 업로드)
 │   │   └── api/
 │   │       ├── students/               # 수강생 API
 │   │       │   ├── create.tsx
@@ -459,8 +537,12 @@ app/
 │   │       │   ├── create.tsx
 │   │       │   ├── update.tsx
 │   │       │   └── delete.tsx
-│   │       └── settings/
-│   │           └── update.tsx
+│   │       ├── settings/
+│   │       │   └── update.tsx
+│   │       └── instructors/              # 강사 API
+│   │           ├── create.tsx
+│   │           ├── update.tsx
+│   │           └── delete.tsx
 │   │
 │   ├── schedules/                      # 스케쥴 모듈 (공통)
 │   │   ├── schema.ts                   # Drizzle 스키마
@@ -484,7 +566,7 @@ app/
 
 ---
 
-## 5. 라우팅 구조
+## 6. 라우팅 구조
 
 ### 5.1 관리자 라우트
 
@@ -500,6 +582,10 @@ app/
 | `/admin/schedules/list`     | schedules/list.tsx     | 스케쥴 목록          |
 | `/admin/schedules/new`      | schedules/create.tsx   | 스케쥴 등록          |
 | `/admin/schedules/:id/edit` | schedules/edit.tsx     | 스케쥴 수정          |
+| `/admin/instructors`        | instructors/list.tsx   | 강사 목록            |
+| `/admin/instructors/new`    | instructors/create.tsx | 강사 등록            |
+| `/admin/instructors/:id`    | instructors/detail.tsx | 강사 상세            |
+| `/admin/instructors/:id/edit`| instructors/edit.tsx  | 강사 수정            |
 | `/admin/settings`           | settings.tsx           | 설정 관리            |
 
 ### 5.2 학생 라우트
@@ -521,12 +607,17 @@ app/
 | `/api/admin/schedules/:id/update`  | POST   | 스케쥴 수정      |
 | `/api/admin/schedules/:id/delete`  | POST   | 스케쥴 삭제      |
 | `/api/admin/settings`              | POST   | 설정 수정        |
+| `/api/admin/instructors/create`    | POST   | 강사 등록        |
+| `/api/admin/instructors/:id/update`| POST   | 강사 수정        |
+| `/api/admin/instructors/:id/delete`| POST   | 강사 삭제        |
+| `/api/admin/programs/create`       | POST   | 클래스 등록      |
+| `/api/admin/programs/:id/update`   | POST   | 클래스 수정      |
 | `/api/schedules/create`            | POST   | 학생 스케쥴 등록 |
 | `/api/schedules/:id/delete`        | POST   | 학생 스케쥴 취소 |
 
 ---
 
-## 6. 비즈니스 로직
+## 7. 비즈니스 로직
 
 ### 6.1 스케쥴 등록 규칙
 
@@ -630,7 +721,7 @@ type RecurringEditOption =
 
 ---
 
-## 7. 컴포넌트 구조
+## 8. 컴포넌트 구조
 
 ### 7.1 관리자 레이아웃
 
@@ -676,7 +767,7 @@ interface CalendarEvent {
 
 ---
 
-## 8. 데이터 흐름
+## 9. 데이터 흐름
 
 ### 8.1 스케쥴 등록 (관리자)
 
@@ -723,7 +814,7 @@ interface CalendarEvent {
 
 ---
 
-## 9. 보안 고려사항
+## 10. 보안 고려사항
 
 ### 9.1 인증/인가
 
@@ -744,7 +835,7 @@ interface CalendarEvent {
 
 ---
 
-## 10. 확장 고려사항
+## 11. 확장 고려사항
 
 ### 10.1 향후 기능
 
@@ -773,3 +864,6 @@ interface CalendarEvent {
 | [student-schedule-rules.ts](../app/features/schedules/utils/student-schedule-rules.ts) | 학생 스케쥴 규칙  |
 | [routes.ts](../app/routes.ts)                                                          | 라우트 정의       |
 | [database.types.ts](../database.types.ts)                                              | 데이터베이스 타입 |
+| [instructors/queries.ts](../app/features/instructors/queries.ts)                       | 강사 쿼리         |
+| [instructor-form.tsx](../app/features/admin/components/instructor-form.tsx)            | 강사 폼 컴포넌트  |
+| [program-form.tsx](../app/features/admin/components/program-form.tsx)                  | 클래스 폼 컴포넌트|
