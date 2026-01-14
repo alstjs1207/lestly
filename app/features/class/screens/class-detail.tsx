@@ -87,7 +87,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       />
 
       {/* CTA 버튼 */}
-      <div className="relative z-10 -mt-4 flex justify-center">
+      <div className="relative z-10 mt-6 flex justify-center">
         <button
           type="button"
           className="flex items-center gap-2 rounded-full bg-[#d4a574] px-8 py-3 text-lg font-semibold text-white shadow-lg transition-colors hover:bg-[#c49464]"
@@ -110,7 +110,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       </div>
 
       {/* 메인 콘텐츠 */}
-      <div className="mx-auto max-w-4xl px-4 py-12">
+      <div className="mx-auto max-w-4xl px-4 pt-12 pb-24">
         {/* 클래스 설명 */}
         {program.description && (
           <div className="mb-12">
