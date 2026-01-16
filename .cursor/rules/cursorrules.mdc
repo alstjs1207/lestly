@@ -49,6 +49,12 @@ You are an expert in TypeScript, Node.js, React Router, React, Remix, Shadcn UI,
   import type { Route } from "./+types/...";
   // 라우트 타입은 위 형식으로 import
 
+# drizzle
+
+- 신규 테이블 생성 및 마이그레이션 진행 시 기본적으로 정의된 명령어 사용( npm run db:generate, npm run db:migrate, npm run db:typegen)
+- sql/migrations 하위의 sql 생성은 직접 생성은 금지 최대한 명령어로 사용
+- 단, 직접 생성 할 수 밖에 없는 경우 반드시 sql/migrations/meta 하위의 \_journal.json에 정보 저장 필수
+
 # 🚫 Forbidden Patterns
 
 - `useLoaderData` and `useActionData` no longer exist in this project structure. // 해당 훅들은 더 이상 존재하지 않음
