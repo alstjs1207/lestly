@@ -40,7 +40,14 @@ export default [
         "features/users/api/disconnect-provider.tsx",
       ),
     ]),
-    ...prefix("/cron", [route("/mailer", "features/cron/api/mailer.tsx")]),
+    ...prefix("/cron", [
+      route("/mailer", "features/cron/api/mailer.tsx"),
+      route("/alimtalk", "features/notifications/api/alimtalk-cron.tsx"),
+    ]),
+    ...prefix("/notifications", [
+      index("features/notifications/api/in-app-notifications.tsx"),
+      route("/test-send", "features/notifications/api/test-send.tsx"),
+    ]),
   ]),
 
   // Redirect root to login page
@@ -147,6 +154,11 @@ export default [
           index("features/admin/screens/instructors/list.tsx"),
           route("/new", "features/admin/screens/instructors/create.tsx"),
           route("/:instructorId/edit", "features/admin/screens/instructors/edit.tsx"),
+        ]),
+        ...prefix("/notifications", [
+          index("features/notifications/screens/list.tsx"),
+          route("/templates", "features/notifications/screens/templates.tsx"),
+          route("/:notificationId", "features/notifications/screens/detail.tsx"),
         ]),
         route("/organization", "features/admin/screens/organization.tsx"),
         route("/settings", "features/admin/screens/settings.tsx"),

@@ -14,6 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      in_app_notifications: {
+        Row: {
+          created_at: string
+          in_app_notification_id: number
+          is_read: boolean
+          message: string
+          notification_id: number | null
+          organization_id: string
+          read_at: string | null
+          read_by: string | null
+          template_type: string
+        }
+        Insert: {
+          created_at?: string
+          in_app_notification_id?: number
+          is_read?: boolean
+          message: string
+          notification_id?: number | null
+          organization_id: string
+          read_at?: string | null
+          read_by?: string | null
+          template_type: string
+        }
+        Update: {
+          created_at?: string
+          in_app_notification_id?: number
+          is_read?: boolean
+          message?: string
+          notification_id?: number | null
+          organization_id?: string
+          read_at?: string | null
+          read_by?: string | null
+          template_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "in_app_notifications_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["notification_id"]
+          },
+          {
+            foreignKeyName: "in_app_notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["organization_id"]
+          },
+          {
+            foreignKeyName: "in_app_notifications_read_by_fkey"
+            columns: ["read_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       instructors: {
         Row: {
           career: Json | null
@@ -55,6 +113,156 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["organization_id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          alimtalk_error_code: string | null
+          alimtalk_error_message: string | null
+          alimtalk_message_id: string | null
+          alimtalk_sent_at: string | null
+          alimtalk_status: Database["public"]["Enums"]["alimtalk_status"] | null
+          alimtalk_template_code: string | null
+          alimtalk_variables: Json | null
+          consult_completed_at: string | null
+          consult_completed_by: string | null
+          consult_message: string | null
+          consult_notes: string | null
+          consult_result: Database["public"]["Enums"]["consult_result"] | null
+          consult_status: Database["public"]["Enums"]["consult_status"] | null
+          created_at: string
+          notification_id: number
+          organization_id: string
+          parent_notification_id: number | null
+          program_id: number | null
+          recipient_name: string | null
+          recipient_phone: string
+          recipient_profile_id: string | null
+          reminder_generated: boolean | null
+          retry_count: number | null
+          schedule_id: number | null
+          scheduled_send_at: string | null
+          send_mode: Database["public"]["Enums"]["send_mode"] | null
+          sender_profile_id: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at: string
+        }
+        Insert: {
+          alimtalk_error_code?: string | null
+          alimtalk_error_message?: string | null
+          alimtalk_message_id?: string | null
+          alimtalk_sent_at?: string | null
+          alimtalk_status?:
+            | Database["public"]["Enums"]["alimtalk_status"]
+            | null
+          alimtalk_template_code?: string | null
+          alimtalk_variables?: Json | null
+          consult_completed_at?: string | null
+          consult_completed_by?: string | null
+          consult_message?: string | null
+          consult_notes?: string | null
+          consult_result?: Database["public"]["Enums"]["consult_result"] | null
+          consult_status?: Database["public"]["Enums"]["consult_status"] | null
+          created_at?: string
+          notification_id?: number
+          organization_id: string
+          parent_notification_id?: number | null
+          program_id?: number | null
+          recipient_name?: string | null
+          recipient_phone: string
+          recipient_profile_id?: string | null
+          reminder_generated?: boolean | null
+          retry_count?: number | null
+          schedule_id?: number | null
+          scheduled_send_at?: string | null
+          send_mode?: Database["public"]["Enums"]["send_mode"] | null
+          sender_profile_id?: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+        }
+        Update: {
+          alimtalk_error_code?: string | null
+          alimtalk_error_message?: string | null
+          alimtalk_message_id?: string | null
+          alimtalk_sent_at?: string | null
+          alimtalk_status?:
+            | Database["public"]["Enums"]["alimtalk_status"]
+            | null
+          alimtalk_template_code?: string | null
+          alimtalk_variables?: Json | null
+          consult_completed_at?: string | null
+          consult_completed_by?: string | null
+          consult_message?: string | null
+          consult_notes?: string | null
+          consult_result?: Database["public"]["Enums"]["consult_result"] | null
+          consult_status?: Database["public"]["Enums"]["consult_status"] | null
+          created_at?: string
+          notification_id?: number
+          organization_id?: string
+          parent_notification_id?: number | null
+          program_id?: number | null
+          recipient_name?: string | null
+          recipient_phone?: string
+          recipient_profile_id?: string | null
+          reminder_generated?: boolean | null
+          retry_count?: number | null
+          schedule_id?: number | null
+          scheduled_send_at?: string | null
+          send_mode?: Database["public"]["Enums"]["send_mode"] | null
+          sender_profile_id?: string | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_consult_completed_by_fkey"
+            columns: ["consult_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["organization_id"]
+          },
+          {
+            foreignKeyName: "notifications_parent_notification_id_fkey"
+            columns: ["parent_notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["notification_id"]
+          },
+          {
+            foreignKeyName: "notifications_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["program_id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "notifications_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["schedule_id"]
+          },
+          {
+            foreignKeyName: "notifications_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
           },
         ]
       }
@@ -100,6 +308,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["profile_id"]
+          },
+        ]
+      }
+      organization_templates: {
+        Row: {
+          batch_start_hour: number | null
+          channel: Database["public"]["Enums"]["template_channel"]
+          created_at: string
+          hours_before: number | null
+          org_template_id: number
+          organization_id: string
+          scheduled_send_time: string | null
+          send_timing: Database["public"]["Enums"]["send_timing"]
+          status: Database["public"]["Enums"]["template_status"]
+          super_template_id: number
+          updated_at: string
+        }
+        Insert: {
+          batch_start_hour?: number | null
+          channel?: Database["public"]["Enums"]["template_channel"]
+          created_at?: string
+          hours_before?: number | null
+          org_template_id?: number
+          organization_id: string
+          scheduled_send_time?: string | null
+          send_timing: Database["public"]["Enums"]["send_timing"]
+          status?: Database["public"]["Enums"]["template_status"]
+          super_template_id: number
+          updated_at?: string
+        }
+        Update: {
+          batch_start_hour?: number | null
+          channel?: Database["public"]["Enums"]["template_channel"]
+          created_at?: string
+          hours_before?: number | null
+          org_template_id?: number
+          organization_id?: string
+          scheduled_send_time?: string | null
+          send_timing?: Database["public"]["Enums"]["send_timing"]
+          status?: Database["public"]["Enums"]["template_status"]
+          super_template_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["organization_id"]
+          },
+          {
+            foreignKeyName: "organization_templates_super_template_id_fkey"
+            columns: ["super_template_id"]
+            isOneToOne: false
+            referencedRelation: "super_templates"
+            referencedColumns: ["super_template_id"]
           },
         ]
       }
@@ -418,6 +683,110 @@ export type Database = {
           },
         ]
       }
+      super_templates: {
+        Row: {
+          channel: Database["public"]["Enums"]["template_channel"]
+          content: string
+          created_at: string
+          default_hours_before: number | null
+          default_timing: Database["public"]["Enums"]["send_timing"]
+          kakao_template_code: string
+          name: string
+          status: Database["public"]["Enums"]["template_status"]
+          super_template_id: number
+          type: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          channel?: Database["public"]["Enums"]["template_channel"]
+          content: string
+          created_at?: string
+          default_hours_before?: number | null
+          default_timing: Database["public"]["Enums"]["send_timing"]
+          kakao_template_code: string
+          name: string
+          status?: Database["public"]["Enums"]["template_status"]
+          super_template_id?: number
+          type: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["template_channel"]
+          content?: string
+          created_at?: string
+          default_hours_before?: number | null
+          default_timing?: Database["public"]["Enums"]["send_timing"]
+          kakao_template_code?: string
+          name?: string
+          status?: Database["public"]["Enums"]["template_status"]
+          super_template_id?: number
+          type?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
+      }
+      test_send_logs: {
+        Row: {
+          log_id: number
+          org_template_id: number | null
+          organization_id: string | null
+          profile_id: string
+          recipient_phone: string
+          sent_at: string
+          super_template_id: number
+        }
+        Insert: {
+          log_id?: number
+          org_template_id?: number | null
+          organization_id?: string | null
+          profile_id: string
+          recipient_phone: string
+          sent_at?: string
+          super_template_id: number
+        }
+        Update: {
+          log_id?: number
+          org_template_id?: number | null
+          organization_id?: string | null
+          profile_id?: string
+          recipient_phone?: string
+          sent_at?: string
+          super_template_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_send_logs_org_template_id_fkey"
+            columns: ["org_template_id"]
+            isOneToOne: false
+            referencedRelation: "organization_templates"
+            referencedColumns: ["org_template_id"]
+          },
+          {
+            foreignKeyName: "test_send_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["organization_id"]
+          },
+          {
+            foreignKeyName: "test_send_logs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "test_send_logs_super_template_id_fkey"
+            columns: ["super_template_id"]
+            isOneToOne: false
+            referencedRelation: "super_templates"
+            referencedColumns: ["super_template_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -426,10 +795,19 @@ export type Database = {
       get_user_organization_id: { Args: never; Returns: string }
       is_org_admin: { Args: { org_id: string }; Returns: boolean }
       is_org_member: { Args: { org_id: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      alimtalk_status: "PENDING" | "SENT" | "FAILED"
+      consult_result: "SUCCESS" | "FAILED"
+      consult_status: "WAITING" | "COMPLETED"
+      notification_type: "ALIMTALK" | "CONSULT_REQUEST"
       program_level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
       program_status: "DRAFT" | "ACTIVE" | "ARCHIVED"
+      send_mode: "TEST" | "LIVE"
+      send_timing: "IMMEDIATE" | "SCHEDULED"
+      template_channel: "ALIMTALK"
+      template_status: "ACTIVE" | "INACTIVE"
       user_role: "STUDENT" | "ADMIN"
       user_state: "NORMAL" | "GRADUATE" | "DELETED"
       user_type: "EXAMINEE" | "DROPPER" | "ADULT"
@@ -560,8 +938,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alimtalk_status: ["PENDING", "SENT", "FAILED"],
+      consult_result: ["SUCCESS", "FAILED"],
+      consult_status: ["WAITING", "COMPLETED"],
+      notification_type: ["ALIMTALK", "CONSULT_REQUEST"],
       program_level: ["BEGINNER", "INTERMEDIATE", "ADVANCED"],
       program_status: ["DRAFT", "ACTIVE", "ARCHIVED"],
+      send_mode: ["TEST", "LIVE"],
+      send_timing: ["IMMEDIATE", "SCHEDULED"],
+      template_channel: ["ALIMTALK"],
+      template_status: ["ACTIVE", "INACTIVE"],
       user_role: ["STUDENT", "ADMIN"],
       user_state: ["NORMAL", "GRADUATE", "DELETED"],
       user_type: ["EXAMINEE", "DROPPER", "ADULT"],

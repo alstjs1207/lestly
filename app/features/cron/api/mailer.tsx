@@ -94,7 +94,7 @@ export async function action({ request }: Route.LoaderArgs) {
         from: "Lestly <hello@lestly.io>",
         to: [to],
         subject: "Welcome to Lestly!",
-        react: WelcomeEmail({ profile: JSON.stringify(emailData, null, 2) }),
+        react: WelcomeEmail({ name: emailData.name || "회원" }),
       });
 
       // Log any errors that occur during email sending

@@ -12,6 +12,8 @@ import {
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getOrganization } from "~/features/organizations/queries";
 
+import { NotificationBell } from "~/features/notifications/components/notification-bell";
+
 import AdminSidebar from "../components/admin-sidebar";
 import { requireAdminRole } from "../guards.server";
 
@@ -57,6 +59,7 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             </span>
           </div>
           <div className="ml-auto flex items-center gap-2 px-4">
+            <NotificationBell organizationId={loaderData.organizationId} />
             <ThemeSwitcher />
             <LangSwitcher />
           </div>

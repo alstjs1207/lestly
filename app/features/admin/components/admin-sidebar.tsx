@@ -1,4 +1,5 @@
 import {
+  BellIcon,
   CalendarIcon,
   HomeIcon,
   SettingsIcon,
@@ -68,6 +69,11 @@ const menuItems = [
     title: "강사 관리",
     url: "/admin/instructors",
     icon: UserIcon,
+  },
+  {
+    title: "알림 관리",
+    url: "/admin/notifications",
+    icon: BellIcon,
   },
 ];
 
