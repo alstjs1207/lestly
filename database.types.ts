@@ -798,7 +798,7 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      alimtalk_status: "PENDING" | "SENT" | "FAILED"
+      alimtalk_status: "PENDING" | "SENDING" | "SENT" | "FAILED"
       consult_result: "SUCCESS" | "FAILED"
       consult_status: "WAITING" | "COMPLETED"
       notification_type: "ALIMTALK" | "CONSULT_REQUEST"
@@ -938,7 +938,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      alimtalk_status: ["PENDING", "SENT", "FAILED"],
+      alimtalk_status: ["PENDING", "SENDING", "SENT", "FAILED"],
       consult_result: ["SUCCESS", "FAILED"],
       consult_status: ["WAITING", "COMPLETED"],
       notification_type: ["ALIMTALK", "CONSULT_REQUEST"],

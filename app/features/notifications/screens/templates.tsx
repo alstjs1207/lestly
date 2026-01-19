@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/core/components/ui/select";
+import { Checkbox } from "~/core/components/ui/checkbox";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { requireAdminRole } from "~/features/admin/guards.server";
 
@@ -66,6 +67,7 @@ export async function action({ request }: Route.ActionArgs) {
     const hoursBefore = formData.get("hoursBefore") ? parseInt(formData.get("hoursBefore") as string) : undefined;
     const scheduledSendTime = formData.get("scheduledSendTime") as string | undefined;
     const batchStartHour = formData.get("batchStartHour") ? parseInt(formData.get("batchStartHour") as string) : undefined;
+    const status = formData.get("status") === "on" ? "ACTIVE" : "INACTIVE";
 
     await upsertOrgTemplate(client, {
       organizationId,
@@ -74,6 +76,7 @@ export async function action({ request }: Route.ActionArgs) {
       hoursBefore: hoursBefore || undefined,
       scheduledSendTime: scheduledSendTime || undefined,
       batchStartHour: batchStartHour || undefined,
+      status,
     });
 
     return { success: true, templateId: superTemplateId };
@@ -139,8 +142,20 @@ export default function TemplatesScreen({
                     {template.kakao_template_code}
                   </CardDescription>
                 </div>
-                <Badge variant={template.orgSettings ? "default" : "outline"}>
-                  {template.orgSettings ? "설정됨" : "기본값"}
+                <Badge
+                  variant={
+                    template.orgSettings?.status === "INACTIVE"
+                      ? "destructive"
+                      : template.orgSettings
+                        ? "default"
+                        : "outline"
+                  }
+                >
+                  {template.orgSettings?.status === "INACTIVE"
+                    ? "사용 안함"
+                    : template.orgSettings
+                      ? "설정됨"
+                      : "기본값"}
                 </Badge>
               </div>
             </CardHeader>
@@ -207,21 +222,38 @@ export default function TemplatesScreen({
                       <input type="hidden" name="intent" value="updateTemplate" />
                       <input type="hidden" name="superTemplateId" value={template.super_template_id} />
 
-                      <div className="space-y-2">
-                        <Label>발송 타이밍</Label>
-                        <Select
-                          name="sendTiming"
-                          defaultValue={template.orgSettings?.send_timing || template.default_timing}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="IMMEDIATE">즉시 발송</SelectItem>
-                            <SelectItem value="SCHEDULED">예약 발송</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`status-${template.super_template_id}`}
+                          name="status"
+                          defaultChecked={template.orgSettings?.status !== "INACTIVE"}
+                        />
+                        <Label htmlFor={`status-${template.super_template_id}`}>알림 사용</Label>
                       </div>
+
+                      {/* 발송 타이밍: 리마인더에만 표시 (관리자 예약/취소는 시간대 기반 자동 결정) */}
+                      {template.type !== "ADM_BOOK_STUDENT" && template.type !== "ADM_CANCEL_STUDENT" && (
+                        <div className="space-y-2">
+                          <Label>발송 타이밍</Label>
+                          <Select
+                            name="sendTiming"
+                            defaultValue={template.orgSettings?.send_timing || template.default_timing}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="IMMEDIATE">즉시 발송</SelectItem>
+                              <SelectItem value="SCHEDULED">예약 발송</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* 관리자 예약/취소: 시간대 기반 자동 발송 안내 */}
+                      {(template.type === "ADM_BOOK_STUDENT" || template.type === "ADM_CANCEL_STUDENT") && (
+                        <input type="hidden" name="sendTiming" value="SCHEDULED" />
+                      )}
 
                       {template.type === "SYS_REMIND_STUDENT" && (
                         <div className="space-y-2">

@@ -37,8 +37,12 @@ export async function action({ request }: Route.ActionArgs) {
     return data({ error: "Unauthorized" }, { status: 401, headers });
   }
 
-  const body: TestSendRequest = await request.json();
-  const { super_template_id, org_template_id, recipient_phone: inputPhone } = body;
+  const formData = await request.formData();
+  const super_template_id = parseInt(formData.get("superTemplateId") as string);
+  const org_template_id = formData.get("orgTemplateId")
+    ? parseInt(formData.get("orgTemplateId") as string)
+    : undefined;
+  const inputPhone = formData.get("recipientPhone") as string | undefined;
 
   // Check if super admin
   const isSuperAdmin =

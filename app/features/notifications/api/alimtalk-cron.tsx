@@ -34,19 +34,33 @@ export async function action({ request }: Route.ActionArgs) {
 
   try {
     // ==========================================
-    // PART 1: Batch sends (ADM_BOOK/CANCEL)
-    // Process notifications with scheduled_send_at <= NOW()
+    // PART 0: Timeout handling for stuck SENDING notifications
+    // Mark SENDING notifications older than 10 minutes as FAILED
     // ==========================================
-    const { data: pendingBatchMessages } = await adminClient
+    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+    await adminClient
+      .from("notifications")
+      .update({
+        alimtalk_status: "FAILED",
+        alimtalk_error_message: "Timeout: processing exceeded 10 minutes",
+      })
+      .eq("alimtalk_status", "SENDING")
+      .lt("updated_at", tenMinutesAgo.toISOString());
+
+    // ==========================================
+    // PART 1: Pending notifications
+    // - Immediate sends: scheduled_send_at IS NULL
+    // - Scheduled sends: scheduled_send_at <= NOW()
+    // ==========================================
+    const { data: pendingMessages } = await adminClient
       .from("notifications")
       .select("notification_id")
       .eq("type", "ALIMTALK")
       .eq("alimtalk_status", "PENDING")
-      .not("scheduled_send_at", "is", null)
-      .lte("scheduled_send_at", now.toISOString())
+      .or(`scheduled_send_at.is.null,scheduled_send_at.lte.${now.toISOString()}`)
       .limit(50);
 
-    for (const msg of pendingBatchMessages || []) {
+    for (const msg of pendingMessages || []) {
       await invokeSendAlimtalk(msg.notification_id);
       processedCount++;
     }

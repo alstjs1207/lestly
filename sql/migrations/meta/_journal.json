@@ -92,6 +92,13 @@
       "when": 1768500000000,
       "tag": "0012_notifications_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1768500000001,
+      "tag": "0013_alimtalk_sending_status",
+      "breakpoints": true
     }
   ]
 }
