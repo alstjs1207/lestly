@@ -153,3 +153,4 @@ dist
 /skia/
 
 sql/migrations/meta/*
+/docs/request_history/*
