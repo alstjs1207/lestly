@@ -149,8 +149,23 @@ export async function action({ request }: Route.ActionArgs) {
 
   // Check if user is admin and redirect accordingly
   const adminUser = await isAdmin(client);
-  const redirectTo = adminUser ? "/admin" : "/dashboard";
 
+  // redirect 파라미터 확인
+  const url = new URL(request.url);
+  const redirectParam = url.searchParams.get("redirect");
+
+  // 관리자이고 redirect 파라미터가 /admin 또는 /super-admin으로 시작하면 해당 경로로
+  if (
+    redirectParam &&
+    adminUser &&
+    (redirectParam.startsWith("/admin") ||
+      redirectParam.startsWith("/super-admin"))
+  ) {
+    return redirect(redirectParam, { headers });
+  }
+
+  // 기존 로직
+  const redirectTo = adminUser ? "/admin" : "/dashboard";
   return redirect(redirectTo, { headers });
 }
 
