@@ -1,6 +1,7 @@
 import {
   Building2Icon,
   ChartBarIcon,
+  FileTextIcon,
   LogOutIcon,
   SettingsIcon,
 } from "lucide-react";
@@ -104,6 +105,18 @@ export default function SuperAdminSidebar({
                   <Link to="/super-admin">
                     <ChartBarIcon />
                     <span>{t("superAdmin.dashboard")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive("/super-admin/templates")}
+                  tooltip="알림 템플릿"
+                >
+                  <Link to="/super-admin/templates">
+                    <FileTextIcon />
+                    <span>알림 템플릿</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

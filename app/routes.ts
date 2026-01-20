@@ -48,6 +48,7 @@ export default [
       index("features/notifications/api/in-app-notifications.tsx"),
       route("/test-send", "features/notifications/api/test-send.tsx"),
     ]),
+    route("/consult-request", "features/class/api/consult-request.tsx"),
   ]),
 
   // Redirect root to login page
@@ -172,6 +173,7 @@ export default [
     layout("features/super-admin/layouts/super-admin.layout.tsx", [
       ...prefix("/super-admin", [
         index("features/super-admin/screens/dashboard.tsx"),
+        route("/templates", "features/super-admin/screens/templates.tsx"),
         route("/org/:orgId", "features/super-admin/screens/org-dashboard.tsx"),
       ]),
     ]),
