@@ -48,7 +48,6 @@ export default [
       index("features/notifications/api/in-app-notifications.tsx"),
       route("/test-send", "features/notifications/api/test-send.tsx"),
     ]),
-    route("/consult-request", "features/class/api/consult-request.tsx"),
   ]),
 
   // Redirect root to login page
