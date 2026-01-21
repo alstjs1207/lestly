@@ -1,4 +1,5 @@
 import type { Route } from "./+types/calendar";
+import type { DatesSetArg } from "@fullcalendar/core";
 
 import { Link, useSearchParams } from "react-router";
 import { ListIcon, PlusIcon } from "lucide-react";
@@ -53,7 +54,20 @@ export default function ScheduleCalendarScreen({
   loaderData,
 }: Route.ComponentProps) {
   const { events } = loaderData;
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const handleDatesSet = (dateInfo: DatesSetArg) => {
+    const viewStart = dateInfo.view.currentStart;
+    const newYear = viewStart.getFullYear();
+    const newMonth = viewStart.getMonth() + 1;
+
+    const currentYear = parseInt(searchParams.get("year") || "0");
+    const currentMonth = parseInt(searchParams.get("month") || "0");
+
+    if (newYear !== currentYear || newMonth !== currentMonth) {
+      setSearchParams({ year: String(newYear), month: String(newMonth) });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -81,7 +95,7 @@ export default function ScheduleCalendarScreen({
       </div>
 
       <div className="rounded-md border bg-card p-4">
-        <AdminCalendar events={events} />
+        <AdminCalendar events={events} onDatesSet={handleDatesSet} />
       </div>
     </div>
   );

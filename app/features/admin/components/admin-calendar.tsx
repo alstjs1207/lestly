@@ -1,5 +1,5 @@
 import type { DateClickArg } from "@fullcalendar/interaction";
-import type { EventClickArg, EventContentArg, EventMountArg } from "@fullcalendar/core";
+import type { DatesSetArg, EventClickArg, EventContentArg, EventMountArg } from "@fullcalendar/core";
 
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -30,6 +30,7 @@ interface AdminCalendarProps {
   initialView?: "dayGridMonth" | "timeGridWeek" | "timeGridDay";
   onDateClick?: (date: Date) => void;
   onEventClick?: (scheduleId: number) => void;
+  onDatesSet?: (dateInfo: DatesSetArg) => void;
 }
 
 export default function AdminCalendar({
@@ -37,6 +38,7 @@ export default function AdminCalendar({
   initialView = "dayGridMonth",
   onDateClick,
   onEventClick,
+  onDatesSet,
 }: AdminCalendarProps) {
   const navigate = useNavigate();
 
@@ -141,6 +143,7 @@ export default function AdminCalendar({
         eventClick={handleEventClick}
         eventContent={renderEventContent}
         eventDidMount={handleEventDidMount}
+        datesSet={onDatesSet}
         locale="ko"
         buttonText={{
           today: "오늘",

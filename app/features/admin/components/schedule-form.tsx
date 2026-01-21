@@ -172,7 +172,6 @@ export default function ScheduleForm({
           <div className="flex items-center space-x-2 pt-2">
             <Checkbox
               id="is_recurring"
-              name="is_recurring"
               checked={isRecurring}
               onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
             />
