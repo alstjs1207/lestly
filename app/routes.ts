@@ -25,6 +25,7 @@ export default [
   ]),
   // API Routes. Routes that export actions and loaders but no UI.
   ...prefix("/api", [
+    route("/consult-request", "features/class/api/consult-request.tsx"),
     ...prefix("/settings", [
       route("/theme", "features/settings/api/set-theme.tsx"),
       route("/locale", "features/settings/api/set-locale.tsx"),
