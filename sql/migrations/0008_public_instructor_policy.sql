@@ -12,3 +12,6 @@ USING (
     AND programs.status = 'ACTIVE'
   )
 );
+
+
+GRANT SELECT ON instructors TO anon;
