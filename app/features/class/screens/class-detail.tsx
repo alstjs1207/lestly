@@ -97,9 +97,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
 
     fetcher.submit(
       {
-        organizationId: program.organization_id,
         programId: program.program_id,
-        programTitle: program.title,
         name: name.trim(),
         phone: phone.trim(),
         message: message.trim(),
