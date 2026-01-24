@@ -523,8 +523,14 @@ BEGIN
   END IF;
 
   IF v_is_student THEN
-    -- 수강생 정보 조회
-    SELECT name, phone INTO v_recipient_name, v_recipient_phone
+    -- 수강생 정보 조회 (지역 정보 포함)
+    SELECT
+      CASE
+        WHEN region IS NOT NULL AND region != '' THEN name || '(' || region || ')'
+        ELSE name
+      END,
+      phone
+    INTO v_recipient_name, v_recipient_phone
     FROM public.profiles
     WHERE profile_id = NEW.student_id;
 
@@ -726,8 +732,14 @@ BEGIN
   END IF;
 
   IF v_is_student THEN
-    -- 수강생 정보 조회
-    SELECT name, phone INTO v_recipient_name, v_recipient_phone
+    -- 수강생 정보 조회 (지역 정보 포함)
+    SELECT
+      CASE
+        WHEN region IS NOT NULL AND region != '' THEN name || '(' || region || ')'
+        ELSE name
+      END,
+      phone
+    INTO v_recipient_name, v_recipient_phone
     FROM public.profiles
     WHERE profile_id = OLD.student_id;
 
