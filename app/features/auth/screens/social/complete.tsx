@@ -17,6 +17,7 @@ import { data, redirect } from "react-router";
 import { z } from "zod";
 
 import makeServerClient from "~/core/lib/supa-client.server";
+import { isAdmin } from "~/features/admin/guards.server";
 
 /**
  * Meta function for the social authentication complete page
@@ -100,8 +101,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     return data({ error: error.message }, { status: 400 });
   }
 
-  // Redirect to home page with auth cookies in headers
-  return redirect("/", { headers });
+  // Redirect based on user role
+  const adminUser = await isAdmin(client);
+  const redirectTo = adminUser ? "/admin" : "/dashboard";
+  return redirect(redirectTo, { headers });
 }
 
 /**
