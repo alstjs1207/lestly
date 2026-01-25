@@ -132,10 +132,14 @@ export type Database = {
           consult_result: Database["public"]["Enums"]["consult_result"] | null
           consult_status: Database["public"]["Enums"]["consult_status"] | null
           created_at: string
+          email_error_message: string | null
+          email_sent_at: string | null
+          email_status: Database["public"]["Enums"]["email_status"] | null
           notification_id: number
           organization_id: string
           parent_notification_id: number | null
           program_id: number | null
+          recipient_email: string | null
           recipient_name: string | null
           recipient_phone: string
           recipient_profile_id: string | null
@@ -165,10 +169,14 @@ export type Database = {
           consult_result?: Database["public"]["Enums"]["consult_result"] | null
           consult_status?: Database["public"]["Enums"]["consult_status"] | null
           created_at?: string
+          email_error_message?: string | null
+          email_sent_at?: string | null
+          email_status?: Database["public"]["Enums"]["email_status"] | null
           notification_id?: number
           organization_id: string
           parent_notification_id?: number | null
           program_id?: number | null
+          recipient_email?: string | null
           recipient_name?: string | null
           recipient_phone: string
           recipient_profile_id?: string | null
@@ -198,10 +206,14 @@ export type Database = {
           consult_result?: Database["public"]["Enums"]["consult_result"] | null
           consult_status?: Database["public"]["Enums"]["consult_status"] | null
           created_at?: string
+          email_error_message?: string | null
+          email_sent_at?: string | null
+          email_status?: Database["public"]["Enums"]["email_status"] | null
           notification_id?: number
           organization_id?: string
           parent_notification_id?: number | null
           program_id?: number | null
+          recipient_email?: string | null
           recipient_name?: string | null
           recipient_phone?: string
           recipient_profile_id?: string | null
@@ -313,9 +325,11 @@ export type Database = {
       }
       organization_templates: {
         Row: {
+          alimtalk_enabled: boolean
           batch_start_hour: number | null
           channel: Database["public"]["Enums"]["template_channel"]
           created_at: string
+          email_enabled: boolean
           hours_before: number | null
           org_template_id: number
           organization_id: string
@@ -326,9 +340,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alimtalk_enabled?: boolean
           batch_start_hour?: number | null
           channel?: Database["public"]["Enums"]["template_channel"]
           created_at?: string
+          email_enabled?: boolean
           hours_before?: number | null
           org_template_id?: number
           organization_id: string
@@ -339,9 +355,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alimtalk_enabled?: boolean
           batch_start_hour?: number | null
           channel?: Database["public"]["Enums"]["template_channel"]
           created_at?: string
+          email_enabled?: boolean
           hours_before?: number | null
           org_template_id?: number
           organization_id?: string
@@ -801,6 +819,7 @@ export type Database = {
       alimtalk_status: "PENDING" | "SENDING" | "SENT" | "FAILED"
       consult_result: "SUCCESS" | "FAILED"
       consult_status: "WAITING" | "COMPLETED"
+      email_status: "PENDING" | "SENT" | "FAILED" | "SKIPPED"
       notification_type: "ALIMTALK" | "CONSULT_REQUEST"
       program_level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
       program_status: "DRAFT" | "ACTIVE" | "ARCHIVED"
@@ -941,6 +960,7 @@ export const Constants = {
       alimtalk_status: ["PENDING", "SENDING", "SENT", "FAILED"],
       consult_result: ["SUCCESS", "FAILED"],
       consult_status: ["WAITING", "COMPLETED"],
+      email_status: ["PENDING", "SENT", "FAILED", "SKIPPED"],
       notification_type: ["ALIMTALK", "CONSULT_REQUEST"],
       program_level: ["BEGINNER", "INTERMEDIATE", "ADVANCED"],
       program_status: ["DRAFT", "ACTIVE", "ARCHIVED"],

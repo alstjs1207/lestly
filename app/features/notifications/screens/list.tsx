@@ -1,7 +1,7 @@
 import type { Route } from "./+types/list";
 
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { FileTextIcon } from "lucide-react";
+import { FileTextIcon, SmartphoneIcon, MailIcon } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -20,6 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "~/core/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/core/components/ui/tooltip";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { requireAdminRole } from "~/features/admin/guards.server";
 
@@ -61,8 +67,15 @@ const typeLabels: Record<string, { label: string; variant: "default" | "secondar
 
 const alimtalkStatusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   PENDING: { label: "대기", variant: "outline" },
-  SENT: { label: "발송 완료", variant: "default" },
-  FAILED: { label: "발송 실패", variant: "destructive" },
+  SENT: { label: "완료", variant: "default" },
+  FAILED: { label: "실패", variant: "destructive" },
+};
+
+const emailStatusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  PENDING: { label: "대기", variant: "outline" },
+  SENT: { label: "완료", variant: "default" },
+  FAILED: { label: "실패", variant: "destructive" },
+  SKIPPED: { label: "건너뜀", variant: "secondary" },
 };
 
 const consultStatusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -105,15 +118,99 @@ export default function NotificationListScreen({
     setSearchParams(newParams);
   };
 
-  const getStatusBadge = (notification: typeof notifications[0]) => {
-    if (notification.type === "ALIMTALK" && notification.alimtalk_status) {
-      const status = alimtalkStatusLabels[notification.alimtalk_status];
-      return <Badge variant={status?.variant || "default"}>{status?.label || notification.alimtalk_status}</Badge>;
+  // 발송 채널 아이콘 렌더링
+  const getChannelIcons = (notification: typeof notifications[0]) => {
+    if (notification.type === "CONSULT_REQUEST") {
+      return null;
     }
+
+    const hasAlimtalk = notification.alimtalk_status !== null;
+    const hasEmail = notification.email_status !== null;
+
+    return (
+      <TooltipProvider>
+        <div className="flex items-center gap-1">
+          {hasAlimtalk ? (
+            <Tooltip>
+              <TooltipTrigger>
+                <SmartphoneIcon
+                  className={`h-4 w-4 ${
+                    notification.alimtalk_status === "SENT"
+                      ? "text-green-600"
+                      : notification.alimtalk_status === "FAILED"
+                        ? "text-red-600"
+                        : "text-muted-foreground"
+                  }`}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                알림톡: {alimtalkStatusLabels[notification.alimtalk_status || ""]?.label || "-"}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <SmartphoneIcon className="h-4 w-4 text-gray-300" />
+          )}
+          {hasEmail ? (
+            <Tooltip>
+              <TooltipTrigger>
+                <MailIcon
+                  className={`h-4 w-4 ${
+                    notification.email_status === "SENT"
+                      ? "text-green-600"
+                      : notification.email_status === "FAILED"
+                        ? "text-red-600"
+                        : notification.email_status === "SKIPPED"
+                          ? "text-gray-400"
+                          : "text-muted-foreground"
+                  }`}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                이메일: {emailStatusLabels[notification.email_status || ""]?.label || "-"}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <MailIcon className="h-4 w-4 text-gray-300" />
+          )}
+        </div>
+      </TooltipProvider>
+    );
+  };
+
+  // 상태 뱃지 렌더링 (알림톡 + 이메일)
+  const getStatusBadge = (notification: typeof notifications[0]) => {
     if (notification.type === "CONSULT_REQUEST" && notification.consult_status) {
       const status = consultStatusLabels[notification.consult_status];
       return <Badge variant={status?.variant || "default"}>{status?.label || notification.consult_status}</Badge>;
     }
+
+    if (notification.type === "ALIMTALK") {
+      const alimtalkStatus = notification.alimtalk_status
+        ? alimtalkStatusLabels[notification.alimtalk_status]
+        : null;
+      const emailStatus = notification.email_status
+        ? emailStatusLabels[notification.email_status]
+        : null;
+
+      return (
+        <div className="flex flex-col gap-1">
+          {alimtalkStatus && (
+            <Badge variant={alimtalkStatus.variant} className="text-xs">
+              알림톡: {alimtalkStatus.label}
+            </Badge>
+          )}
+          {emailStatus && (
+            <Badge variant={emailStatus.variant} className="text-xs">
+              이메일: {emailStatus.label}
+            </Badge>
+          )}
+          {!alimtalkStatus && !emailStatus && (
+            <Badge variant="outline">-</Badge>
+          )}
+        </div>
+      );
+    }
+
     return <Badge variant="outline">-</Badge>;
   };
 
@@ -189,8 +286,9 @@ export default function NotificationListScreen({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-20">채널</TableHead>
               <TableHead className="w-28">유형</TableHead>
-              <TableHead className="w-32">상태</TableHead>
+              <TableHead className="w-40">상태</TableHead>
               <TableHead>수신자</TableHead>
               <TableHead>내용</TableHead>
               <TableHead className="w-32">최종 결과</TableHead>
@@ -201,7 +299,7 @@ export default function NotificationListScreen({
           <TableBody>
             {notifications.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={8} className="text-center py-8">
                   알림 이력이 없습니다.
                 </TableCell>
               </TableRow>
@@ -212,6 +310,9 @@ export default function NotificationListScreen({
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => navigate(`/admin/notifications/${notification.notification_id}`)}
                 >
+                  <TableCell>
+                    {getChannelIcons(notification)}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={typeLabels[notification.type]?.variant || "default"}>
                       {typeLabels[notification.type]?.label || notification.type}
@@ -224,6 +325,9 @@ export default function NotificationListScreen({
                     <div>
                       <div className="font-medium">{notification.recipient_name || "-"}</div>
                       <div className="text-sm text-muted-foreground">{notification.recipient_phone}</div>
+                      {notification.recipient_email && (
+                        <div className="text-xs text-muted-foreground">{notification.recipient_email}</div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">

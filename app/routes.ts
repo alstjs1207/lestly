@@ -44,6 +44,7 @@ export default [
     ...prefix("/cron", [
       route("/mailer", "features/cron/api/mailer.tsx"),
       route("/alimtalk", "features/notifications/api/alimtalk-cron.tsx"),
+      route("/email", "features/notifications/api/email-cron.tsx"),
     ]),
     ...prefix("/notifications", [
       index("features/notifications/api/in-app-notifications.tsx"),

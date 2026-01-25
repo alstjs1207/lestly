@@ -68,6 +68,8 @@ export async function action({ request }: Route.ActionArgs) {
     const scheduledSendTime = formData.get("scheduledSendTime") as string | undefined;
     const batchStartHour = formData.get("batchStartHour") ? parseInt(formData.get("batchStartHour") as string) : undefined;
     const status = formData.get("status") === "on" ? "ACTIVE" : "INACTIVE";
+    const alimtalkEnabled = formData.get("alimtalkEnabled") === "on";
+    const emailEnabled = formData.get("emailEnabled") === "on";
 
     await upsertOrgTemplate(client, {
       organizationId,
@@ -77,6 +79,8 @@ export async function action({ request }: Route.ActionArgs) {
       scheduledSendTime: scheduledSendTime || undefined,
       batchStartHour: batchStartHour || undefined,
       status,
+      alimtalkEnabled,
+      emailEnabled,
     });
 
     return { success: true, templateId: superTemplateId };
@@ -229,6 +233,33 @@ export default function TemplatesScreen({
                           defaultChecked={template.orgSettings?.status !== "INACTIVE"}
                         />
                         <Label htmlFor={`status-${template.super_template_id}`}>알림 사용</Label>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <Label className="text-muted-foreground">발송 채널</Label>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`alimtalk-${template.super_template_id}`}
+                            name="alimtalkEnabled"
+                            defaultChecked={(template.orgSettings as { alimtalk_enabled?: boolean } | null)?.alimtalk_enabled ?? true}
+                          />
+                          <Label htmlFor={`alimtalk-${template.super_template_id}`}>알림톡 발송</Label>
+                        </div>
+                        {template.type !== "SYS_CONSULT_ADMIN" && (
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`email-${template.super_template_id}`}
+                              name="emailEnabled"
+                              defaultChecked={(template.orgSettings as { email_enabled?: boolean } | null)?.email_enabled ?? true}
+                            />
+                            <Label htmlFor={`email-${template.super_template_id}`}>이메일 발송</Label>
+                          </div>
+                        )}
+                        {(template.type === "ADM_BOOK_STUDENT" || template.type === "ADM_CANCEL_STUDENT") && (
+                          <p className="text-xs text-muted-foreground">
+                            ※ 이메일은 배치 설정과 관계없이 즉시 발송됩니다.
+                          </p>
+                        )}
                       </div>
 
                       {/* 발송 타이밍: 리마인더에만 표시 (관리자 예약/취소는 시간대 기반 자동 결정) */}

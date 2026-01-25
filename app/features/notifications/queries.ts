@@ -198,6 +198,8 @@ export async function upsertOrgTemplate(
     scheduledSendTime,
     batchStartHour,
     status,
+    alimtalkEnabled,
+    emailEnabled,
   }: {
     organizationId: string;
     superTemplateId: number;
@@ -206,6 +208,8 @@ export async function upsertOrgTemplate(
     scheduledSendTime?: string;
     batchStartHour?: number;
     status?: "ACTIVE" | "INACTIVE";
+    alimtalkEnabled?: boolean;
+    emailEnabled?: boolean;
   },
 ) {
   // Check if org template exists
@@ -223,11 +227,12 @@ export async function upsertOrgTemplate(
     hours_before: hoursBefore ?? null,
     scheduled_send_time: scheduledSendTime ?? null,
     batch_start_hour: batchStartHour ?? 23,
-    status: status ?? "ACTIVE",
+    status: status ?? ("ACTIVE" as const),
+    alimtalk_enabled: alimtalkEnabled ?? true,
+    email_enabled: emailEnabled ?? true,
   };
 
   if (existing) {
-    // Update
     const { data, error } = await client
       .from("organization_templates")
       .update(templateData)
@@ -241,7 +246,6 @@ export async function upsertOrgTemplate(
 
     return data;
   } else {
-    // Insert
     const { data, error } = await client
       .from("organization_templates")
       .insert(templateData)

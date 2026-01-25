@@ -71,6 +71,7 @@ export async function action({ request }: Route.ActionArgs) {
     // ==========================================
 
     // Get reminder template settings for all organizations
+    // Note: alimtalk_enabled and email_enabled columns will be available after migration
     const { data: reminderSettings } = await adminClient
       .from("super_templates")
       .select(
@@ -88,10 +89,26 @@ export async function action({ request }: Route.ActionArgs) {
       .eq("type", "SYS_REMIND_STUDENT")
       .eq("status", "ACTIVE");
 
+    // Type for org template with new columns
+    interface OrgTemplateWithChannels {
+      organization_id: string;
+      status: string;
+      hours_before: number | null;
+      alimtalk_enabled?: boolean;
+      email_enabled?: boolean;
+    }
+
     for (const setting of reminderSettings || []) {
       // Process each organization's reminder settings
-      for (const orgTemplate of setting.organization_templates || []) {
+      for (const orgTemplate of (setting.organization_templates || []) as OrgTemplateWithChannels[]) {
         if (orgTemplate.status !== "ACTIVE") continue;
+
+        // Check channel settings (default to true for backwards compatibility)
+        const alimtalkEnabled = orgTemplate.alimtalk_enabled ?? true;
+        const emailEnabled = orgTemplate.email_enabled ?? true;
+
+        // Skip if both channels are disabled
+        if (!alimtalkEnabled && !emailEnabled) continue;
 
         const hoursBeforeMs =
           (orgTemplate.hours_before || setting.default_hours_before || 24) *
@@ -124,14 +141,26 @@ export async function action({ request }: Route.ActionArgs) {
           .lt("start_time", targetStartMax.toISOString());
 
         for (const schedule of schedules || []) {
-          // Get student info
+          // Get student info with email
           const { data: student } = await adminClient
             .from("profiles")
             .select("name, phone")
             .eq("profile_id", schedule.student_id)
             .single();
 
-          if (!student?.phone) continue;
+          if (!student) continue;
+          if (!student.phone && alimtalkEnabled) continue;
+
+          // Get student email from auth.users
+          let studentEmail: string | null = null;
+          if (emailEnabled) {
+            const { data: user } = await adminClient.auth.admin.getUserById(schedule.student_id);
+            studentEmail = user?.user?.email || null;
+          }
+
+          // Store student info for later use
+          const studentName = student.name || "";
+          const studentPhone = student.phone || "";
 
           // Check for duplicate reminder
           const { data: existing } = await adminClient
@@ -150,41 +179,56 @@ export async function action({ request }: Route.ActionArgs) {
           const programTitle =
             (schedule.programs as { title: string })?.title || "미지정";
 
+          // Determine email status
+          let emailStatus: "PENDING" | "SKIPPED" | null = null;
+          if (emailEnabled && studentEmail) {
+            emailStatus = "PENDING";
+          } else if (emailEnabled) {
+            emailStatus = "SKIPPED";
+          }
+
           // Create reminder notification
-          const { data: newNotification } = await adminClient
-            .from("notifications")
-            .insert({
-              organization_id: schedule.organization_id,
-              type: "ALIMTALK",
-              alimtalk_status: "PENDING",
-              alimtalk_template_code: setting.kakao_template_code,
-              recipient_phone: student.phone,
-              recipient_name: student.name,
-              recipient_profile_id: schedule.student_id,
-              schedule_id: schedule.schedule_id,
-              program_id: schedule.program_id,
-              alimtalk_variables: {
-                organization_name: orgName,
-                program_title: programTitle,
-                schedule_datetime: formatDateTime(schedule.start_time),
-                student_name: student.name,
-              },
-              reminder_generated: true,
-              send_mode: "LIVE",
-            })
+          // Note: recipient_email and email_status are new columns from 0014_email_notifications.sql
+          const insertData = {
+            organization_id: schedule.organization_id,
+            type: "ALIMTALK" as const,
+            alimtalk_status: alimtalkEnabled ? ("PENDING" as const) : null,
+            alimtalk_template_code: setting.kakao_template_code,
+            recipient_phone: studentPhone,
+            recipient_name: studentName,
+            recipient_email: studentEmail,
+            recipient_profile_id: schedule.student_id,
+            schedule_id: schedule.schedule_id,
+            program_id: schedule.program_id,
+            alimtalk_variables: {
+              organization_name: orgName,
+              program_title: programTitle,
+              schedule_datetime: formatDateTime(schedule.start_time),
+              student_name: studentName,
+            },
+            reminder_generated: true,
+            send_mode: "LIVE" as const,
+            email_status: emailStatus,
+          };
+
+          const { data: newNotification } = await (adminClient
+            .from("notifications") as unknown as { insert: (data: typeof insertData) => { select: () => { single: () => Promise<{ data: { notification_id: number } | null }> } } })
+            .insert(insertData)
             .select()
             .single();
 
           if (newNotification) {
-            // Immediately invoke send function for reminders
-            await invokeSendAlimtalk(newNotification.notification_id);
+            // Immediately invoke send function for reminders (if alimtalk is enabled)
+            if (alimtalkEnabled) {
+              await invokeSendAlimtalk(newNotification.notification_id);
+            }
             processedCount++;
           }
         }
       }
 
       // Also check organizations without custom settings (use default)
-      const orgsWithSettings = (setting.organization_templates || []).map(
+      const orgsWithSettings = ((setting.organization_templates || []) as OrgTemplateWithChannels[]).map(
         (ot) => ot.organization_id
       );
 
@@ -232,6 +276,11 @@ export async function action({ request }: Route.ActionArgs) {
 
         if (!student?.phone) continue;
 
+        // Get student email from auth.users (default: email enabled)
+        let studentEmail: string | null = null;
+        const { data: user } = await adminClient.auth.admin.getUserById(schedule.student_id);
+        studentEmail = user?.user?.email || null;
+
         const { data: existing } = await adminClient
           .from("notifications")
           .select("notification_id")
@@ -247,27 +296,35 @@ export async function action({ request }: Route.ActionArgs) {
         const programTitle =
           (schedule.programs as { title: string })?.title || "미지정";
 
-        const { data: newNotification } = await adminClient
-          .from("notifications")
-          .insert({
-            organization_id: schedule.organization_id,
-            type: "ALIMTALK",
-            alimtalk_status: "PENDING",
-            alimtalk_template_code: setting.kakao_template_code,
-            recipient_phone: student.phone,
-            recipient_name: student.name,
-            recipient_profile_id: schedule.student_id,
-            schedule_id: schedule.schedule_id,
-            program_id: schedule.program_id,
-            alimtalk_variables: {
-              organization_name: orgName,
-              program_title: programTitle,
-              schedule_datetime: formatDateTime(schedule.start_time),
-              student_name: student.name,
-            },
-            reminder_generated: true,
-            send_mode: "LIVE",
-          })
+        // Determine email status (default: email enabled)
+        const emailStatus: "PENDING" | "SKIPPED" = studentEmail ? "PENDING" : "SKIPPED";
+
+        // Note: recipient_email and email_status are new columns from 0014_email_notifications.sql
+        const insertData = {
+          organization_id: schedule.organization_id,
+          type: "ALIMTALK" as const,
+          alimtalk_status: "PENDING" as const,
+          alimtalk_template_code: setting.kakao_template_code,
+          recipient_phone: student.phone || "",
+          recipient_name: student.name,
+          recipient_email: studentEmail,
+          recipient_profile_id: schedule.student_id,
+          schedule_id: schedule.schedule_id,
+          program_id: schedule.program_id,
+          alimtalk_variables: {
+            organization_name: orgName,
+            program_title: programTitle,
+            schedule_datetime: formatDateTime(schedule.start_time),
+            student_name: student.name || "",
+          },
+          reminder_generated: true,
+          send_mode: "LIVE" as const,
+          email_status: emailStatus,
+        };
+
+        const { data: newNotification } = await (adminClient
+          .from("notifications") as unknown as { insert: (data: typeof insertData) => { select: () => { single: () => Promise<{ data: { notification_id: number } | null }> } } })
+          .insert(insertData)
           .select()
           .single();
 

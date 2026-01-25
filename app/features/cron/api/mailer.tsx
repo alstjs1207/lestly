@@ -91,7 +91,7 @@ export async function action({ request }: Route.LoaderArgs) {
       // Send welcome email using the Resend client
       const { error } = await resendClient.emails.send({
         // Make sure this domain is the Resend domain.
-        from: "Lestly <hello@lestly.io>",
+        from: "Lestly <hello@mail.lestly.io>",
         to: [to],
         subject: "Welcome to Lestly!",
         react: WelcomeEmail({ name: emailData.name || "회원" }),

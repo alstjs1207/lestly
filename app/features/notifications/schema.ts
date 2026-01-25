@@ -52,6 +52,20 @@ export const alimtalkStatusEnum = pgEnum("alimtalk_status", [
 ]);
 
 /**
+ * Email Status Enum
+ * - PENDING: Waiting for send
+ * - SENT: Successfully sent
+ * - FAILED: Failed to send
+ * - SKIPPED: Skipped (no email address or disabled)
+ */
+export const emailStatusEnum = pgEnum("email_status", [
+  "PENDING",
+  "SENT",
+  "FAILED",
+  "SKIPPED",
+]);
+
+/**
  * Consult Status Enum
  * - WAITING: Waiting for consultation
  * - COMPLETED: Consultation completed
@@ -126,6 +140,7 @@ export const notifications = pgTable(
     // Recipient info
     recipient_phone: text("recipient_phone").notNull(),
     recipient_name: text("recipient_name"),
+    recipient_email: text("recipient_email"),
     recipient_profile_id: uuid("recipient_profile_id").references(
       () => profiles.profile_id,
       { onDelete: "set null" }
@@ -146,6 +161,11 @@ export const notifications = pgTable(
     alimtalk_error_message: text("alimtalk_error_message"),
     alimtalk_sent_at: timestamp("alimtalk_sent_at"),
     send_mode: sendModeEnum("send_mode"),
+
+    // Email fields
+    email_status: emailStatusEnum("email_status"),
+    email_sent_at: timestamp("email_sent_at"),
+    email_error_message: text("email_error_message"),
 
     // Consult request fields
     consult_status: consultStatusEnum("consult_status"),
@@ -286,6 +306,10 @@ export const organizationTemplates = pgTable(
 
     // Status
     status: templateStatusEnum().notNull().default("ACTIVE"),
+
+    // Channel enabled settings
+    alimtalk_enabled: boolean("alimtalk_enabled").notNull().default(true),
+    email_enabled: boolean("email_enabled").notNull().default(true),
 
     // Send settings
     send_timing: sendTimingEnum("send_timing").notNull(),

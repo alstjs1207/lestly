@@ -76,6 +76,13 @@ const alimtalkStatusLabels: Record<string, { label: string; variant: "default" |
   FAILED: { label: "발송 실패", variant: "destructive" },
 };
 
+const emailStatusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  PENDING: { label: "대기", variant: "outline" },
+  SENT: { label: "발송 완료", variant: "default" },
+  FAILED: { label: "발송 실패", variant: "destructive" },
+  SKIPPED: { label: "건너뜀", variant: "secondary" },
+};
+
 const consultStatusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   WAITING: { label: "상담 대기", variant: "outline" },
   COMPLETED: { label: "상담 완료", variant: "default" },
@@ -96,15 +103,33 @@ export default function NotificationDetailScreen({
   const isAlimtalk = notification.type === "ALIMTALK";
   const isConsult = notification.type === "CONSULT_REQUEST";
 
-  const getStatusBadge = () => {
-    if (isAlimtalk && notification.alimtalk_status) {
-      const status = alimtalkStatusLabels[notification.alimtalk_status];
-      return <Badge variant={status?.variant || "default"}>{status?.label || notification.alimtalk_status}</Badge>;
-    }
+  const getStatusBadges = () => {
     if (isConsult && notification.consult_status) {
       const status = consultStatusLabels[notification.consult_status];
       return <Badge variant={status?.variant || "default"}>{status?.label || notification.consult_status}</Badge>;
     }
+
+    if (isAlimtalk) {
+      const badges = [];
+      if (notification.alimtalk_status) {
+        const alimtalkStatus = alimtalkStatusLabels[notification.alimtalk_status];
+        badges.push(
+          <Badge key="alimtalk" variant={alimtalkStatus?.variant || "default"} className="text-xs">
+            알림톡: {alimtalkStatus?.label || notification.alimtalk_status}
+          </Badge>
+        );
+      }
+      if (notification.email_status) {
+        const emailStatus = emailStatusLabels[notification.email_status];
+        badges.push(
+          <Badge key="email" variant={emailStatus?.variant || "default"} className="text-xs">
+            이메일: {emailStatus?.label || notification.email_status}
+          </Badge>
+        );
+      }
+      return badges.length > 0 ? <div className="flex flex-wrap gap-1">{badges}</div> : null;
+    }
+
     return null;
   };
 
@@ -123,7 +148,7 @@ export default function NotificationDetailScreen({
               <Badge variant={typeLabels[notification.type]?.variant || "default"}>
                 {typeLabels[notification.type]?.label || notification.type}
               </Badge>
-              {getStatusBadge()}
+              {getStatusBadges()}
             </div>
             <p className="text-muted-foreground">
               {new Date(notification.created_at).toLocaleString("ko-KR")}
@@ -161,6 +186,12 @@ export default function NotificationDetailScreen({
                 <p className="font-medium">{notification.recipient_phone}</p>
               </div>
             </div>
+            {notification.recipient_email && (
+              <div>
+                <Label className="text-muted-foreground">이메일</Label>
+                <p className="font-medium">{notification.recipient_email}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -210,6 +241,48 @@ export default function NotificationDetailScreen({
                   <pre className="mt-1 rounded-md bg-muted p-2 text-sm overflow-auto">
                     {JSON.stringify(notification.alimtalk_variables, null, 2)}
                   </pre>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {isAlimtalk && notification.email_status && (
+          <Card>
+            <CardHeader>
+              <CardTitle>이메일 정보</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">발송 상태</Label>
+                <div className="mt-1">
+                  <Badge variant={emailStatusLabels[notification.email_status]?.variant || "default"}>
+                    {emailStatusLabels[notification.email_status]?.label || notification.email_status}
+                  </Badge>
+                </div>
+              </div>
+              {notification.email_sent_at && (
+                <div>
+                  <Label className="text-muted-foreground">발송 시각</Label>
+                  <p className="font-medium">
+                    {new Date(notification.email_sent_at).toLocaleString("ko-KR")}
+                  </p>
+                </div>
+              )}
+              {notification.email_status === "FAILED" && notification.email_error_message && (
+                <div>
+                  <Label className="text-muted-foreground">에러 메시지</Label>
+                  <p className="font-medium text-destructive">
+                    {notification.email_error_message}
+                  </p>
+                </div>
+              )}
+              {notification.email_status === "SKIPPED" && notification.email_error_message && (
+                <div>
+                  <Label className="text-muted-foreground">건너뜀 사유</Label>
+                  <p className="font-medium text-muted-foreground">
+                    {notification.email_error_message}
+                  </p>
                 </div>
               )}
             </CardContent>
