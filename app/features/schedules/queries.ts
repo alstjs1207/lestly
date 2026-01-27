@@ -99,10 +99,20 @@ export async function getDailySchedules(
  */
 export async function getStudentSchedules(
   client: SupabaseClient<Database>,
-  { studentId, year, month }: { studentId: string; year: number; month: number },
+  params:
+    | { studentId: string; year: number; month: number }
+    | { studentId: string; startDate: Date; endDate: Date },
 ) {
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
+  let queryStartDate: Date;
+  let queryEndDate: Date;
+
+  if ("year" in params && "month" in params) {
+    queryStartDate = new Date(params.year, params.month - 1, 1);
+    queryEndDate = new Date(params.year, params.month, 0, 23, 59, 59);
+  } else {
+    queryStartDate = params.startDate;
+    queryEndDate = params.endDate;
+  }
 
   const { data, error } = await client
     .from("schedules")
@@ -115,9 +125,9 @@ export async function getStudentSchedules(
       )
     `,
     )
-    .eq("student_id", studentId)
-    .gte("start_time", startDate.toISOString())
-    .lte("start_time", endDate.toISOString())
+    .eq("student_id", params.studentId)
+    .gte("start_time", queryStartDate.toISOString())
+    .lte("start_time", queryEndDate.toISOString())
     .order("start_time", { ascending: true });
 
   if (error) {

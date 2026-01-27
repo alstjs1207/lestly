@@ -1,6 +1,7 @@
 import type { Route } from "./+types/my-schedules";
 
-import { Link, useFetcher } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useFetcher, useRevalidator } from "react-router";
 import { CalendarIcon } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
@@ -45,22 +46,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     data: { user },
   } = await client.auth.getUser();
 
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const { startDate, endDate } = getStudentAllowedDateRange();
 
   const schedules = await getStudentSchedules(client, {
     studentId: user!.id,
-    year,
-    month,
+    startDate,
+    endDate,
   });
-
-  const { startDate, endDate } = getStudentAllowedDateRange();
 
   return {
     schedules,
-    year,
-    month,
     allowedStartDate: startDate.toISOString(),
     allowedEndDate: endDate.toISOString(),
   };
@@ -69,8 +64,22 @@ export async function loader({ request }: Route.LoaderArgs) {
 const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 
 export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) {
-  const { schedules, year, month } = loaderData;
-  const cancelFetcher = useFetcher();
+  const { schedules, allowedStartDate, allowedEndDate } = loaderData;
+  const cancelFetcher = useFetcher<{ success: boolean; error?: string }>();
+  const revalidator = useRevalidator();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Handle cancel fetcher response
+  useEffect(() => {
+    if (cancelFetcher.data) {
+      if (!cancelFetcher.data.success && cancelFetcher.data.error) {
+        setErrorMessage(cancelFetcher.data.error);
+      } else if (cancelFetcher.data.success) {
+        revalidator.revalidate();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cancelFetcher.data]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -81,7 +90,7 @@ export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) 
         <div>
           <h1 className="text-2xl font-bold">나의 일정</h1>
           <p className="text-muted-foreground">
-            {year}년 {month}월 수업 일정
+            {new Date(allowedStartDate).toLocaleDateString("ko-KR")} ~ {new Date(allowedEndDate).toLocaleDateString("ko-KR")}
           </p>
         </div>
         <Button asChild>
@@ -94,7 +103,7 @@ export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) 
 
       <Card>
         <CardHeader>
-          <CardTitle>이번 달 일정</CardTitle>
+          <CardTitle>등록된 일정</CardTitle>
           <CardDescription>
             {schedules.length}건의 일정이 등록되어 있습니다.
           </CardDescription>
@@ -204,6 +213,18 @@ export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) 
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!errorMessage} onOpenChange={() => setErrorMessage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>취소 실패</DialogTitle>
+            <DialogDescription>{errorMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setErrorMessage(null)}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

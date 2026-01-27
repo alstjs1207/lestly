@@ -1,6 +1,6 @@
 import type { Route } from "./+types/delete-schedule";
 
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -29,18 +29,22 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   // Check if user owns this schedule
   if (schedule.student_id !== user.id) {
-    throw new Error("이 스케쥴을 취소할 권한이 없습니다.");
+    return data(
+      { success: false, error: "이 스케쥴을 취소할 권한이 없습니다." },
+      { status: 403 },
+    );
   }
 
   // Check if schedule can be cancelled
   if (!canStudentCancelSchedule(new Date(schedule.start_time))) {
-    throw new Error(
-      "당일 스케쥴은 취소할 수 없습니다. 강사에게 문의해주세요.",
+    return data(
+      { success: false, error: "당일 스케쥴은 취소할 수 없습니다. 강사에게 문의해주세요." },
+      { status: 400 },
     );
   }
 
   // Delete schedule
   await deleteSchedule(client, { scheduleId: parseInt(scheduleId) });
 
-  return redirect("/my-schedules");
+  return data({ success: true });
 }

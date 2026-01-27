@@ -37,6 +37,7 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import { getActivePrograms } from "~/features/programs/queries";
 import { getStudentSchedules } from "~/features/schedules/queries";
 import {
+  canStudentCancelSchedule,
   canStudentRegisterSchedule,
   DURATION_OPTIONS,
   generateTimeSlots,
@@ -52,35 +53,35 @@ export async function loader({ request }: Route.LoaderArgs) {
     data: { user },
   } = await client.auth.getUser();
 
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-
   // Get user's organization
   const membership = await getOrganizationMembership(client, { profileId: user!.id });
   const organizationId = membership?.organization_id;
 
+  const { startDate, endDate } = getStudentAllowedDateRange();
+
   const [schedules, programs] = await Promise.all([
     getStudentSchedules(client, {
       studentId: user!.id,
-      year,
-      month,
+      startDate,
+      endDate,
     }),
     organizationId
       ? getActivePrograms(client, { organizationId })
       : Promise.resolve([]),
   ]);
 
-  const { startDate, endDate } = getStudentAllowedDateRange();
-
   // Transform schedules to calendar events
   const events = schedules.map((schedule) => ({
     id: String(schedule.schedule_id),
-    title: "내 수업",
+    title: schedule.program?.title || "내 수업",
     start: schedule.start_time,
     end: schedule.end_time,
     backgroundColor: "#3B82F6",
     borderColor: "#3B82F6",
+    extendedProps: {
+      scheduleId: schedule.schedule_id,
+      programTitle: schedule.program?.title || null,
+    },
   }));
 
   return {
@@ -90,6 +91,14 @@ export async function loader({ request }: Route.LoaderArgs) {
     allowedEndDate: endDate.toISOString(),
   };
 }
+
+type SelectedEvent = {
+  scheduleId: number;
+  title: string;
+  start: Date;
+  end: Date;
+  programTitle: string | null;
+};
 
 export default function StudentCalendarScreen({
   loaderData,
@@ -102,20 +111,37 @@ export default function StudentCalendarScreen({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProgramSelectOpen, setIsProgramSelectOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(null);
+  const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
+  const deleteFetcher = useFetcher<{ success: boolean; error?: string }>();
   const revalidator = useRevalidator();
 
-  // Handle fetcher response
+  // Handle create fetcher response
   useEffect(() => {
     if (fetcher.data) {
       if (!fetcher.data.success && fetcher.data.error) {
         setErrorMessage(fetcher.data.error);
       } else if (fetcher.data.success) {
-        // 성공 시 페이지 데이터 새로고침
         revalidator.revalidate();
       }
     }
-  }, [fetcher.data, revalidator]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetcher.data]);
+
+  // Handle delete fetcher response
+  useEffect(() => {
+    if (deleteFetcher.data) {
+      if (!deleteFetcher.data.success && deleteFetcher.data.error) {
+        setErrorMessage(deleteFetcher.data.error);
+      } else if (deleteFetcher.data.success) {
+        setIsEventDetailOpen(false);
+        setSelectedEvent(null);
+        revalidator.revalidate();
+      }
+    }
+    // eslint-disable-next-line react-hooks-exhaustive-deps
+  }, [deleteFetcher.data]);
 
   const timeSlots = generateTimeSlots(30);
 
@@ -144,6 +170,32 @@ export default function StudentCalendarScreen({
     setSelectedProgramId(programId);
     setIsProgramSelectOpen(false);
     setIsDialogOpen(true);
+  };
+
+  const handleEventClick = (arg: { event: { id: string; title: string; start: Date | null; end: Date | null; extendedProps: Record<string, unknown> } }) => {
+    const { event } = arg;
+    if (!event.start || !event.end) return;
+
+    setSelectedEvent({
+      scheduleId: event.extendedProps.scheduleId as number,
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      programTitle: event.extendedProps.programTitle as string | null,
+    });
+    setIsEventDetailOpen(true);
+  };
+
+  const handleCancelSchedule = () => {
+    if (!selectedEvent) return;
+
+    deleteFetcher.submit(
+      {},
+      {
+        method: "post",
+        action: `/api/schedules/${selectedEvent.scheduleId}/delete`,
+      },
+    );
   };
 
   const handleSubmit = () => {
@@ -216,6 +268,7 @@ export default function StudentCalendarScreen({
           }}
           events={events}
           dateClick={handleDateClick}
+          eventClick={handleEventClick}
           locale="ko"
           buttonText={{
             today: "오늘",
@@ -354,6 +407,67 @@ export default function StudentCalendarScreen({
             <Button variant="outline" onClick={() => setIsProgramSelectOpen(false)}>
               취소
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEventDetailOpen} onOpenChange={setIsEventDetailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>일정 상세</DialogTitle>
+            <DialogDescription>
+              {selectedEvent?.start.toLocaleDateString("ko-KR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                weekday: "long",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>클래스</Label>
+                <p className="text-sm">{selectedEvent.programTitle || "미지정"}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>시간</Label>
+                <p className="text-sm">
+                  {selectedEvent.start.toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {" - "}
+                  {selectedEvent.end.toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+              {canStudentCancelSchedule(selectedEvent.start) ? (
+                <p className="text-sm text-muted-foreground">
+                  일정을 취소하려면 아래 버튼을 클릭하세요.
+                </p>
+              ) : (
+                <p className="text-sm text-destructive">
+                  당일 일정은 취소할 수 없습니다. 강사에게 문의해주세요.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEventDetailOpen(false)}>
+              닫기
+            </Button>
+            {selectedEvent && canStudentCancelSchedule(selectedEvent.start) && (
+              <Button
+                variant="destructive"
+                onClick={handleCancelSchedule}
+                disabled={deleteFetcher.state !== "idle"}
+              >
+                {deleteFetcher.state !== "idle" ? "취소 중..." : "일정 취소"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
