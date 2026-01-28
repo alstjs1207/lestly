@@ -332,7 +332,7 @@ export default function NotificationListScreen({
                   </TableCell>
                   <TableCell className="max-w-xs truncate">
                     {notification.type === "ALIMTALK"
-                      ? notification.alimtalk_template_code
+                      ? notification.template_name || notification.alimtalk_template_code
                       : notification.consult_message || "-"}
                   </TableCell>
                   <TableCell>

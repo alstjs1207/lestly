@@ -59,6 +59,18 @@ function replaceVariables(content: string, variables: Record<string, string>): s
 }
 
 /**
+ * Convert variables to Solapi format
+ * Solapi expects keys in #{variable_name} format
+ */
+function convertToSolapiVariables(variables: Record<string, string>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(variables)) {
+    result[`#{${key}}`] = value || "";
+  }
+  return result;
+}
+
+/**
  * Generate HMAC-SHA256 signature for Solapi API
  */
 async function generateSolapiSignature(): Promise<{
@@ -287,7 +299,7 @@ async function sendSolapiAlimtalk(params: {
       kakaoOptions: {
         pfId: SOLAPI_PFID,
         templateId,
-        variables,
+        variables: convertToSolapiVariables(variables),
         ...(isTest && { disableSms: true }), // Disable SMS fallback in test mode
       },
     },

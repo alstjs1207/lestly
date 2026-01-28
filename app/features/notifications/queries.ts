@@ -58,8 +58,26 @@ export async function getNotificationsPaginated(
     throw error;
   }
 
+  // super_templates 조회하여 템플릿 코드 → 이름 매핑 생성
+  const { data: superTemplates } = await client
+    .from("super_templates")
+    .select("kakao_template_code, name");
+
+  const templateNameMap = new Map(
+    superTemplates?.map((t) => [t.kakao_template_code, t.name]) ?? []
+  );
+
+  // notifications에 template_name 추가
+  const notificationsWithTemplateName = (data ?? []).map((notification) => ({
+    ...notification,
+    template_name: notification.alimtalk_template_code
+      ? templateNameMap.get(notification.alimtalk_template_code) ??
+        notification.alimtalk_template_code
+      : null,
+  }));
+
   return {
-    notifications: data ?? [],
+    notifications: notificationsWithTemplateName,
     totalCount: count ?? 0,
     totalPages: Math.ceil((count ?? 0) / pageSize),
     currentPage: page,

@@ -38,16 +38,91 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
+
+  // Check if super admin (needed early for both resend and test send)
+  const isSuperAdmin =
+    user.app_metadata?.is_super_admin === true ||
+    user.app_metadata?.role === "SUPER_ADMIN";
+
+  // Check for notificationId (resend existing notification)
+  const notificationId = formData.get("notificationId")
+    ? parseInt(formData.get("notificationId") as string)
+    : undefined;
+
+  // Resend existing notification
+  if (notificationId) {
+    // 1. Get existing notification
+    const { data: existingNotification, error: fetchError } = await adminClient
+      .from("notifications")
+      .select("*")
+      .eq("notification_id", notificationId)
+      .single();
+
+    if (fetchError || !existingNotification) {
+      return data({ error: "Notification not found" }, { status: 404, headers });
+    }
+
+    // 2. Check authorization (super admin or same org)
+    if (!isSuperAdmin) {
+      const { data: membership } = await adminClient
+        .from("organization_members")
+        .select("organization_id")
+        .eq("profile_id", user.id)
+        .eq("organization_id", existingNotification.organization_id)
+        .eq("role", "ADMIN")
+        .eq("state", "NORMAL")
+        .single();
+
+      if (!membership) {
+        return data({ error: "Not authorized" }, { status: 403, headers });
+      }
+    }
+
+    // 3. Reset notification status to PENDING
+    const { error: updateError } = await adminClient
+      .from("notifications")
+      .update({
+        alimtalk_status: "PENDING",
+        alimtalk_error_code: null,
+        alimtalk_error_message: null,
+        alimtalk_message_id: null,
+        alimtalk_sent_at: null,
+      })
+      .eq("notification_id", notificationId);
+
+    if (updateError) {
+      return data({ error: "Failed to reset notification" }, { status: 500, headers });
+    }
+
+    // 4. Invoke Edge Function
+    try {
+      const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/send-alimtalk`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({ notification_id: notificationId }),
+      });
+
+      const result = await response.json();
+
+      return data({ success: true, notification_id: notificationId, result }, { headers });
+    } catch (error) {
+      return data({
+        success: false,
+        notification_id: notificationId,
+        error: error instanceof Error ? error.message : "Unknown error",
+      }, { headers });
+    }
+  }
+
+  // --- Existing test send logic below (for new test sends) ---
   const super_template_id = parseInt(formData.get("superTemplateId") as string);
   const org_template_id = formData.get("orgTemplateId")
     ? parseInt(formData.get("orgTemplateId") as string)
     : undefined;
   const inputPhone = formData.get("recipientPhone") as string | undefined;
-
-  // Check if super admin
-  const isSuperAdmin =
-    user.app_metadata?.is_super_admin === true ||
-    user.app_metadata?.role === "SUPER_ADMIN";
 
   // Get user profile
   const { data: profile } = await adminClient
