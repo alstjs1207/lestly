@@ -15,7 +15,6 @@ import { expect, test } from "@playwright/test";
 import { sql } from "drizzle-orm";
 import {
   checkInvalidField,
-  confirmUser,
   deleteUser,
   loginUser,
   registerUser,
@@ -146,15 +145,8 @@ test.describe.serial("Reset Password Flow", () => {
    * This creates a fresh user account that will be used to test the complete
    * password reset flow, including registration and email confirmation
    */
-  test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    /*
-     * Create a test user so we can test the reset password flow
-     */
-    await registerUser(page, TEST_EMAIL, "password");
-    await confirmUser(page, TEST_EMAIL);
-    await context.close();
+  test.beforeAll(async () => {
+    await registerUser(TEST_EMAIL, "password");
   });
 
   /**

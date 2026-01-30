@@ -75,7 +75,7 @@ export default [
     route("/error", "core/screens/error.tsx"),
     layout("core/layouts/public.layout.tsx", [
       // Routes that should only be visible to unauthenticated users.
-      route("/join", "features/auth/screens/join.tsx"),
+      // route("/join", "features/auth/screens/join.tsx"),
       ...prefix("/auth", [
         route("/api/resend", "features/auth/api/resend.tsx"),
         route(

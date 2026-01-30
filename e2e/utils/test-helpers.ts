@@ -47,15 +47,6 @@ export async function checkInvalidField(page: Page, fieldId: string) {
   expect(message).not.toBe("");
 }
 
-/**
- * Create a test user (placeholder function)
- * 
- * This is a placeholder for a potential helper function to create test users.
- * Currently not implemented, but kept as a stub for future expansion.
- * 
- * @param page - The Playwright Page object
- */
-export async function createTestUser(page: Page) {}
 
 /**
  * Log in a user with email and password
@@ -105,38 +96,42 @@ export async function loginAdminUser(
 }
 
 /**
- * Register a new user account
- * 
- * This function navigates to the registration page, fills in all required fields,
- * opts into marketing emails, submits the form, and waits for the success message.
- * 
- * The function automatically generates a name from the email address by using
- * the part before the @ symbol, which is useful for automated testing.
- * 
- * @param page - The Playwright Page object
+ * Register a new user account via Supabase Admin API
+ *
+ * This function creates a user using the Admin API instead of the UI.
+ * It automatically generates a name from the email address.
+ * By default, the user is created with email confirmed.
+ *
  * @param email - The email address for the new user
  * @param password - The password for the new user account
+ * @param options - Optional settings (emailConfirm defaults to true)
  */
 export async function registerUser(
-  page: Page,
   email: string,
   password: string,
+  options?: { emailConfirm?: boolean },
 ) {
-  // Navigate to the registration page
-  await page.goto("/join");
-  // Fill in the registration form
-  await page.locator("#name").fill(email.split("@")[0]); // Use part before @ as name
-  await page.locator("#email").fill(email);
-  await page.locator("#password").fill(password);
-  await page.locator("#confirmPassword").fill(password);
-  // Opt into marketing emails
-  await page
-    .getByRole("checkbox", { name: "Sign up for marketing emails" })
-    .click();
-  // Submit the registration form
-  await page.getByRole("button", { name: "Create account" }).click();
-  // Wait for success message to confirm registration completed
-  await page.waitForSelector("text=Account created!");
+  const emailConfirm = options?.emailConfirm ?? true;
+  const name = email.split("@")[0];
+
+  const { error } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: emailConfirm,
+    user_metadata: {
+      name,
+      display_name: name,
+      marketing_consent: false,
+    },
+    app_metadata: {
+      provider: "email",
+      providers: ["email"],
+    },
+  });
+
+  if (error) {
+    throw new Error(`Failed to create test user ${email}: ${error.message}`);
+  }
 }
 
 /**
@@ -162,6 +157,26 @@ export async function confirmUser(page: Page, email: string) {
   await page.goto(
 `/auth/confirm?token_hash=${confirmation_token}&type=email&next=/&testid=6554`
   );
+}
+
+/**
+ * Confirm a user's email address via Supabase Admin API
+ *
+ * This function uses the Admin API to set the user's email as confirmed,
+ * without requiring a browser page or confirmation token.
+ *
+ * @param email - The email address of the user to confirm
+ */
+export async function confirmUserViaAdmin(email: string) {
+  const [{ id }] = await db.execute<{ id: string }>(
+    sql`SELECT id FROM auth.users WHERE email = ${email}`,
+  );
+  const { error } = await adminClient.auth.admin.updateUserById(id, {
+    email_confirm: true,
+  });
+  if (error) {
+    throw new Error(`Failed to confirm user ${email}: ${error.message}`);
+  }
 }
 
 /**

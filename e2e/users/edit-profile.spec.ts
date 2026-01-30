@@ -19,7 +19,6 @@ import { expect, test } from "@playwright/test";
 import { eq, sql } from "drizzle-orm";
 import {
   checkInvalidField,
-  confirmUser,
   deleteUser,
   loginUser,
   registerUser,
@@ -63,12 +62,8 @@ test.describe("Edit Profile", () => {
    * This creates a user account that will be used to test the profile editing features.
    * The user is confirmed to ensure they have full account access.
    */
-  test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await registerUser(page, TEST_EMAIL, "password");
-    await confirmUser(page, TEST_EMAIL);
-    await context.close();
+  test.beforeAll(async () => {
+    await registerUser(TEST_EMAIL, "password");
   });
 
   /**

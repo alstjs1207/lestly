@@ -15,7 +15,6 @@ import { expect, test } from "@playwright/test";
 import { sql } from "drizzle-orm";
 import {
   checkInvalidField,
-  confirmUser,
   deleteUser,
   registerUser,
 } from "e2e/utils/test-helpers";
@@ -108,11 +107,8 @@ test.describe.serial("Magic Link Flow", () => {
    * This creates a user account that will be used to test the magic link flow
    * Note: The user is initially unconfirmed
    */
-  test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await registerUser(page, TEST_EMAIL, "password");
-    await context.close();
+  test.beforeAll(async () => {
+    await registerUser(TEST_EMAIL, "password", { emailConfirm: false });
   });
 
   /**
@@ -226,8 +222,7 @@ test.describe.serial("Magic Link Flow", () => {
   test("should show error if user is already confirmed", async ({ page }) => {
     // Create a fresh confirmed user for this test
     await deleteUser(TEST_EMAIL);
-    await registerUser(page, TEST_EMAIL, "password");
-    await confirmUser(page, TEST_EMAIL);
+    await registerUser(TEST_EMAIL, "password");
 
     // Log out to prepare for magic link login
     await page.goto("/logout");

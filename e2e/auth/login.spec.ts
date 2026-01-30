@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   checkInvalidField,
-  confirmUser,
+  confirmUserViaAdmin,
   deleteUser,
   loginUser,
   registerUser,
@@ -19,7 +19,7 @@ test.describe("User Login UI", () => {
   });
 
   test("should display login form", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "로그인" })).toBeVisible(); 
+    await expect(page.locator("[data-slot='card-title']", { hasText: "로그인" })).toBeVisible();
     await expect(page.locator("#email")).toBeVisible();
     await expect(page.locator("#password")).toBeVisible();
   });
@@ -67,11 +67,8 @@ test.describe("User Login UI", () => {
 });
 
 test.describe.serial("User Login Flow", () => {
-  test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await registerUser(page, TEST_EMAIL, "password");
-    await context.close();
+  test.beforeAll(async () => {
+    await registerUser(TEST_EMAIL, "password", { emailConfirm: false });
   });
 
   test.afterAll(async () => {
@@ -108,8 +105,7 @@ test.describe.serial("User Login Flow", () => {
   test("should redirect to dashboard after successful login", async ({
     page,
   }) => {
-    await confirmUser(page, TEST_EMAIL);
-    await page.goto("/logout");
+    await confirmUserViaAdmin(TEST_EMAIL);
     await loginUser(page, TEST_EMAIL, "password");
     await expect(page).toHaveURL("/dashboard");
   });
