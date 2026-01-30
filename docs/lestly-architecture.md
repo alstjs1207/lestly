@@ -314,6 +314,7 @@ CREATE TYPE program_level AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED');
 ```
 
 > **N:N 관계 특징:**
+>
 > - 한 사용자(Profile)가 여러 조직에 소속 가능
 > - 각 조직에서 서로 다른 역할 (ADMIN/STUDENT) 가질 수 있음
 > - 조직별로 독립적인 state (NORMAL/GRADUATE/DELETED) 관리
@@ -450,10 +451,10 @@ CREATE POLICY "Admins can update org settings"
 
 ### 4.1 버킷 구조
 
-| 버킷명 | 용도 | 경로 패턴 |
-|--------|------|-----------|
+| 버킷명        | 용도               | 경로 패턴                           |
+| ------------- | ------------------ | ----------------------------------- |
 | `coverimages` | 클래스 커버 이미지 | `programs/{program_id}/cover.{ext}` |
-| `instructors` | 강사 프로필 사진 | `{instructor_id}/photo.{ext}` |
+| `instructors` | 강사 프로필 사진   | `{instructor_id}/photo.{ext}`       |
 
 ### 4.2 RLS 정책
 
@@ -570,23 +571,23 @@ app/
 
 ### 5.1 관리자 라우트
 
-| Path                        | Screen                 | Description          |
-| --------------------------- | ---------------------- | -------------------- |
-| `/admin`                    | dashboard.tsx          | 월별 캘린더 대시보드 |
-| `/admin/today`              | today.tsx              | 오늘의 수업 목록     |
-| `/admin/students`           | students/list.tsx      | 수강생 목록          |
-| `/admin/students/new`       | students/create.tsx    | 수강생 등록          |
-| `/admin/students/:id`       | students/detail.tsx    | 수강생 상세          |
-| `/admin/students/:id/edit`  | students/edit.tsx      | 수강생 수정          |
-| `/admin/schedules`          | schedules/calendar.tsx | 스케쥴 캘린더        |
-| `/admin/schedules/list`     | schedules/list.tsx     | 스케쥴 목록          |
-| `/admin/schedules/new`      | schedules/create.tsx   | 스케쥴 등록          |
-| `/admin/schedules/:id/edit` | schedules/edit.tsx     | 스케쥴 수정          |
-| `/admin/instructors`        | instructors/list.tsx   | 강사 목록            |
-| `/admin/instructors/new`    | instructors/create.tsx | 강사 등록            |
-| `/admin/instructors/:id`    | instructors/detail.tsx | 강사 상세            |
-| `/admin/instructors/:id/edit`| instructors/edit.tsx  | 강사 수정            |
-| `/admin/settings`           | settings.tsx           | 설정 관리            |
+| Path                          | Screen                 | Description          |
+| ----------------------------- | ---------------------- | -------------------- |
+| `/admin`                      | dashboard.tsx          | 월별 캘린더 대시보드 |
+| `/admin/today`                | today.tsx              | 오늘의 수업 목록     |
+| `/admin/students`             | students/list.tsx      | 수강생 목록          |
+| `/admin/students/new`         | students/create.tsx    | 수강생 등록          |
+| `/admin/students/:id`         | students/detail.tsx    | 수강생 상세          |
+| `/admin/students/:id/edit`    | students/edit.tsx      | 수강생 수정          |
+| `/admin/schedules`            | schedules/calendar.tsx | 스케쥴 캘린더        |
+| `/admin/schedules/list`       | schedules/list.tsx     | 스케쥴 목록          |
+| `/admin/schedules/new`        | schedules/create.tsx   | 스케쥴 등록          |
+| `/admin/schedules/:id/edit`   | schedules/edit.tsx     | 스케쥴 수정          |
+| `/admin/instructors`          | instructors/list.tsx   | 강사 목록            |
+| `/admin/instructors/new`      | instructors/create.tsx | 강사 등록            |
+| `/admin/instructors/:id`      | instructors/detail.tsx | 강사 상세            |
+| `/admin/instructors/:id/edit` | instructors/edit.tsx   | 강사 수정            |
+| `/admin/settings`             | settings.tsx           | 설정 관리            |
 
 ### 5.2 학생 라우트
 
@@ -597,23 +598,23 @@ app/
 
 ### 5.3 API 라우트
 
-| Path                               | Method | Description      |
-| ---------------------------------- | ------ | ---------------- |
-| `/api/admin/students/create`       | POST   | 수강생 등록      |
-| `/api/admin/students/:id/update`   | POST   | 수강생 수정      |
-| `/api/admin/students/:id/graduate` | POST   | 수강생 졸업      |
-| `/api/admin/students/:id/delete`   | POST   | 수강생 탈퇴      |
-| `/api/admin/schedules/create`      | POST   | 스케쥴 등록      |
-| `/api/admin/schedules/:id/update`  | POST   | 스케쥴 수정      |
-| `/api/admin/schedules/:id/delete`  | POST   | 스케쥴 삭제      |
-| `/api/admin/settings`              | POST   | 설정 수정        |
-| `/api/admin/instructors/create`    | POST   | 강사 등록        |
-| `/api/admin/instructors/:id/update`| POST   | 강사 수정        |
-| `/api/admin/instructors/:id/delete`| POST   | 강사 삭제        |
-| `/api/admin/programs/create`       | POST   | 클래스 등록      |
-| `/api/admin/programs/:id/update`   | POST   | 클래스 수정      |
-| `/api/schedules/create`            | POST   | 학생 스케쥴 등록 |
-| `/api/schedules/:id/delete`        | POST   | 학생 스케쥴 취소 |
+| Path                                | Method | Description      |
+| ----------------------------------- | ------ | ---------------- |
+| `/api/admin/students/create`        | POST   | 수강생 등록      |
+| `/api/admin/students/:id/update`    | POST   | 수강생 수정      |
+| `/api/admin/students/:id/graduate`  | POST   | 수강생 졸업      |
+| `/api/admin/students/:id/delete`    | POST   | 수강생 탈퇴      |
+| `/api/admin/schedules/create`       | POST   | 스케쥴 등록      |
+| `/api/admin/schedules/:id/update`   | POST   | 스케쥴 수정      |
+| `/api/admin/schedules/:id/delete`   | POST   | 스케쥴 삭제      |
+| `/api/admin/settings`               | POST   | 설정 수정        |
+| `/api/admin/instructors/create`     | POST   | 강사 등록        |
+| `/api/admin/instructors/:id/update` | POST   | 강사 수정        |
+| `/api/admin/instructors/:id/delete` | POST   | 강사 삭제        |
+| `/api/admin/programs/create`        | POST   | 클래스 등록      |
+| `/api/admin/programs/:id/update`    | POST   | 클래스 수정      |
+| `/api/schedules/create`             | POST   | 학생 스케쥴 등록 |
+| `/api/schedules/:id/delete`         | POST   | 학생 스케쥴 취소 |
 
 ---
 
@@ -840,7 +841,7 @@ interface CalendarEvent {
 ### 10.1 향후 기능
 
 - [ ] 결제 연동 (수업료 관리)
-- [ ] 알림 기능 (수업 리마인더)
+- [x] 알림 기능 (수업 리마인더)
 - [ ] 출석 체크
 - [ ] 수업 노트/피드백
 - [ ] 통계 대시보드
@@ -855,15 +856,15 @@ interface CalendarEvent {
 
 ## 부록: 주요 파일 참조
 
-| 파일                                                                                   | 설명              |
-| -------------------------------------------------------------------------------------- | ----------------- |
-| [guards.server.ts](../app/features/admin/guards.server.ts)                             | 관리자 권한 체크  |
-| [admin/queries.ts](../app/features/admin/queries.ts)                                   | 관리자 쿼리       |
-| [schedules/queries.ts](../app/features/schedules/queries.ts)                           | 스케쥴 쿼리       |
-| [app-settings/queries.ts](../app/features/app-settings/queries.ts)                     | 설정 쿼리         |
-| [student-schedule-rules.ts](../app/features/schedules/utils/student-schedule-rules.ts) | 학생 스케쥴 규칙  |
-| [routes.ts](../app/routes.ts)                                                          | 라우트 정의       |
-| [database.types.ts](../database.types.ts)                                              | 데이터베이스 타입 |
-| [instructors/queries.ts](../app/features/instructors/queries.ts)                       | 강사 쿼리         |
-| [instructor-form.tsx](../app/features/admin/components/instructor-form.tsx)            | 강사 폼 컴포넌트  |
-| [program-form.tsx](../app/features/admin/components/program-form.tsx)                  | 클래스 폼 컴포넌트|
+| 파일                                                                                   | 설명               |
+| -------------------------------------------------------------------------------------- | ------------------ |
+| [guards.server.ts](../app/features/admin/guards.server.ts)                             | 관리자 권한 체크   |
+| [admin/queries.ts](../app/features/admin/queries.ts)                                   | 관리자 쿼리        |
+| [schedules/queries.ts](../app/features/schedules/queries.ts)                           | 스케쥴 쿼리        |
+| [app-settings/queries.ts](../app/features/app-settings/queries.ts)                     | 설정 쿼리          |
+| [student-schedule-rules.ts](../app/features/schedules/utils/student-schedule-rules.ts) | 학생 스케쥴 규칙   |
+| [routes.ts](../app/routes.ts)                                                          | 라우트 정의        |
+| [database.types.ts](../database.types.ts)                                              | 데이터베이스 타입  |
+| [instructors/queries.ts](../app/features/instructors/queries.ts)                       | 강사 쿼리          |
+| [instructor-form.tsx](../app/features/admin/components/instructor-form.tsx)            | 강사 폼 컴포넌트   |
+| [program-form.tsx](../app/features/admin/components/program-form.tsx)                  | 클래스 폼 컴포넌트 |
