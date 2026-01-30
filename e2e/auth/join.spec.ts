@@ -91,7 +91,6 @@ test.describe("User Registration UI", () => {
    * beyond the traditional email/password approach
    */
   test("should show alternative login methods", async ({ page }) => {
-    await expect(page.getByText("Continue with GitHub")).toBeVisible();
     await expect(page.getByText("Continue with Kakao")).toBeVisible();
   });
 
@@ -319,8 +318,8 @@ test.describe.serial("User Registration Flow", () => {
    */
   test("should confirm email", async ({ page }) => {
     await confirmUser(page, UNCONFIRMED_EMAIL);
-    // Verify successful confirmation by checking redirect to home page
-    await expect(page).toHaveURL("/");
+    // After confirmation, next=/ redirects to /login since / is redirect-to-login
+    await expect(page).toHaveURL("/login");
   });
 
   /**

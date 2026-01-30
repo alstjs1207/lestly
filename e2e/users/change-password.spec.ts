@@ -78,7 +78,7 @@ test.describe("Change Password", () => {
    */
   test.beforeEach(async ({ page }) => {
     await loginUser(page, TEST_EMAIL, "password");
-    await page.goto("/account/edit");
+    await page.goto("/account");
   });
 
   /**

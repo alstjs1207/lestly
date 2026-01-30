@@ -83,7 +83,7 @@ test.describe("Delete Profile", () => {
     // Log in with the test user account
     await loginUser(page, TEST_EMAIL, "password");
     // Navigate to the account settings page
-    await page.goto("/account/edit");
+    await page.goto("/account");
 
     /**
      * Step 1: Complete the dual confirmation process

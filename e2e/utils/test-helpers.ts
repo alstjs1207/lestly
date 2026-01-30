@@ -16,6 +16,10 @@ import { eq, sql } from "drizzle-orm";
 import { authUsers } from "drizzle-orm/supabase";
 
 import db from "~/core/db/drizzle-client.server";
+import adminClient from "~/core/lib/supa-admin-client.server";
+import { organizations } from "~/features/organizations/schema";
+
+export { adminClient };
 
 /**
  * Check if a form field has validation errors
@@ -73,9 +77,31 @@ export async function loginUser(page: Page, email: string, password: string) {
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   // Click the login button
-  await page.getByRole("button", { name: "Log in" }).click();
-  // Wait for login process to complete (including potential redirects)
-  await page.waitForTimeout(15000);
+  await page.getByRole("button", { name: "로그인" }).click();
+  // Wait for login process to complete (redirect to /dashboard or /admin)
+  await page.waitForURL(/\/(dashboard|admin)/, { timeout: 15000 });
+}
+
+/**
+ * Log in an admin user with email and password
+ *
+ * This function navigates to the login page, fills in the admin credentials,
+ * submits the form, and waits for redirect to /admin.
+ *
+ * @param page - The Playwright Page object
+ * @param email - The email address of the admin user
+ * @param password - The password for the admin account
+ */
+export async function loginAdminUser(
+  page: Page,
+  email: string,
+  password: string,
+) {
+  await page.goto("/login");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill(password);
+  await page.getByRole("button", { name: "로그인" }).click();
+  await page.waitForURL(/\/admin/, { timeout: 15000 });
 }
 
 /**
@@ -152,4 +178,25 @@ export async function confirmUser(page: Page, email: string) {
  */
 export async function deleteUser(email: string) {
   await db.delete(authUsers).where(eq(authUsers.email, email));
+}
+
+/**
+ * Delete organizations associated with a user by email
+ *
+ * Since the organizations table does not cascade delete when a user is removed,
+ * this helper finds and deletes organizations that the user belongs to.
+ *
+ * @param email - The email address of the user whose organizations to delete
+ */
+export async function deleteOrganizationByMember(email: string) {
+  const result = await db.execute<{ organization_id: string }>(
+    sql`SELECT om.organization_id FROM organization_members om
+        JOIN auth.users u ON u.id = om.profile_id
+        WHERE u.email = ${email}`,
+  );
+  if (result.length > 0) {
+    await db
+      .delete(organizations)
+      .where(eq(organizations.organization_id, result[0].organization_id));
+  }
 }

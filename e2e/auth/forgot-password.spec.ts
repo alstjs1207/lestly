@@ -87,7 +87,7 @@ test.describe("Reset Password UI", () => {
   test("should show validation error when email is invalid", async ({
     page,
   }) => {
-    await page.locator("#email").fill("lottie@mail.lestly.io"); // Invalid email format
+    await page.locator("#email").fill("not-an-email@error"); // Invalid email format
     await page.getByRole("button", { name: "Send reset link" }).click();
     await expect(
       page.getByText("Invalid email", { exact: true }),
@@ -103,7 +103,7 @@ test.describe("Reset Password UI", () => {
   test("should show success message after sending reset link", async ({
     page,
   }) => {
-    await page.locator("#email").fill("lottie@mail.lestly.io");
+    await page.locator("#email").fill(TEST_EMAIL);
     await page.getByRole("button", { name: "Send reset link" }).click();
     await expect(
       page.getByText(
@@ -122,7 +122,7 @@ test.describe("Reset Password UI", () => {
   test("should reset the form after successful submission", async ({
     page,
   }) => {
-    await page.locator("#email").fill("lottie@mail.lestly.io");  
+    await page.locator("#email").fill(TEST_EMAIL);  
     await page.getByRole("button", { name: "Send reset link" }).click();
     await expect(page.locator("#email")).toBeEmpty();
   });
@@ -246,8 +246,8 @@ test.describe.serial("Reset Password Flow", () => {
       await page.goto("/logout");
       await loginUser(page, TEST_EMAIL, "newpassword123");
       
-      // Verify successful login by checking we're redirected to the home page
-      await expect(page).toHaveURL("/");
+      // Verify successful login by checking we're redirected to the dashboard
+      await expect(page).toHaveURL("/dashboard");
     });
   });
 });

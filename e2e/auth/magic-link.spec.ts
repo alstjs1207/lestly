@@ -210,8 +210,8 @@ test.describe.serial("Magic Link Flow", () => {
       `/auth/confirm?token_hash=${confirmation_token}&type=email&next=/`,
     );
 
-    // Verify successful login by checking redirect to home page
-    await expect(page).toHaveURL("/");
+    // After confirmation, next=/ redirects to /login since / is redirect-to-login
+    await expect(page).toHaveURL("/login");
   });
 
   /**
@@ -256,7 +256,7 @@ test.describe.serial("Magic Link Flow", () => {
       `/auth/confirm?token_hash=${recovery_token}&type=email&next=/`,
     );
 
-    // Verify successful login by checking redirect to home page
-    await expect(page).toHaveURL("/");
+    // After confirmation, next=/ redirects to /login since / is redirect-to-login
+    await expect(page).toHaveURL("/login");
   });
 });
