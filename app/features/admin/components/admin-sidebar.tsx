@@ -92,12 +92,14 @@ const settingsItems = [
 
 export default function AdminSidebar({
   user,
+  notificationsEnabled,
 }: {
   user: {
     name: string;
     email: string;
     avatarUrl: string;
   };
+  notificationsEnabled: boolean;
 }) {
   const location = useLocation();
   const { isMobile } = useSidebar();
@@ -108,6 +110,10 @@ export default function AdminSidebar({
     }
     return location.pathname.startsWith(url);
   };
+
+  const filteredMenuItems = notificationsEnabled
+    ? menuItems
+    : menuItems.filter((item) => item.url !== "/admin/notifications");
 
   return (
     <Sidebar collapsible="icon" variant="inset">
@@ -136,7 +142,7 @@ export default function AdminSidebar({
           <SidebarGroupLabel>메뉴</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {filteredMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

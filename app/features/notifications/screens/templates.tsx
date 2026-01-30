@@ -33,13 +33,14 @@ import {
 } from "~/core/components/ui/select";
 import { Checkbox } from "~/core/components/ui/checkbox";
 import makeServerClient from "~/core/lib/supa-client.server";
-import { requireAdminRole } from "~/features/admin/guards.server";
+import { requireAdminRole, requireNotificationsEnabled } from "~/features/admin/guards.server";
 
 import { getTemplatesWithOrgSettings, getTodayTestSendCount, upsertOrgTemplate } from "../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId, user } = await requireAdminRole(client);
+  await requireNotificationsEnabled(organizationId);
 
   const [templates, testSendCount] = await Promise.all([
     getTemplatesWithOrgSettings(client, { organizationId }),
@@ -57,6 +58,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
+  await requireNotificationsEnabled(organizationId);
 
   const formData = await request.formData();
   const intent = formData.get("intent");

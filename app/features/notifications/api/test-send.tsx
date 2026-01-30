@@ -11,6 +11,7 @@ import { data } from "react-router";
 
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { requireNotificationsEnabled } from "~/features/admin/guards.server";
 
 const SUPABASE_FUNCTIONS_URL = process.env.SUPABASE_URL?.replace(
   ".supabase.co",
@@ -76,6 +77,9 @@ export async function action({ request }: Route.ActionArgs) {
       if (!membership) {
         return data({ error: "Not authorized" }, { status: 403, headers });
       }
+
+      // Check notifications enabled for this organization
+      await requireNotificationsEnabled(existingNotification.organization_id);
     }
 
     // 3. Reset notification status to PENDING
@@ -179,6 +183,9 @@ export async function action({ request }: Route.ActionArgs) {
     }
 
     organizationId = membership.organization_id;
+
+    // Check notifications enabled for this organization
+    await requireNotificationsEnabled(organizationId);
 
     // Check own phone
     if (!profile.phone) {

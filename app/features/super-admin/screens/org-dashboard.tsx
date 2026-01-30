@@ -1,13 +1,14 @@
 import type { Route } from "./+types/org-dashboard";
 
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useFetcher } from "react-router";
 import {
   CalendarIcon,
   UsersIcon,
   GraduationCapIcon,
   CalendarDaysIcon,
   ArrowLeftIcon,
+  BellIcon,
 } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
@@ -40,6 +41,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   if (!organization) {
     throw new Response("Organization not found", { status: 404 });
   }
+
+  // Get notifications_enabled setting
+  const { data: notifSetting } = await adminClient
+    .from("settings")
+    .select("setting_value")
+    .eq("organization_id", orgId)
+    .eq("setting_key", "notifications_enabled")
+    .single();
+
+  const notificationsEnabled =
+    (notifSetting?.setting_value as { value?: boolean } | null)?.value ?? false;
 
   // Get stats for this organization
   const [
@@ -123,14 +135,44 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     },
   }));
 
-  return { organization, stats, events };
+  return { organization, stats, events, notificationsEnabled };
+}
+
+export async function action({ request, params }: Route.ActionArgs) {
+  const [client] = makeServerClient(request);
+  const { orgId } = params;
+
+  await requireSuperAdmin(client);
+
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "toggleNotifications") {
+    const enabled = formData.get("enabled") === "true";
+
+    await adminClient.from("settings").upsert({
+      organization_id: orgId,
+      setting_key: "notifications_enabled",
+      setting_value: { value: enabled },
+    });
+
+    return { success: true };
+  }
+
+  return { success: false };
 }
 
 export default function OrgDashboardScreen({
   loaderData,
 }: Route.ComponentProps) {
   const { t } = useTranslation();
-  const { organization, stats, events } = loaderData;
+  const { organization, stats, events, notificationsEnabled } = loaderData;
+  const fetcher = useFetcher();
+
+  const isToggling = fetcher.state !== "idle";
+  const optimisticEnabled = isToggling
+    ? fetcher.formData?.get("enabled") === "true"
+    : notificationsEnabled;
 
   return (
     <div className="space-y-6">
@@ -146,6 +188,24 @@ export default function OrgDashboardScreen({
             {organization.description ||
               t("superAdmin.orgDashboard.organizationDashboard")}
           </p>
+        </div>
+        <div className="ml-auto">
+          <fetcher.Form method="post">
+            <input type="hidden" name="intent" value="toggleNotifications" />
+            <input
+              type="hidden"
+              name="enabled"
+              value={String(!optimisticEnabled)}
+            />
+            <Button
+              type="submit"
+              variant={optimisticEnabled ? "destructive" : "default"}
+              disabled={isToggling}
+            >
+              <BellIcon className="mr-2 h-4 w-4" />
+              {optimisticEnabled ? "알림 비활성화" : "알림 활성화"}
+            </Button>
+          </fetcher.Form>
         </div>
       </div>
 

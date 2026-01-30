@@ -9,6 +9,7 @@ import {
   TrendingUpIcon,
 } from "lucide-react";
 
+import { Badge } from "~/core/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -45,23 +46,36 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Get all organizations with member counts
   const organizations = await getAllOrganizations();
 
-  // Get member counts per organization
+  // Get member counts and notification settings per organization
   const orgStats = await Promise.all(
     organizations.map(async (org) => {
-      const { count: memberCount } = await adminClient
-        .from("organization_members")
-        .select("profile_id", { count: "exact", head: true })
-        .eq("organization_id", org.organization_id);
+      const [{ count: memberCount }, { count: scheduleCount }, notifSetting] =
+        await Promise.all([
+          adminClient
+            .from("organization_members")
+            .select("profile_id", { count: "exact", head: true })
+            .eq("organization_id", org.organization_id),
+          adminClient
+            .from("schedules")
+            .select("schedule_id", { count: "exact", head: true })
+            .eq("organization_id", org.organization_id),
+          adminClient
+            .from("settings")
+            .select("setting_value")
+            .eq("organization_id", org.organization_id)
+            .eq("setting_key", "notifications_enabled")
+            .single(),
+        ]);
 
-      const { count: scheduleCount } = await adminClient
-        .from("schedules")
-        .select("schedule_id", { count: "exact", head: true })
-        .eq("organization_id", org.organization_id);
+      const notificationsEnabled =
+        (notifSetting.data?.setting_value as { value?: boolean } | null)
+          ?.value ?? false;
 
       return {
         ...org,
         memberCount: memberCount ?? 0,
         scheduleCount: scheduleCount ?? 0,
+        notificationsEnabled,
       };
     })
   );
@@ -168,6 +182,7 @@ export default function SuperAdminDashboardScreen({
                 <TableHead className="text-right">
                   {t("superAdmin.table.schedules")}
                 </TableHead>
+                <TableHead className="text-center">알림</TableHead>
                 <TableHead className="text-right">
                   {t("superAdmin.table.created")}
                 </TableHead>
@@ -191,6 +206,11 @@ export default function SuperAdminDashboardScreen({
                   <TableCell className="text-right">
                     {org.scheduleCount}
                   </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={org.notificationsEnabled ? "default" : "secondary"}>
+                      {org.notificationsEnabled ? "사용" : "미사용"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right text-muted-foreground">
                     {new Date(org.created_at).toLocaleDateString()}
                   </TableCell>
@@ -199,7 +219,7 @@ export default function SuperAdminDashboardScreen({
               {organizations.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center text-muted-foreground"
                   >
                     {t("superAdmin.table.noOrganizationsFound")}

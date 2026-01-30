@@ -27,13 +27,14 @@ import {
   TooltipTrigger,
 } from "~/core/components/ui/tooltip";
 import makeServerClient from "~/core/lib/supa-client.server";
-import { requireAdminRole } from "~/features/admin/guards.server";
+import { requireAdminRole, requireNotificationsEnabled } from "~/features/admin/guards.server";
 
 import { getNotificationsPaginated } from "../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
+  await requireNotificationsEnabled(organizationId);
 
   const url = new URL(request.url);
   const page = parseInt(url.searchParams.get("page") || "1");

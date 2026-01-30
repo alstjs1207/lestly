@@ -34,7 +34,7 @@ export async function getSetting(
 
   if (error || !data) {
     // Return default value if setting doesn't exist
-    return DEFAULT_SETTINGS[key] || { value: null };
+    return (DEFAULT_SETTINGS[key] as { value: number }) || { value: null };
   }
 
   return data.setting_value as { value: number };
@@ -111,6 +111,20 @@ export async function initializeDefaultSettings(
   if (error) {
     throw error;
   }
+}
+
+/**
+ * Get notifications enabled setting for an organization
+ */
+export async function getNotificationsEnabled(
+  client: SupabaseClient<Database>,
+  { organizationId }: { organizationId: string },
+): Promise<boolean> {
+  const setting = await getSetting(client, {
+    organizationId,
+    key: SETTING_KEYS.NOTIFICATIONS_ENABLED,
+  });
+  return (setting.value as unknown as boolean) ?? false;
 }
 
 /**

@@ -80,6 +80,7 @@ export const SETTING_KEYS = {
   MAX_CONCURRENT_STUDENTS: "max_concurrent_students",
   SCHEDULE_DURATION_HOURS: "schedule_duration_hours",
   TIME_SLOT_INTERVAL_MINUTES: "time_slot_interval_minutes",
+  NOTIFICATIONS_ENABLED: "notifications_enabled",
 } as const;
 
 /**
@@ -89,4 +90,5 @@ export const DEFAULT_SETTINGS = {
   [SETTING_KEYS.MAX_CONCURRENT_STUDENTS]: { value: 5 },
   [SETTING_KEYS.SCHEDULE_DURATION_HOURS]: { value: 3 },
   [SETTING_KEYS.TIME_SLOT_INTERVAL_MINUTES]: { value: 30 },
+  [SETTING_KEYS.NOTIFICATIONS_ENABLED]: { value: false },
 } as const;

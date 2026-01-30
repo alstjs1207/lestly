@@ -11,7 +11,7 @@ import type { Route } from "./+types/in-app-notifications";
 import { data } from "react-router";
 
 import makeServerClient from "~/core/lib/supa-client.server";
-import { requireAdminRole } from "~/features/admin/guards.server";
+import { requireAdminRole, requireNotificationsEnabled } from "~/features/admin/guards.server";
 
 /**
  * GET: List in-app notifications (max 9) with unread count
@@ -19,6 +19,7 @@ import { requireAdminRole } from "~/features/admin/guards.server";
 export async function loader({ request }: Route.LoaderArgs) {
   const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
+  await requireNotificationsEnabled(organizationId);
 
   // Get notifications (max 9, newest first)
   const { data: notifications } = await client
@@ -61,6 +62,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   const [client, headers] = makeServerClient(request);
   const { organizationId, user } = await requireAdminRole(client);
+  await requireNotificationsEnabled(organizationId);
 
   const body = await request.json().catch(() => ({}));
   const { in_app_notification_id } = body as {

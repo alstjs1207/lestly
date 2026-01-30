@@ -9,7 +9,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "~/core/components/ui/sidebar";
+import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getNotificationsEnabled } from "~/features/app-settings/queries";
 import { getOrganization } from "~/features/organizations/queries";
 
 import { NotificationBell } from "~/features/notifications/components/notification-bell";
@@ -30,8 +32,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     .eq("profile_id", adminUser.user.id)
     .single();
 
-  // Get organization info
-  const organization = await getOrganization(client, { organizationId: adminUser.organizationId });
+  // Get organization info and notifications setting
+  const [organization, notificationsEnabled] = await Promise.all([
+    getOrganization(client, { organizationId: adminUser.organizationId }),
+    getNotificationsEnabled(adminClient, { organizationId: adminUser.organizationId }),
+  ]);
 
   return {
     user: {
@@ -41,6 +46,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     },
     organizationId: adminUser.organizationId,
     organizationName: organization?.name ?? "조직",
+    notificationsEnabled,
   };
 }
 
@@ -49,7 +55,7 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
 
   return (
     <SidebarProvider>
-      <AdminSidebar user={user} />
+      <AdminSidebar user={user} notificationsEnabled={loaderData.notificationsEnabled} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
@@ -59,7 +65,9 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             </span>
           </div>
           <div className="ml-auto flex items-center gap-2 px-4">
-            <NotificationBell organizationId={loaderData.organizationId} />
+            {loaderData.notificationsEnabled && (
+              <NotificationBell organizationId={loaderData.organizationId} />
+            )}
             <ThemeSwitcher />
             <LangSwitcher />
           </div>

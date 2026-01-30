@@ -13,6 +13,7 @@ import { data, redirect } from "react-router";
 
 import type { Database } from "database.types";
 import adminClient from "~/core/lib/supa-admin-client.server";
+import { getNotificationsEnabled } from "~/features/app-settings/queries";
 
 export interface AdminUser {
   user: User;
@@ -354,6 +355,27 @@ export async function getAllOrganizations() {
   }
 
   return organizations;
+}
+
+/**
+ * Require notifications feature to be enabled for the organization
+ *
+ * Checks the notifications_enabled setting using adminClient (bypasses RLS).
+ * If disabled, redirects to /admin.
+ *
+ * @param organizationId - The organization ID to check
+ * @throws {Response} Redirect to /admin if notifications are disabled
+ */
+export async function requireNotificationsEnabled(
+  organizationId: string,
+): Promise<void> {
+  const enabled = await getNotificationsEnabled(adminClient, {
+    organizationId,
+  });
+
+  if (!enabled) {
+    throw redirect("/admin");
+  }
 }
 
 /**

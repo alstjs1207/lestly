@@ -22,13 +22,14 @@ import {
 } from "~/core/components/ui/select";
 import { Textarea } from "~/core/components/ui/textarea";
 import makeServerClient from "~/core/lib/supa-client.server";
-import { requireAdminRole } from "~/features/admin/guards.server";
+import { requireAdminRole, requireNotificationsEnabled } from "~/features/admin/guards.server";
 
 import { getNotificationById, updateConsultNotification } from "../queries";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
+  await requireNotificationsEnabled(organizationId);
 
   const notificationId = parseInt(params.notificationId);
   const notification = await getNotificationById(client, {
@@ -42,6 +43,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 export async function action({ request, params }: Route.ActionArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
+  await requireNotificationsEnabled(organizationId);
 
   const formData = await request.formData();
   const intent = formData.get("intent");
