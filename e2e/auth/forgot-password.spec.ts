@@ -57,10 +57,10 @@ test.describe("Reset Password UI", () => {
    * - Submit button
    */
   test("should show forgot password form", async ({ page }) => {
-    await expect(page.getByText("Forgot your password?")).toBeVisible();
+    await expect(page.getByText("비밀번호 찾기")).toBeVisible();
     await expect(page.locator("#email")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Send reset link" }),
+      page.getByRole("button", { name: "재설정 링크 보내기" }),
     ).toBeVisible();
   });
 
@@ -73,7 +73,7 @@ test.describe("Reset Password UI", () => {
   test("should show validation error when any field is empty", async ({
     page,
   }) => {
-    await page.getByRole("button", { name: "Send reset link" }).click();
+    await page.getByRole("button", { name: "재설정 링크 보내기" }).click();
     await checkInvalidField(page, "email");
   });
 
@@ -87,9 +87,9 @@ test.describe("Reset Password UI", () => {
     page,
   }) => {
     await page.locator("#email").fill("not-an-email@error"); // Invalid email format
-    await page.getByRole("button", { name: "Send reset link" }).click();
+    await page.getByRole("button", { name: "재설정 링크 보내기" }).click();
     await expect(
-      page.getByText("Invalid email", { exact: true }),
+      page.getByText("올바른 이메일 주소를 입력해주세요", { exact: true }),
     ).toBeVisible();
   });
 
@@ -103,10 +103,10 @@ test.describe("Reset Password UI", () => {
     page,
   }) => {
     await page.locator("#email").fill(TEST_EMAIL);
-    await page.getByRole("button", { name: "Send reset link" }).click();
+    await page.getByRole("button", { name: "재설정 링크 보내기" }).click();
     await expect(
       page.getByText(
-        "Check your email for a reset link, you can close this tab.",
+        "비밀번호 재설정 링크가 이메일로 전송되었습니다. 이 탭을 닫으셔도 됩니다.",
         { exact: true },
       ),
     ).toBeVisible({ timeout: 10000 }); // Extended timeout for server processing
@@ -122,7 +122,7 @@ test.describe("Reset Password UI", () => {
     page,
   }) => {
     await page.locator("#email").fill(TEST_EMAIL);  
-    await page.getByRole("button", { name: "Send reset link" }).click();
+    await page.getByRole("button", { name: "재설정 링크 보내기" }).click();
     await expect(page.locator("#email")).toBeEmpty();
   });
 });
@@ -181,10 +181,10 @@ test.describe.serial("Reset Password Flow", () => {
      */
     await test.step("send reset link", async () => {
       await page.locator("#email").fill(TEST_EMAIL);
-      await page.getByRole("button", { name: "Send reset link" }).click();
+      await page.getByRole("button", { name: "재설정 링크 보내기" }).click();
       await expect(
         page.getByText(
-          "Check your email for a reset link, you can close this tab.",
+          "비밀번호 재설정 링크가 이메일로 전송되었습니다. 이 탭을 닫으셔도 됩니다.",
           { exact: true },
         ),
       ).toBeVisible();
@@ -210,7 +210,7 @@ test.describe.serial("Reset Password Flow", () => {
       );
       
       // Verify we're on the password reset page
-      await expect(page.getByText("Update your password")).toBeVisible();
+      await expect(page.getByText("비밀번호 변경")).toBeVisible();
     });
     
     /**
@@ -221,11 +221,11 @@ test.describe.serial("Reset Password Flow", () => {
     await test.step("reset password", async () => {
       await page.locator("#password").fill("newpassword123");
       await page.locator("#confirmPassword").fill("newpassword123");
-      await page.getByRole("button", { name: "Update password" }).click();
+      await page.getByRole("button", { name: "비밀번호 변경" }).click();
       
       // Verify the success message
       await expect(
-        page.getByText("Password updated successfully."),
+        page.getByText("비밀번호가 성공적으로 변경되었습니다."),
       ).toBeVisible();
     });
     

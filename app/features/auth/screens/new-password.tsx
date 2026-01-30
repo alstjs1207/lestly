@@ -39,7 +39,7 @@ import makeServerClient from "~/core/lib/supa-client.server";
 export const meta: Route.MetaFunction = () => {
   return [
     {
-      title: `Update password | ${import.meta.env.VITE_APP_NAME}`,
+      title: `비밀번호 변경 | ${import.meta.env.VITE_APP_NAME}`,
     },
   ];
 };
@@ -59,7 +59,7 @@ const updatePasswordSchema = z
     confirmPassword: z.string().min(8),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords must match",
+    message: "비밀번호가 일치하지 않습니다",
     path: ["confirmPassword"],
   });
 
@@ -152,10 +152,10 @@ export default function ChangePassword({ actionData }: Route.ComponentProps) {
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col items-center">
           <CardTitle className="text-2xl font-semibold">
-            Update your password
+            비밀번호 변경
           </CardTitle>
           <CardDescription className="text-center text-base">
-            Enter your new password and confirm it.
+            새 비밀번호를 입력하고 확인해주세요.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -166,14 +166,14 @@ export default function ChangePassword({ actionData }: Route.ComponentProps) {
           >
             <div className="flex flex-col items-start space-y-2">
               <Label htmlFor="name" className="flex flex-col items-start gap-1">
-                Password
+                비밀번호
               </Label>
               <Input
                 id="password"
                 name="password"
                 required
                 type="password"
-                placeholder="Enter your new password"
+                placeholder="새 비밀번호를 입력하세요"
               />
               {actionData &&
               "fieldErrors" in actionData &&
@@ -183,14 +183,14 @@ export default function ChangePassword({ actionData }: Route.ComponentProps) {
             </div>
             <div className="flex flex-col items-start space-y-2">
               <Label htmlFor="name" className="flex flex-col items-start gap-1">
-                Confirm password
+                비밀번호 확인
               </Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 required
                 type="password"
-                placeholder="Confirm your new password"
+                placeholder="비밀번호를 다시 입력하세요"
               />
               {actionData &&
               "fieldErrors" in actionData &&
@@ -198,14 +198,14 @@ export default function ChangePassword({ actionData }: Route.ComponentProps) {
                 <FormErrors errors={actionData.fieldErrors.confirmPassword} />
               ) : null}
             </div>
-            <FormButton label="Update password" />
+            <FormButton label="비밀번호 변경" />
             {actionData && "error" in actionData && actionData.error ? (
               <FormErrors errors={[actionData.error]} />
             ) : null}
             {actionData && "success" in actionData && actionData.success ? (
               <div className="flex items-center justify-center gap-2 text-sm text-green-500">
                 <CheckCircle2Icon className="size-4" />
-                <p>Password updated successfully.</p>
+                <p>비밀번호가 성공적으로 변경되었습니다.</p>
               </div>
             ) : null}
           </Form>

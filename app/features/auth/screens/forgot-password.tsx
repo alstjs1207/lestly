@@ -12,13 +12,15 @@
  */
 import type { Route } from "./+types/forgot-password";
 
+import { CalendarIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { Form, data } from "react-router";
+import { Form, Link, data } from "react-router";
 import { z } from "zod";
 
 import FormButton from "~/core/components/form-button";
 import FormErrors from "~/core/components/form-error";
 import FormSuccess from "~/core/components/form-success";
+import { Button } from "~/core/components/ui/button";
 import {
   Card,
   CardContent,
@@ -38,7 +40,7 @@ import makeServerClient from "~/core/lib/supa-client.server";
 export const meta: Route.MetaFunction = () => {
   return [
     {
-      title: `Forgot Password | ${import.meta.env.VITE_APP_NAME}`,
+      title: `비밀번호 찾기 | ${import.meta.env.VITE_APP_NAME}`,
     },
   ];
 };
@@ -50,7 +52,7 @@ export const meta: Route.MetaFunction = () => {
  * before attempting to send a reset link
  */
 const forgotPasswordSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email({ message: "올바른 이메일 주소를 입력해주세요" }),
 });
 
 /**
@@ -120,49 +122,110 @@ export default function ForgotPassword({ actionData }: Route.ComponentProps) {
     }
   }, [actionData]);
   return (
-    <div className="flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col items-center">
-          <CardTitle className="text-2xl font-semibold">
-            Forgot your password?
-          </CardTitle>
-          <CardDescription className="text-center text-base">
-            Enter your email and we&apos;ll send you a reset link.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <Form
-            className="flex w-full flex-col gap-5"
-            method="post"
-            ref={formRef}
-          >
-            <div className="flex flex-col items-start space-y-2">
-              <Label htmlFor="name" className="flex flex-col items-start gap-1">
-                Email
-              </Label>
-              <Input
-                id="email"
-                name="email"
-                required
-                type="email"
-                placeholder="your@email.com"
-              />
-              {actionData &&
-              "fieldErrors" in actionData &&
-              actionData.fieldErrors.email ? (
-                <FormErrors errors={actionData.fieldErrors.email} />
-              ) : null}
+    <div className="flex min-h-screen">
+      {/* 왼쪽 패널 - 서비스 소개 (데스크톱만 표시) */}
+      <div className="bg-primary text-primary-foreground hidden flex-col items-center justify-center p-12 lg:flex lg:w-1/2">
+        <div className="max-w-md space-y-8 text-center">
+          {/* 로고 */}
+          <div className="flex items-center justify-center gap-3">
+            <div className="bg-primary-foreground text-primary flex aspect-square size-12 items-center justify-center rounded-lg">
+              <CalendarIcon className="size-6" />
             </div>
-            <FormButton label="Send reset link" className="w-full" />
-            {actionData && "error" in actionData && actionData.error ? (
-              <FormErrors errors={[actionData.error]} />
-            ) : null}
-            {actionData && "success" in actionData && actionData.success ? (
-              <FormSuccess message="Check your email for a reset link, you can close this tab." />
-            ) : null}
-          </Form>
-        </CardContent>
-      </Card>
+            <span className="text-4xl font-bold">Lestly</span>
+          </div>
+
+          {/* 서비스 소개 */}
+          <div className="space-y-4">
+            <h1 className="text-3xl font-bold">스케줄 관리의 새로운 방법</h1>
+            <p className="text-primary-foreground/80 text-lg">
+              수강생 관리부터 일정까지 한 곳에서.
+              <br />더 쉽고 효율적인 일정 관리를 경험하세요.
+            </p>
+          </div>
+
+          {/* CTA */}
+          <div className="space-y-4 pt-8">
+            <p className="text-xl font-semibold">지금 바로 Lestly 사용해보기</p>
+            <Button
+              asChild
+              size="lg"
+              variant="secondary"
+              className="w-full max-w-xs"
+            >
+              <Link to="/admin/signup">관리자 회원가입하기</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* 오른쪽 패널 - 비밀번호 찾기 폼 */}
+      <div className="flex w-full flex-col items-center justify-center p-6 lg:w-1/2">
+        <div className="w-full max-w-md space-y-6">
+          {/* 모바일용 로고 */}
+          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
+            <div className="bg-primary text-primary-foreground flex aspect-square size-10 items-center justify-center rounded-lg">
+              <CalendarIcon className="size-5" />
+            </div>
+            <span className="text-2xl font-bold">Lestly</span>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-col items-center">
+              <CardTitle className="text-2xl font-semibold">
+                비밀번호 찾기
+              </CardTitle>
+              <CardDescription className="text-center text-base">
+                이메일을 입력하시면 비밀번호 재설정 링크를 보내드립니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <Form
+                className="flex w-full flex-col gap-5"
+                method="post"
+                ref={formRef}
+              >
+                <div className="flex flex-col items-start space-y-2">
+                  <Label htmlFor="email" className="flex flex-col items-start gap-1">
+                    이메일
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    required
+                    type="email"
+                    placeholder="example@lestly.io"
+                  />
+                  {actionData &&
+                  "fieldErrors" in actionData &&
+                  actionData.fieldErrors.email ? (
+                    <FormErrors errors={actionData.fieldErrors.email} />
+                  ) : null}
+                </div>
+                <FormButton label="재설정 링크 보내기" className="w-full" />
+                {actionData && "error" in actionData && actionData.error ? (
+                  <FormErrors errors={[actionData.error]} />
+                ) : null}
+                {actionData && "success" in actionData && actionData.success ? (
+                  <FormSuccess message="비밀번호 재설정 링크가 이메일로 전송되었습니다. 이 탭을 닫으셔도 됩니다." />
+                ) : null}
+              </Form>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col items-center justify-center text-sm">
+            <p className="text-muted-foreground">
+              비밀번호가 기억나셨나요?{" "}
+              <Link
+                to="/login"
+                viewTransition
+                className="text-primary hover:text-primary/80 font-medium underline transition-colors"
+              >
+                로그인
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

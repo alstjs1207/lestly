@@ -63,6 +63,7 @@ export default [
     route("/login", "features/auth/screens/login.tsx"),
     route("/admin/signup", "features/auth/screens/admin-signup.tsx"),
     route("/admin/signup/verify", "features/auth/screens/admin-signup-verify.tsx"),
+    route("/auth/forgot-password/reset", "features/auth/screens/forgot-password.tsx"),
   ]),
 
   // Admin signup flow (requires authentication, no layout redirect)
@@ -78,10 +79,6 @@ export default [
       // route("/join", "features/auth/screens/join.tsx"),
       ...prefix("/auth", [
         route("/api/resend", "features/auth/api/resend.tsx"),
-        route(
-          "/forgot-password/reset",
-          "features/auth/screens/forgot-password.tsx",
-        ),
         route("/magic-link", "features/auth/screens/magic-link.tsx"),
         ...prefix("/otp", [
           route("/start", "features/auth/screens/otp/start.tsx"),
