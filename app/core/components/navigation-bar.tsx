@@ -18,7 +18,7 @@
  */
 import { CogIcon, HomeIcon, LogOutIcon, MenuIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useRouteLoaderData } from "react-router";
 
 import LangSwitcher from "./lang-switcher";
 import ThemeSwitcher from "./theme-switcher";
@@ -119,7 +119,7 @@ function UserMenu({
  *
  * @returns Fragment containing auth buttons with dropdown for admin
  */
-function AuthButtons() {
+function AuthButtons({ showAdminSignup }: { showAdminSignup: boolean }) {
   return (
     <>
       {/* User auth buttons */}
@@ -140,29 +140,31 @@ function AuthButtons() {
       </Button>
 
       {/* Admin auth dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="default">관리자</Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>관리자 메뉴</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <SheetClose asChild>
-              <Link to="/login" viewTransition>
-                관리자 로그인
-              </Link>
-            </SheetClose>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <SheetClose asChild>
-              <Link to="/admin/signup" viewTransition>
-                관리자 가입
-              </Link>
-            </SheetClose>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {showAdminSignup && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default">관리자</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>관리자 메뉴</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <SheetClose asChild>
+                <Link to="/login" viewTransition>
+                  관리자 로그인
+                </Link>
+              </SheetClose>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <SheetClose asChild>
+                <Link to="/admin/signup" viewTransition>
+                  관리자 가입
+                </Link>
+              </SheetClose>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </>
   );
 }
@@ -254,6 +256,8 @@ export function NavigationBar({
 }) {
   // Get translation function for internationalization
   const { t } = useTranslation();
+  const rootData = useRouteLoaderData<{ env: { SHOW_ADMIN_SIGNUP: boolean } }>("root");
+  const showAdminSignup = rootData?.env?.SHOW_ADMIN_SIGNUP ?? true;
 
   return (
     <nav
@@ -305,7 +309,7 @@ export function NavigationBar({
                 <UserMenu name={name} email={email} avatarUrl={avatarUrl} />
               ) : (
                 // Unauthenticated state with auth buttons
-                <AuthButtons />
+                <AuthButtons showAdminSignup={showAdminSignup} />
               )}
             </>
           )}
@@ -361,22 +365,24 @@ export function NavigationBar({
                         </SheetClose>
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button variant="secondary" asChild>
-                        <SheetClose asChild>
-                          <Link to="/login" viewTransition>
-                            관리자 로그인
-                          </Link>
-                        </SheetClose>
-                      </Button>
-                      <Button variant="default" asChild>
-                        <SheetClose asChild>
-                          <Link to="/admin/signup" viewTransition>
-                            관리자 가입
-                          </Link>
-                        </SheetClose>
-                      </Button>
-                    </div>
+                    {showAdminSignup && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="secondary" asChild>
+                          <SheetClose asChild>
+                            <Link to="/login" viewTransition>
+                              관리자 로그인
+                            </Link>
+                          </SheetClose>
+                        </Button>
+                        <Button variant="default" asChild>
+                          <SheetClose asChild>
+                            <Link to="/admin/signup" viewTransition>
+                              관리자 가입
+                            </Link>
+                          </SheetClose>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

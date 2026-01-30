@@ -104,6 +104,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     env: {
       SUPABASE_URL: process.env.SUPABASE_URL!,
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
+      SHOW_ADMIN_SIGNUP: process.env.VERCEL_ENV !== "production",
     },
   };
 }

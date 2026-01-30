@@ -10,7 +10,14 @@ import type { Route } from "./+types/login";
 
 import { AlertCircle, CalendarIcon, Loader2Icon } from "lucide-react";
 import { useRef } from "react";
-import { Form, Link, data, redirect, useFetcher } from "react-router";
+import {
+  Form,
+  Link,
+  data,
+  redirect,
+  useFetcher,
+  useRouteLoaderData,
+} from "react-router";
 import { z } from "zod";
 
 import FormButton from "~/core/components/form-button";
@@ -186,6 +193,8 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Login({ actionData }: Route.ComponentProps) {
   // Reference to the form element for accessing form data
   const formRef = useRef<HTMLFormElement>(null);
+  const rootData = useRouteLoaderData<{ env: { SHOW_ADMIN_SIGNUP: boolean } }>("root");
+  const showAdminSignup = rootData?.env?.SHOW_ADMIN_SIGNUP ?? true;
 
   // Fetcher for submitting the email verification resend request
   const fetcher = useFetcher();
@@ -233,17 +242,19 @@ export default function Login({ actionData }: Route.ComponentProps) {
           </div>
 
           {/* CTA */}
-          <div className="space-y-4 pt-8">
-            <p className="text-xl font-semibold">지금 바로 Lestly 사용해보기</p>
-            <Button
-              asChild
-              size="lg"
-              variant="secondary"
-              className="w-full max-w-xs"
-            >
-              <Link to="/admin/signup">관리자 회원가입하기</Link>
-            </Button>
-          </div>
+          {showAdminSignup && (
+            <div className="space-y-4 pt-8">
+              <p className="text-xl font-semibold">지금 바로 Lestly 사용해보기</p>
+              <Button
+                asChild
+                size="lg"
+                variant="secondary"
+                className="w-full max-w-xs"
+              >
+                <Link to="/admin/signup">관리자 회원가입하기</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -355,18 +366,20 @@ export default function Login({ actionData }: Route.ComponentProps) {
           </Card>
 
           {/* 모바일용 관리자 회원가입 링크 */}
-          <div className="flex flex-col items-center justify-center gap-4 text-sm lg:hidden">
-            <p className="text-muted-foreground">
-              소규모 클래스 또는 개인 레슨, 프라이빗 레슨을 운영하시나요?{" "}
-              <Link
-                to="/admin/signup"
-                viewTransition
-                className="text-primary hover:text-primary/80 font-medium underline transition-colors"
-              >
-                관리자 회원가입
-              </Link>
-            </p>
-          </div>
+          {showAdminSignup && (
+            <div className="flex flex-col items-center justify-center gap-4 text-sm lg:hidden">
+              <p className="text-muted-foreground">
+                소규모 클래스 또는 개인 레슨, 프라이빗 레슨을 운영하시나요?{" "}
+                <Link
+                  to="/admin/signup"
+                  viewTransition
+                  className="text-primary hover:text-primary/80 font-medium underline transition-colors"
+                >
+                  관리자 회원가입
+                </Link>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
