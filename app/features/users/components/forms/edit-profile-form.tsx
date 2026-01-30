@@ -59,8 +59,8 @@ export default function EditProfileForm({
     >
       <Card className="justify-between">
         <CardHeader>
-          <CardTitle>Edit profile</CardTitle>
-          <CardDescription>Manage your profile information.</CardDescription>
+          <CardTitle>프로필 수정</CardTitle>
+          <CardDescription>프로필 정보를 관리합니다.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex w-full flex-col gap-7">
@@ -69,7 +69,7 @@ export default function EditProfileForm({
                 htmlFor="avatar"
                 className="flex flex-col items-start gap-2"
               >
-                <span>Avatar</span>
+                <span>아바타</span>
                 <Avatar className="size-24">
                   {avatar ? <AvatarImage src={avatar} alt="Avatar" /> : null}
                   <AvatarFallback>
@@ -79,8 +79,8 @@ export default function EditProfileForm({
               </Label>
               <div className="text-muted-foreground flex w-1/2 flex-col gap-2 text-sm">
                 <div className="flex flex-col gap-1">
-                  <span>Max size: 1MB</span>
-                  <span>Allowed formats: PNG, JPG, GIF</span>
+                  <span>최대 크기: 1MB</span>
+                  <span>허용 형식: PNG, JPG, GIF</span>
                 </div>
                 <Input
                   id="avatar"
@@ -92,14 +92,14 @@ export default function EditProfileForm({
             </div>
             <div className="flex flex-col items-start space-y-2">
               <Label htmlFor="name" className="flex flex-col items-start gap-1">
-                Name
+                이름
               </Label>
               <Input
                 id="name"
                 name="name"
                 required
                 type="text"
-                placeholder="Your Name"
+                placeholder="이름을 입력하세요"
                 defaultValue={name}
               />
               {fetcher.data &&
@@ -115,7 +115,7 @@ export default function EditProfileForm({
                 defaultChecked={marketingConsent}
               />
               <Label htmlFor="marketingConsent">
-                Consent to marketing emails
+                마케팅 이메일 수신 동의
               </Label>
             </div>
             {fetcher.data &&
@@ -130,11 +130,11 @@ export default function EditProfileForm({
         <CardFooter className="flex flex-col gap-4">
           <FetcherFormButton
             submitting={fetcher.state === "submitting"}
-            label="Save profile"
+            label="프로필 저장"
             className="w-full"
           />
           {fetcher.data && "success" in fetcher.data && fetcher.data.success ? (
-            <FormSuccess message="Profile updated" />
+            <FormSuccess message="프로필이 업데이트되었습니다" />
           ) : null}
           {fetcher.data && "error" in fetcher.data && fetcher.data.error ? (
             <FormErrors errors={[fetcher.data.error]} />

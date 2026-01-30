@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
-import { GithubLogo } from "~/features/auth/components/logos/github";
 import { KakaoLogo } from "~/features/auth/components/logos/kakao";
 
 import {
@@ -15,11 +14,6 @@ import {
 } from "../connect-provider-buttons";
 
 const enabledProviders = [
-  {
-    name: "Github",
-    key: "github",
-    logo: <GithubLogo />,
-  },
   {
     name: "Kakao",
     key: "kakao",
@@ -35,9 +29,9 @@ export default function ConnectSocialAccountsForm({
   return (
     <Card className="w-full max-w-screen-md">
       <CardHeader>
-        <CardTitle>Connect social accounts</CardTitle>
+        <CardTitle>소셜 계정 연결</CardTitle>
         <CardDescription>
-          Add or remove additional authentication methods to your account.
+          계정에 추가 인증 방법을 연결하거나 해제합니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
