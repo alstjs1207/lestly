@@ -79,24 +79,24 @@ export default function ScheduleListScreen({ loaderData }: Route.ComponentProps)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">일정 관리</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold">일정 관리</h1>
+          <p className="hidden md:block text-muted-foreground">
             수강생들의 수업 일정을 관리합니다.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link to={`/admin/schedules?year=${year}&month=${month}`}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              캘린더 보기
+              <CalendarIcon className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">캘린더 보기</span>
             </Link>
           </Button>
           <Button asChild>
             <Link to="/admin/schedules/new">
-              <PlusIcon className="mr-2 h-4 w-4" />
-              일정 등록
+              <PlusIcon className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">일정 등록</span>
             </Link>
           </Button>
         </div>
@@ -114,14 +114,14 @@ export default function ScheduleListScreen({ loaderData }: Route.ComponentProps)
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-32">날짜</TableHead>
-              <TableHead className="w-16">요일</TableHead>
+              <TableHead className="w-20 md:w-32">날짜</TableHead>
+              <TableHead className="hidden md:table-cell w-16">요일</TableHead>
               <TableHead>일정</TableHead>
-              <TableHead className="w-20"></TableHead>
+              <TableHead className="w-16 md:w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -136,7 +136,7 @@ export default function ScheduleListScreen({ loaderData }: Route.ComponentProps)
                     {month}월 {day}일
                   </TableCell>
                   <TableCell
-                    className={`${dayOfWeek === 0 ? "text-red-500" : ""} ${dayOfWeek === 6 ? "text-blue-500" : ""}`}
+                    className={`hidden md:table-cell ${dayOfWeek === 0 ? "text-red-500" : ""} ${dayOfWeek === 6 ? "text-blue-500" : ""}`}
                   >
                     {dayLabels[dayOfWeek]}
                   </TableCell>
@@ -159,7 +159,7 @@ export default function ScheduleListScreen({ loaderData }: Route.ComponentProps)
                             <Link to={`/admin/schedules/${schedule.schedule_id}/edit`}>
                               {schedule.student?.name || "알 수 없음"}
                               {schedule.program?.title && (
-                                <span className="text-muted-foreground ml-1">
+                                <span className="hidden md:inline text-muted-foreground ml-1">
                                   ({schedule.program.title})
                                 </span>
                               )}

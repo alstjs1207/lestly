@@ -98,7 +98,7 @@ export default function StudentDetailScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/admin/students">
@@ -107,21 +107,21 @@ export default function StudentDetailScreen({
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{student.name}</h1>
+              <h1 className="text-xl md:text-2xl font-bold">{student.name}</h1>
               <Badge variant={stateLabels[student.state]?.variant || "default"}>
                 {stateLabels[student.state]?.label || student.state}
               </Badge>
             </div>
-            <p className="text-muted-foreground">
+            <p className="hidden md:block text-muted-foreground">
               {student.type ? typeLabels[student.type] : "-"} · {student.region || "-"}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
             <Link to={`/admin/students/${student.profile_id}/edit`}>
-              <EditIcon className="mr-2 h-4 w-4" />
-              수정
+              <EditIcon className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">수정</span>
             </Link>
           </Button>
           {student.state === "NORMAL" && (
@@ -129,8 +129,8 @@ export default function StudentDetailScreen({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline">
-                    <MailIcon className="mr-2 h-4 w-4" />
-                    초대 발송
+                    <MailIcon className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">초대 발송</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -170,8 +170,8 @@ export default function StudentDetailScreen({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline">
-                    <GraduationCapIcon className="mr-2 h-4 w-4" />
-                    졸업
+                    <GraduationCapIcon className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">졸업</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -196,8 +196,8 @@ export default function StudentDetailScreen({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="destructive">
-                    <TrashIcon className="mr-2 h-4 w-4" />
-                    탈퇴
+                    <TrashIcon className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">탈퇴</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -330,7 +330,7 @@ export default function StudentDetailScreen({
                 <TableHeader>
                   <TableRow>
                     <TableHead>날짜</TableHead>
-                    <TableHead>요일</TableHead>
+                    <TableHead className="hidden md:table-cell">요일</TableHead>
                     <TableHead>클래스</TableHead>
                     <TableHead>시간</TableHead>
                   </TableRow>
@@ -347,7 +347,7 @@ export default function StudentDetailScreen({
                             day: "numeric",
                           })}
                         </TableCell>
-                        <TableCell>{dayLabels[startDate.getDay()]}</TableCell>
+                        <TableCell className="hidden md:table-cell">{dayLabels[startDate.getDay()]}</TableCell>
                         <TableCell>
                           {schedule.program?.title || "-"}
                         </TableCell>
@@ -386,7 +386,7 @@ export default function StudentDetailScreen({
                 <TableHeader>
                   <TableRow>
                     <TableHead>날짜</TableHead>
-                    <TableHead>요일</TableHead>
+                    <TableHead className="hidden md:table-cell">요일</TableHead>
                     <TableHead>클래스</TableHead>
                     <TableHead>시간</TableHead>
                   </TableRow>
@@ -403,7 +403,7 @@ export default function StudentDetailScreen({
                             day: "numeric",
                           })}
                         </TableCell>
-                        <TableCell>{dayLabels[startDate.getDay()]}</TableCell>
+                        <TableCell className="hidden md:table-cell">{dayLabels[startDate.getDay()]}</TableCell>
                         <TableCell>
                           {schedule.program?.title || "-"}
                         </TableCell>

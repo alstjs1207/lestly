@@ -32,8 +32,8 @@ export default function ProgramCreateScreen() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">클래스 등록</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold">클래스 등록</h1>
+          <p className="hidden md:block text-muted-foreground">
             새로운 클래스 정보를 입력하세요.
           </p>
         </div>

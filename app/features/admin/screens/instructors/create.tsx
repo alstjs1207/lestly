@@ -32,8 +32,8 @@ export default function InstructorCreateScreen() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">강사 등록</h1>
-          <p className="text-muted-foreground">새로운 강사를 등록합니다.</p>
+          <h1 className="text-xl md:text-2xl font-bold">강사 등록</h1>
+          <p className="hidden md:block text-muted-foreground">새로운 강사를 등록합니다.</p>
         </div>
       </div>
 

@@ -198,7 +198,7 @@ export default function ScheduleForm({
       {mode === "edit" && (
         <div className="space-y-2">
           <Label>수정 범위</Label>
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-2 md:flex-row md:gap-4">
             <div className="flex items-center space-x-2">
               <input
                 type="radio"

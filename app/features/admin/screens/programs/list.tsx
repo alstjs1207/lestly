@@ -81,17 +81,17 @@ export default function ProgramListScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">클래스 관리</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold">클래스 관리</h1>
+          <p className="hidden md:block text-muted-foreground">
             총 {totalCount}개의 클래스가 등록되어 있습니다.
           </p>
         </div>
         <Button asChild>
           <Link to="/admin/programs/new">
-            <PlusIcon className="mr-2 h-4 w-4" />
-            클래스 등록
+            <PlusIcon className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">클래스 등록</span>
           </Link>
         </Button>
       </div>
@@ -113,17 +113,17 @@ export default function ProgramListScreen({
         </Select>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>클래스명</TableHead>
               <TableHead className="w-24">상태</TableHead>
-              <TableHead>강사명</TableHead>
-              <TableHead className="w-24">난이도</TableHead>
-              <TableHead className="w-28">가격</TableHead>
+              <TableHead className="hidden md:table-cell">강사명</TableHead>
+              <TableHead className="hidden md:table-cell w-24">난이도</TableHead>
+              <TableHead className="hidden md:table-cell w-28">가격</TableHead>
               <TableHead className="w-24">스케줄 수</TableHead>
-              <TableHead className="w-32">등록일</TableHead>
+              <TableHead className="hidden md:table-cell w-32">등록일</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
@@ -152,17 +152,17 @@ export default function ProgramListScreen({
                       {statusLabels[program.status]?.label || program.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{program.instructor?.name || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">{program.instructor?.name || "-"}</TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {program.level ? levelLabels[program.level] || program.level : "-"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {program.price ? `${program.price.toLocaleString()}원` : "-"}
                   </TableCell>
                   <TableCell>
                     {scheduleCounts[program.program_id] || 0}개
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {new Date(program.created_at).toLocaleDateString("ko-KR")}
                   </TableCell>
                   <TableCell>

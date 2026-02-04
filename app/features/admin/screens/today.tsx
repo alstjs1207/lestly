@@ -49,7 +49,7 @@ export default function TodayScreen({ loaderData }: Route.ComponentProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">오늘의 수업</h1>
+        <h1 className="text-xl md:text-2xl font-bold">오늘의 수업</h1>
         <p className="text-muted-foreground">
           {todayDate.toLocaleDateString("ko-KR", {
             year: "numeric",
@@ -74,13 +74,14 @@ export default function TodayScreen({ loaderData }: Route.ComponentProps) {
                 오늘 예정된 수업이 없습니다.
               </p>
             ) : (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>시간</TableHead>
                     <TableHead>수강생</TableHead>
                     <TableHead>클래스</TableHead>
-                    <TableHead>지역</TableHead>
+                    <TableHead className="hidden md:table-cell">지역</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -118,7 +119,7 @@ export default function TodayScreen({ loaderData }: Route.ComponentProps) {
                         <TableCell>
                           {schedule.program?.title || "-"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {schedule.student?.region || "-"}
                         </TableCell>
                       </TableRow>
@@ -126,6 +127,7 @@ export default function TodayScreen({ loaderData }: Route.ComponentProps) {
                   })}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>

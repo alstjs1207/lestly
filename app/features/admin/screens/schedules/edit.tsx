@@ -72,7 +72,7 @@ export default function ScheduleEditScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/admin/schedules">
@@ -80,7 +80,7 @@ export default function ScheduleEditScreen({
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">일정 수정</h1>
+            <h1 className="text-xl md:text-2xl font-bold">일정 수정</h1>
             <p className="text-muted-foreground">
               {schedule.student?.name || "알 수 없음"}의 일정을 수정합니다.
             </p>
@@ -90,8 +90,8 @@ export default function ScheduleEditScreen({
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="destructive">
-                <TrashIcon className="mr-2 h-4 w-4" />
-                삭제
+                <TrashIcon className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">삭제</span>
               </Button>
             </DialogTrigger>
             <DialogContent>

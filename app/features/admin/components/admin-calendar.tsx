@@ -6,6 +6,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { useNavigate } from "react-router";
+import { useIsMobile } from "~/core/hooks/use-mobile";
 
 interface CalendarEvent {
   id: string;
@@ -41,6 +42,7 @@ export default function AdminCalendar({
   onDatesSet,
 }: AdminCalendarProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const handleDateClick = (arg: DateClickArg) => {
     if (onDateClick) {
@@ -74,7 +76,20 @@ export default function AdminCalendar({
     const dotColor = studentColor || "#3B82F6";
 
     if (isMonthView) {
-      // Month view: show color dot + student name (compact)
+      // Month view: compact display
+      if (isMobile) {
+        // Mobile month: show only dot + time (no student name)
+        return (
+          <div className="fc-event-main-frame overflow-hidden flex items-center gap-1 px-0.5">
+            <span
+              className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: dotColor }}
+            />
+            <span className="fc-event-time text-xs whitespace-nowrap">{timeText}</span>
+          </div>
+        );
+      }
+      // Desktop month: dot + time + student name
       return (
         <div className="fc-event-main-frame overflow-hidden flex items-center gap-1 px-1">
           <span
@@ -132,12 +147,12 @@ export default function AdminCalendar({
     <div className="admin-calendar">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView={initialView}
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
-        }}
+        initialView={isMobile ? "dayGridMonth" : initialView}
+        headerToolbar={
+          isMobile
+            ? { left: "prev,next,today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }
+            : { left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }
+        }
         events={events}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
@@ -156,7 +171,7 @@ export default function AdminCalendar({
         slotMaxTime="23:00:00"
         slotDuration="00:30:00"
         height="auto"
-        dayMaxEvents={3}
+        dayMaxEvents={isMobile ? 2 : 3}
         eventTimeFormat={{
           hour: "2-digit",
           minute: "2-digit",
@@ -228,6 +243,36 @@ export default function AdminCalendar({
         .admin-calendar .fc-more-link {
           color: hsl(var(--primary));
           font-weight: 500;
+        }
+        /* Mobile responsive styles */
+        @media (max-width: 767px) {
+          .admin-calendar .fc-toolbar-title {
+            font-size: 1rem;
+          }
+          .admin-calendar .fc-button {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+          }
+          .admin-calendar .fc-daygrid-day {
+            min-height: 60px;
+          }
+          .admin-calendar .fc-daygrid-day-frame {
+            padding: 2px;
+            min-height: 60px;
+          }
+          .admin-calendar .fc-daygrid-day-top {
+            padding: 2px;
+          }
+          .admin-calendar .fc-col-header-cell-cushion {
+            font-size: 0.75rem;
+            padding: 4px 2px;
+          }
+          .admin-calendar .fc-daygrid-event {
+            font-size: 0.65rem;
+          }
+          .admin-calendar .fc-daygrid-day-number {
+            font-size: 0.75rem;
+          }
         }
       `}</style>
     </div>

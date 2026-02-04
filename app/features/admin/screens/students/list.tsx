@@ -2,7 +2,7 @@ import type { Route } from "./+types/list";
 
 import { useState } from "react";
 import { Link, useFetcher, useNavigate, useSearchParams } from "react-router";
-import { MailIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { MailIcon, UserPlusIcon, SearchIcon } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -136,17 +136,17 @@ export default function StudentListScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">수강생 관리</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold">수강생 관리</h1>
+          <p className="hidden md:block text-muted-foreground">
             총 {totalCount}명의 수강생이 등록되어 있습니다.
           </p>
         </div>
         <Button asChild>
           <Link to="/admin/students/new">
-            <PlusIcon className="mr-2 h-4 w-4" />
-            수강생 등록
+            <UserPlusIcon className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">수강생 등록</span>
           </Link>
         </Button>
       </div>
@@ -159,7 +159,7 @@ export default function StudentListScreen({
               name="search"
               placeholder="이름 또는 전화번호 검색"
               defaultValue={searchParams.get("search") || ""}
-              className="pl-9 w-64"
+              className="pl-9 w-full sm:w-64"
             />
           </div>
           <Button type="submit" variant="secondary">
@@ -198,17 +198,17 @@ export default function StudentListScreen({
         </Select>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-20">ID</TableHead>
+              <TableHead className="hidden md:table-cell w-20">ID</TableHead>
               <TableHead className="w-24">상태</TableHead>
               <TableHead className="w-24">유형</TableHead>
               <TableHead>이름</TableHead>
-              <TableHead>이메일</TableHead>
-              <TableHead className="w-28">총 수강시간</TableHead>
-              <TableHead className="w-32">등록일</TableHead>
+              <TableHead className="hidden md:table-cell">이메일</TableHead>
+              <TableHead className="hidden md:table-cell w-28">총 수강시간</TableHead>
+              <TableHead className="hidden md:table-cell w-32">등록일</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
@@ -226,7 +226,7 @@ export default function StudentListScreen({
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => navigate(`/admin/students/${student.profile_id}`)}
                 >
-                  <TableCell className="font-mono text-xs">
+                  <TableCell className="hidden md:table-cell font-mono text-xs">
                     {student.profile_id.slice(0, 8)}...
                   </TableCell>
                   <TableCell>
@@ -238,11 +238,11 @@ export default function StudentListScreen({
                     {student.type ? typeLabels[student.type] || student.type : "-"}
                   </TableCell>
                   <TableCell className="font-medium">{student.name}</TableCell>
-                  <TableCell className="text-sm">{emails[student.profile_id] || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell text-sm">{emails[student.profile_id] || "-"}</TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {Math.round((totalHours[student.profile_id] || 0) * 10) / 10}시간
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {new Date(student.created_at).toLocaleDateString("ko-KR")}
                   </TableCell>
                   <TableCell>

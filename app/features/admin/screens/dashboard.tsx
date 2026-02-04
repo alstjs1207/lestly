@@ -60,8 +60,8 @@ export default function AdminDashboardScreen({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">대시보드</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl md:text-2xl font-bold">대시보드</h1>
+        <p className="hidden md:block text-muted-foreground">
           Lestly 관리자 대시보드입니다.
         </p>
       </div>

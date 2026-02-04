@@ -46,7 +46,7 @@ export default function ScheduleCreateScreen({
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">일정 등록</h1>
+          <h1 className="text-xl md:text-2xl font-bold">일정 등록</h1>
           <p className="text-muted-foreground">
             새로운 수업 일정을 등록합니다.
           </p>

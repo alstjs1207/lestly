@@ -43,8 +43,8 @@ export default function StudentEditScreen({ loaderData }: Route.ComponentProps) 
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">수강생 수정</h1>
-          <p className="text-muted-foreground">{student.name}의 정보를 수정합니다.</p>
+          <h1 className="text-xl md:text-2xl font-bold">수강생 수정</h1>
+          <p className="hidden md:block text-muted-foreground">{student.name}의 정보를 수정합니다.</p>
         </div>
       </div>
 

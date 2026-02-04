@@ -47,8 +47,8 @@ export default function ProgramEditScreen({ loaderData }: Route.ComponentProps) 
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">클래스 수정</h1>
-          <p className="text-muted-foreground">{program.title}의 정보를 수정합니다.</p>
+          <h1 className="text-xl md:text-2xl font-bold">클래스 수정</h1>
+          <p className="hidden md:block text-muted-foreground">{program.title}의 정보를 수정합니다.</p>
         </div>
       </div>
 

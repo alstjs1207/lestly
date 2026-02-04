@@ -32,8 +32,8 @@ export default function StudentCreateScreen() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">수강생 등록</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold">수강생 등록</h1>
+          <p className="hidden md:block text-muted-foreground">
             새로운 수강생 정보를 입력하세요.
           </p>
         </div>

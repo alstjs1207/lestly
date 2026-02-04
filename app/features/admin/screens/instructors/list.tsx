@@ -1,7 +1,7 @@
 import type { Route } from "./+types/list";
 
 import { Link } from "react-router";
-import { PlusIcon } from "lucide-react";
+import { UserPlusIcon } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -33,28 +33,28 @@ export default function InstructorListScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">강사 관리</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold">강사 관리</h1>
+          <p className="hidden md:block text-muted-foreground">
             총 {instructors.length}명의 강사가 등록되어 있습니다.
           </p>
         </div>
         <Button asChild>
           <Link to="/admin/instructors/new">
-            <PlusIcon className="mr-2 h-4 w-4" />
-            강사 등록
+            <UserPlusIcon className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">강사 등록</span>
           </Link>
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>강사명</TableHead>
-              <TableHead>소개</TableHead>
-              <TableHead className="w-32">등록일</TableHead>
+              <TableHead className="hidden md:table-cell">소개</TableHead>
+              <TableHead className="hidden md:table-cell w-32">등록일</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
@@ -80,10 +80,10 @@ export default function InstructorListScreen({
                       <span className="font-medium">{instructor.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="max-w-md truncate">
+                  <TableCell className="hidden md:table-cell max-w-md truncate">
                     {instructor.info || "-"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {new Date(instructor.created_at).toLocaleDateString("ko-KR")}
                   </TableCell>
                   <TableCell>

@@ -79,7 +79,7 @@ export default function ProgramDetailScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/admin/programs">
@@ -88,21 +88,21 @@ export default function ProgramDetailScreen({
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{program.title}</h1>
+              <h1 className="text-xl md:text-2xl font-bold">{program.title}</h1>
               <Badge variant={statusLabels[program.status]?.variant || "default"}>
                 {statusLabels[program.status]?.label || program.status}
               </Badge>
             </div>
             {program.subtitle && (
-              <p className="text-muted-foreground">{program.subtitle}</p>
+              <p className="hidden md:block text-muted-foreground">{program.subtitle}</p>
             )}
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link to={`/admin/programs/${program.program_id}/edit`}>
-              <EditIcon className="mr-2 h-4 w-4" />
-              수정
+              <EditIcon className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">수정</span>
             </Link>
           </Button>
           {programHasSchedules ? (
@@ -111,8 +111,8 @@ export default function ProgramDetailScreen({
                 <TooltipTrigger asChild>
                   <span>
                     <Button variant="destructive" disabled>
-                      <TrashIcon className="mr-2 h-4 w-4" />
-                      삭제
+                      <TrashIcon className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">삭제</span>
                     </Button>
                   </span>
                 </TooltipTrigger>
@@ -125,8 +125,8 @@ export default function ProgramDetailScreen({
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="destructive">
-                  <TrashIcon className="mr-2 h-4 w-4" />
-                  삭제
+                  <TrashIcon className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">삭제</span>
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -159,7 +159,7 @@ export default function ProgramDetailScreen({
             <CardTitle>기본 정보</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">클래스명</p>
                 <p className="font-medium">{program.title}</p>
@@ -228,7 +228,7 @@ export default function ProgramDetailScreen({
             <CardTitle>공개 설정</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">공개 여부</p>
                 <Badge variant={program.is_public ? "default" : "outline"}>
@@ -260,7 +260,7 @@ export default function ProgramDetailScreen({
             <CardTitle>클래스 운영 정보</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">진행 방식</p>
                 <p className="font-medium">
@@ -362,7 +362,7 @@ export default function ProgramDetailScreen({
           <CardDescription>클래스 등록 및 수정 기록</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">등록일</p>
               <p className="font-medium">

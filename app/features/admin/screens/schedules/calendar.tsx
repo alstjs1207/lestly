@@ -71,24 +71,24 @@ export default function ScheduleCalendarScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">일정 관리</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold">일정 관리</h1>
+          <p className="hidden md:block text-muted-foreground">
             수강생들의 수업 일정을 관리합니다.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link to={`/admin/schedules/list?${searchParams.toString()}`}>
-              <ListIcon className="mr-2 h-4 w-4" />
-              목록 보기
+              <ListIcon className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">목록 보기</span>
             </Link>
           </Button>
           <Button asChild>
             <Link to="/admin/schedules/new">
-              <PlusIcon className="mr-2 h-4 w-4" />
-              일정 등록
+              <PlusIcon className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">일정 등록</span>
             </Link>
           </Button>
         </div>
