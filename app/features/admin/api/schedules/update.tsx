@@ -1,6 +1,6 @@
 import type { Route } from "./+types/update";
 
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -47,7 +47,10 @@ export async function action({ request, params }: Route.ActionArgs) {
   const scheduleValue = scheduleKST.year * 10000 + scheduleKST.month * 100 + scheduleKST.day;
   const todayValue = todayKST.year * 10000 + todayKST.month * 100 + todayKST.day;
   if (scheduleValue < todayValue) {
-    throw new Error("과거 날짜의 일정은 수정할 수 없습니다.");
+    return data(
+      { success: false, error: "과거 날짜의 일정은 수정할 수 없습니다." },
+      { status: 400 },
+    );
   }
 
   // Get duration hours from form selection (1타임=3시간)
@@ -68,8 +71,9 @@ export async function action({ request, params }: Route.ActionArgs) {
   });
 
   if (!allowed) {
-    throw new Error(
-      `동시간대 최대 인원(${maxCount}명)을 초과했습니다. 현재 ${currentCount}명 등록됨.`,
+    return data(
+      { success: false, error: `동시간대 최대 인원(${maxCount}명)을 초과했습니다. 현재 ${currentCount}명 등록됨.` },
+      { status: 400 },
     );
   }
 
@@ -87,7 +91,10 @@ export async function action({ request, params }: Route.ActionArgs) {
       .gte("start_time", new Date().toISOString());
 
     if (error) {
-      throw new Error(error.message);
+      return data(
+        { success: false, error: error.message },
+        { status: 400 },
+      );
     }
   } else {
     // Update single schedule

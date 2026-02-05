@@ -286,12 +286,12 @@ export default function AdminSignupProfile({
                     <Checkbox id="terms" name="terms" required defaultChecked />
                     <Label
                       htmlFor="terms"
-                      className="text-sm leading-relaxed cursor-pointer"
+                      className="text-xs sm:text-sm leading-relaxed cursor-pointer"
                     >
                       <Link
                         to="/legal/terms"
                         target="_blank"
-                        className="text-primary hover:underline font-semibold"
+                        className="text-primary hover:underline font-semibold whitespace-nowrap"
                       >
                         서비스 이용약관
                       </Link>
@@ -299,7 +299,7 @@ export default function AdminSignupProfile({
                       <Link
                         to="/legal/privacy"
                         target="_blank"
-                        className="text-primary hover:underline font-semibold"
+                        className="text-primary hover:underline font-semibold whitespace-nowrap"
                       >
                         개인정보 처리방침
                       </Link>

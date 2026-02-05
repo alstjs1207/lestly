@@ -1,5 +1,5 @@
 import { useFetcher } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "~/core/components/ui/button";
 import { Input } from "~/core/components/ui/input";
@@ -12,6 +12,14 @@ import {
   SelectValue,
 } from "~/core/components/ui/select";
 import { Checkbox } from "~/core/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/core/components/ui/dialog";
 import { DURATION_OPTIONS, generateTimeSlots } from "~/features/schedules/utils/student-schedule-rules";
 
 interface Student {
@@ -47,9 +55,16 @@ export default function ScheduleForm({
   programs = [],
   defaultValues,
 }: ScheduleFormProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const isSubmitting = fetcher.state !== "idle";
   const [isRecurring, setIsRecurring] = useState(defaultValues?.is_recurring || false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (fetcher.data && !fetcher.data.success && fetcher.data.error) {
+      setErrorMessage(fetcher.data.error);
+    }
+  }, [fetcher.data]);
 
   const actionUrl =
     mode === "create"
@@ -59,6 +74,7 @@ export default function ScheduleForm({
   const timeSlots = generateTimeSlots(30);
 
   return (
+    <>
     <fetcher.Form method="post" action={actionUrl} className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-2">
@@ -239,5 +255,18 @@ export default function ScheduleForm({
         </Button>
       </div>
     </fetcher.Form>
+
+      <Dialog open={!!errorMessage} onOpenChange={() => setErrorMessage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>등록 실패</DialogTitle>
+            <DialogDescription>{errorMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setErrorMessage(null)}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -70,6 +70,11 @@ export default [
   route("/admin/signup/profile", "features/auth/screens/admin-signup-profile.tsx"),
   route("/admin/signup/organization", "features/auth/screens/admin-organization-setup.tsx"),
 
+  // Set password (full-screen, no navigation bar, requires authentication)
+  layout("core/layouts/private.layout.tsx", { id: "private-set-password" }, [
+    route("/auth/set-password", "features/auth/screens/set-password.tsx"),
+  ]),
+
   layout("core/layouts/navigation.layout.tsx", [
     route("/auth/confirm", "features/auth/screens/confirm.tsx"),
     // index("features/home/screens/home.tsx"),
@@ -100,7 +105,6 @@ export default [
           "features/auth/screens/new-password.tsx",
         ),
         route("/email-verified", "features/auth/screens/email-verified.tsx"),
-        route("/set-password", "features/auth/screens/set-password.tsx"),
       ]),
       // Routes that should only be visible to authenticated users.
       route("/logout", "features/auth/screens/logout.tsx"),

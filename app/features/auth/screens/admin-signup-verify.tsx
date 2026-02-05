@@ -31,6 +31,7 @@ import {
 import {
   InputOTP,
   InputOTPGroup,
+  InputOTPSeparator,
   InputOTPSlot,
 } from "~/core/components/ui/input-otp";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -204,14 +205,17 @@ export default function AdminSignupVerify({
                     name="token"
                   >
                     <InputOTPGroup>
-                      <InputOTPSlot index={0} className="size-11 text-lg" />
-                      <InputOTPSlot index={1} className="size-11 text-lg" />
-                      <InputOTPSlot index={2} className="size-11 text-lg" />
-                      <InputOTPSlot index={3} className="size-11 text-lg" />
-                      <InputOTPSlot index={4} className="size-11 text-lg" />
-                      <InputOTPSlot index={5} className="size-11 text-lg" />
-                      <InputOTPSlot index={6} className="size-11 text-lg" />
-                      <InputOTPSlot index={7} className="size-11 text-lg" />
+                      <InputOTPSlot index={0} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot index={1} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot index={2} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot index={3} className="size-9 text-base sm:size-11 sm:text-lg" />
+                    </InputOTPGroup>
+                    <InputOTPSeparator />
+                    <InputOTPGroup>
+                      <InputOTPSlot index={4} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot index={5} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot index={6} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot index={7} className="size-9 text-base sm:size-11 sm:text-lg" />
                     </InputOTPGroup>
                   </InputOTP>
 

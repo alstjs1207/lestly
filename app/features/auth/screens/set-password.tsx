@@ -113,7 +113,7 @@ export default function SetPassword({
   }, [actionData, navigate]);
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex h-screen items-center justify-center overflow-hidden">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col items-center">
           <CardTitle className="text-2xl font-semibold">

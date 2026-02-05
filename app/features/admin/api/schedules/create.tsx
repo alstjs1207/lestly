@@ -1,6 +1,6 @@
 import type { Route } from "./+types/create";
 
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -54,8 +54,9 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (!allowed) {
-    throw new Error(
-      `동시간대 최대 인원(${maxCount}명)을 초과했습니다. 현재 ${currentCount}명 등록됨.`,
+    return data(
+      { success: false, error: `동시간대 최대 인원(${maxCount}명)을 초과했습니다. 현재 ${currentCount}명 등록됨.` },
+      { status: 400 },
     );
   }
 
@@ -63,7 +64,10 @@ export async function action({ request }: Route.ActionArgs) {
     // Get student's class end date for recurring schedules
     const student = await getStudentById(client, { organizationId, studentId });
     if (!student.class_end_date) {
-      throw new Error("수강생의 수업 종료일이 설정되어 있지 않습니다.");
+      return data(
+        { success: false, error: "수강생의 수업 종료일이 설정되어 있지 않습니다." },
+        { status: 400 },
+      );
     }
 
     const [ey, em, ed] = student.class_end_date.split("-").map(Number);
