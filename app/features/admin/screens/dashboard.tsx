@@ -66,62 +66,62 @@ export default function AdminDashboardScreen({
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">전체 수강생</CardTitle>
-            <UsersIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalStudents}명</div>
-            <p className="text-xs text-muted-foreground">
-              <Link to="/admin/students" className="hover:underline">
+      <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
+        <Link to="/admin/students">
+          <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 md:pb-2">
+              <CardTitle className="text-sm font-medium">전체 수강생</CardTitle>
+              <UsersIcon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg md:text-2xl font-bold">{stats.totalStudents}명</div>
+              <p className="hidden md:block text-xs text-muted-foreground">
                 수강생 관리 →
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 md:pb-2">
             <CardTitle className="text-sm font-medium">정상 수강생</CardTitle>
             <UsersIcon className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeStudents}명</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-lg md:text-2xl font-bold">{stats.activeStudents}명</div>
+            <p className="hidden md:block text-xs text-muted-foreground">
               현재 수업 중인 수강생
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 md:pb-2">
             <CardTitle className="text-sm font-medium">졸업 수강생</CardTitle>
             <GraduationCapIcon className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.graduatedStudents}명</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-lg md:text-2xl font-bold">{stats.graduatedStudents}명</div>
+            <p className="hidden md:block text-xs text-muted-foreground">
               졸업 처리된 수강생
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">오늘의 수업</CardTitle>
-            <CalendarDaysIcon className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.todayScheduleCount}건</div>
-            <p className="text-xs text-muted-foreground">
-              <Link to="/admin/today" className="hover:underline">
+        <Link to="/admin/today">
+          <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 md:pb-2">
+              <CardTitle className="text-sm font-medium">오늘의 수업</CardTitle>
+              <CalendarDaysIcon className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg md:text-2xl font-bold">{stats.todayScheduleCount}건</div>
+              <p className="hidden md:block text-xs text-muted-foreground">
                 오늘의 수업 보기 →
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <Card>
