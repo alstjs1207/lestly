@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { CalendarIcon } from "lucide-react";
 
-import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 import {
   Card,
@@ -123,10 +122,8 @@ export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) 
               <TableHeader>
                 <TableRow>
                   <TableHead>날짜</TableHead>
-                  <TableHead>요일</TableHead>
                   <TableHead>클래스</TableHead>
                   <TableHead>시간</TableHead>
-                  <TableHead>상태</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -142,15 +139,11 @@ export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) 
                       key={schedule.schedule_id}
                       className={isPast ? "opacity-60" : ""}
                     >
-                      <TableCell className="font-medium">
-                        {startTime.toLocaleDateString("ko-KR", {
-                          month: "long",
-                          day: "numeric",
-                        })}
+                      <TableCell className="py-2 font-medium">
+                        {startTime.getMonth() + 1}월 {startTime.getDate()}일({dayLabels[startTime.getDay()]})
                       </TableCell>
-                      <TableCell>{dayLabels[startTime.getDay()]}</TableCell>
-                      <TableCell>{schedule.program?.title || "-"}</TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">{schedule.program?.title || "-"}</TableCell>
+                      <TableCell className="py-2">
                         {startTime.toLocaleTimeString("ko-KR", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -161,14 +154,7 @@ export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) 
                           minute: "2-digit",
                         })}
                       </TableCell>
-                      <TableCell>
-                        {isPast ? (
-                          <Badge variant="secondary">완료</Badge>
-                        ) : (
-                          <Badge variant="default">예정</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">
                         {!isPast && (
                           <Dialog>
                             <DialogTrigger asChild>

@@ -1,12 +1,12 @@
 import type { Route } from "./+types/calendar";
 
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import { ListIcon, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useFetcher, useRevalidator } from "react-router";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import { ListIcon } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -24,14 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/core/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "~/core/components/ui/sheet";
 import { Label } from "~/core/components/ui/label";
 import {
   Select,
@@ -40,20 +32,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/core/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "~/core/components/ui/sheet";
+import { useIsMobile } from "~/core/hooks/use-mobile";
 import { requireAuthentication } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-import { useIsMobile } from "~/core/hooks/use-mobile";
+import { getOrganizationMembership } from "~/features/organizations/queries";
 import { getActivePrograms } from "~/features/programs/queries";
+import { MobileCalendar } from "~/features/schedules/components/mobile-calendar";
 import { getStudentSchedules } from "~/features/schedules/queries";
 import {
+  DURATION_OPTIONS,
   canStudentCancelSchedule,
   canStudentRegisterSchedule,
-  DURATION_OPTIONS,
   generateTimeSlots,
   getStudentAllowedDateRange,
 } from "~/features/schedules/utils/student-schedule-rules";
-import { getOrganizationMembership } from "~/features/organizations/queries";
-import { MobileCalendar } from "~/features/schedules/components/mobile-calendar";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
@@ -64,7 +64,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   } = await client.auth.getUser();
 
   // Get user's organization
-  const membership = await getOrganizationMembership(client, { profileId: user!.id });
+  const membership = await getOrganizationMembership(client, {
+    profileId: user!.id,
+  });
   const organizationId = membership?.organization_id;
 
   const { startDate, endDate } = getStudentAllowedDateRange();
@@ -120,15 +122,23 @@ export default function StudentCalendarScreen({
   );
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedDuration, setSelectedDuration] = useState<string>("1");
-  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(
+    null,
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProgramSelectOpen, setIsProgramSelectOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent | null>(
+    null,
+  );
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const deleteFetcher = useFetcher<{ success: boolean; error?: string }>();
   const revalidator = useRevalidator();
+  const isLoading =
+    fetcher.state !== "idle" ||
+    deleteFetcher.state !== "idle" ||
+    revalidator.state === "loading";
 
   // Initialize selectedDate to today when switching to mobile
   useEffect(() => {
@@ -181,7 +191,9 @@ export default function StudentCalendarScreen({
       setIsProgramSelectOpen(true);
     } else {
       // If single program or no programs, go directly to time selection
-      setSelectedProgramId(programs.length === 1 ? programs[0].program_id : null);
+      setSelectedProgramId(
+        programs.length === 1 ? programs[0].program_id : null,
+      );
       setIsDialogOpen(true);
     }
   };
@@ -192,7 +204,15 @@ export default function StudentCalendarScreen({
     setIsDialogOpen(true);
   };
 
-  const handleEventClick = (arg: { event: { id: string; title: string; start: Date | null; end: Date | null; extendedProps: Record<string, unknown> } }) => {
+  const handleEventClick = (arg: {
+    event: {
+      id: string;
+      title: string;
+      start: Date | null;
+      end: Date | null;
+      extendedProps: Record<string, unknown>;
+    };
+  }) => {
     const { event } = arg;
     if (!event.start || !event.end) return;
 
@@ -259,19 +279,20 @@ export default function StudentCalendarScreen({
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="time">시작 시간</Label>
-        <Select value={selectedTime} onValueChange={setSelectedTime}>
-          <SelectTrigger>
-            <SelectValue placeholder="시간 선택" />
-          </SelectTrigger>
-          <SelectContent>
-            {timeSlots.map((slot) => (
-              <SelectItem key={slot.value} value={slot.value}>
-                {slot.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
+        <div className="grid grid-cols-4 gap-2">
+          {timeSlots.map((slot) => (
+            <Button
+              key={slot.value}
+              type="button"
+              variant={selectedTime === slot.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTime(slot.value)}
+            >
+              {slot.label}
+            </Button>
+          ))}
+        </div>
+        <p className="text-muted-foreground text-xs">
           시작 시간: 09:00 ~ 20:00
         </p>
       </div>
@@ -289,7 +310,7 @@ export default function StudentCalendarScreen({
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           1타임 = 3시간 (최대 3타임, 9시간)
         </p>
       </div>
@@ -303,15 +324,28 @@ export default function StudentCalendarScreen({
     weekday: "long",
   });
 
-  const eventDateDescription = selectedEvent?.start.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  });
+  const eventDateDescription = selectedEvent?.start.toLocaleDateString(
+    "ko-KR",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long",
+    },
+  );
 
   return (
     <>
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="bg-background/60 fixed inset-0 z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="text-primary h-8 w-8 animate-spin" />
+            <p className="text-foreground text-sm font-medium">일정 반영 중...</p>
+          </div>
+        </div>
+      )}
+
       {/* ===== Mobile UI ===== */}
       {isMobile && (
         <>
@@ -327,16 +361,20 @@ export default function StudentCalendarScreen({
 
           {/* Schedule registration Sheet */}
           <Sheet open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+            <SheetContent
+              side="bottom"
+              className="max-h-[80vh] overflow-y-auto rounded-t-2xl"
+            >
               <SheetHeader>
                 <SheetTitle>일정 등록</SheetTitle>
                 <SheetDescription>{dateDescription}</SheetDescription>
               </SheetHeader>
-              <div className="px-4">
-                {scheduleFormContent}
-              </div>
+              <div className="px-4">{scheduleFormContent}</div>
               <SheetFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   취소
                 </Button>
                 <Button
@@ -350,8 +388,14 @@ export default function StudentCalendarScreen({
           </Sheet>
 
           {/* Program selection Sheet */}
-          <Sheet open={isProgramSelectOpen} onOpenChange={setIsProgramSelectOpen}>
-            <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <Sheet
+            open={isProgramSelectOpen}
+            onOpenChange={setIsProgramSelectOpen}
+          >
+            <SheetContent
+              side="bottom"
+              className="max-h-[80vh] overflow-y-auto rounded-t-2xl"
+            >
               <SheetHeader>
                 <SheetTitle>클래스 선택</SheetTitle>
                 <SheetDescription>
@@ -364,13 +408,13 @@ export default function StudentCalendarScreen({
                   <Button
                     key={program.program_id}
                     variant="outline"
-                    className="w-full justify-start h-auto py-3"
+                    className="h-auto w-full justify-start py-3"
                     onClick={() => handleProgramSelect(program.program_id)}
                   >
                     <div className="text-left">
                       <div className="font-medium">{program.title}</div>
                       {program.subtitle && (
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-muted-foreground text-sm">
                           {program.subtitle}
                         </div>
                       )}
@@ -379,7 +423,10 @@ export default function StudentCalendarScreen({
                 ))}
               </div>
               <SheetFooter>
-                <Button variant="outline" onClick={() => setIsProgramSelectOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsProgramSelectOpen(false)}
+                >
                   취소
                 </Button>
               </SheetFooter>
@@ -388,7 +435,10 @@ export default function StudentCalendarScreen({
 
           {/* Event detail Sheet */}
           <Sheet open={isEventDetailOpen} onOpenChange={setIsEventDetailOpen}>
-            <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+            <SheetContent
+              side="bottom"
+              className="max-h-[80vh] overflow-y-auto rounded-t-2xl"
+            >
               <SheetHeader>
                 <SheetTitle>일정 상세</SheetTitle>
                 <SheetDescription>{eventDateDescription}</SheetDescription>
@@ -397,7 +447,9 @@ export default function StudentCalendarScreen({
                 <div className="space-y-4 px-4">
                   <div className="space-y-2">
                     <Label>클래스</Label>
-                    <p className="text-sm">{selectedEvent.programTitle || "미지정"}</p>
+                    <p className="text-sm">
+                      {selectedEvent.programTitle || "미지정"}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>시간</Label>
@@ -414,36 +466,48 @@ export default function StudentCalendarScreen({
                     </p>
                   </div>
                   {canStudentCancelSchedule(selectedEvent.start) ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       일정을 취소하려면 아래 버튼을 클릭하세요.
                     </p>
                   ) : (
-                    <p className="text-sm text-destructive">
+                    <p className="text-destructive text-sm">
                       당일 일정은 취소할 수 없습니다. 강사에게 문의해주세요.
                     </p>
                   )}
                 </div>
               )}
               <SheetFooter>
-                <Button variant="outline" onClick={() => setIsEventDetailOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEventDetailOpen(false)}
+                >
                   닫기
                 </Button>
-                {selectedEvent && canStudentCancelSchedule(selectedEvent.start) && (
-                  <Button
-                    variant="destructive"
-                    onClick={handleCancelSchedule}
-                    disabled={deleteFetcher.state !== "idle"}
-                  >
-                    {deleteFetcher.state !== "idle" ? "취소 중..." : "일정 취소"}
-                  </Button>
-                )}
+                {selectedEvent &&
+                  canStudentCancelSchedule(selectedEvent.start) && (
+                    <Button
+                      variant="destructive"
+                      onClick={handleCancelSchedule}
+                      disabled={deleteFetcher.state !== "idle"}
+                    >
+                      {deleteFetcher.state !== "idle"
+                        ? "취소 중..."
+                        : "일정 취소"}
+                    </Button>
+                  )}
               </SheetFooter>
             </SheetContent>
           </Sheet>
 
           {/* Error message Sheet */}
-          <Sheet open={!!errorMessage} onOpenChange={() => setErrorMessage(null)}>
-            <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <Sheet
+            open={!!errorMessage}
+            onOpenChange={() => setErrorMessage(null)}
+          >
+            <SheetContent
+              side="bottom"
+              className="max-h-[80vh] overflow-y-auto rounded-t-2xl"
+            >
               <SheetHeader>
                 <SheetTitle>등록 실패</SheetTitle>
                 <SheetDescription>{errorMessage}</SheetDescription>
@@ -483,15 +547,14 @@ export default function StudentCalendarScreen({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 * 매월 25일 이후부터 다음 달 일정을 등록할 수 있습니다.
-                <br />
-                * 수업 시간: 09:00 ~ 20:00 (1타임 = 3시간, 최대 3타임)
+                <br />* 수업 시간: 09:00 ~ 20:00 (1타임 = 3시간, 최대 3타임)
               </p>
             </CardContent>
           </Card>
 
-          <div className="rounded-md border bg-card p-4">
+          <div className="bg-card rounded-md border p-4">
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
@@ -535,7 +598,10 @@ export default function StudentCalendarScreen({
               </DialogHeader>
               {scheduleFormContent}
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   취소
                 </Button>
                 <Button
@@ -548,7 +614,10 @@ export default function StudentCalendarScreen({
             </DialogContent>
           </Dialog>
 
-          <Dialog open={!!errorMessage} onOpenChange={() => setErrorMessage(null)}>
+          <Dialog
+            open={!!errorMessage}
+            onOpenChange={() => setErrorMessage(null)}
+          >
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>등록 실패</DialogTitle>
@@ -560,7 +629,10 @@ export default function StudentCalendarScreen({
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isProgramSelectOpen} onOpenChange={setIsProgramSelectOpen}>
+          <Dialog
+            open={isProgramSelectOpen}
+            onOpenChange={setIsProgramSelectOpen}
+          >
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>클래스 선택</DialogTitle>
@@ -574,13 +646,13 @@ export default function StudentCalendarScreen({
                   <Button
                     key={program.program_id}
                     variant="outline"
-                    className="w-full justify-start h-auto py-3"
+                    className="h-auto w-full justify-start py-3"
                     onClick={() => handleProgramSelect(program.program_id)}
                   >
                     <div className="text-left">
                       <div className="font-medium">{program.title}</div>
                       {program.subtitle && (
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-muted-foreground text-sm">
                           {program.subtitle}
                         </div>
                       )}
@@ -589,7 +661,10 @@ export default function StudentCalendarScreen({
                 ))}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsProgramSelectOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsProgramSelectOpen(false)}
+                >
                   취소
                 </Button>
               </DialogFooter>
@@ -606,7 +681,9 @@ export default function StudentCalendarScreen({
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>클래스</Label>
-                    <p className="text-sm">{selectedEvent.programTitle || "미지정"}</p>
+                    <p className="text-sm">
+                      {selectedEvent.programTitle || "미지정"}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>시간</Label>
@@ -623,29 +700,35 @@ export default function StudentCalendarScreen({
                     </p>
                   </div>
                   {canStudentCancelSchedule(selectedEvent.start) ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       일정을 취소하려면 아래 버튼을 클릭하세요.
                     </p>
                   ) : (
-                    <p className="text-sm text-destructive">
+                    <p className="text-destructive text-sm">
                       당일 일정은 취소할 수 없습니다. 강사에게 문의해주세요.
                     </p>
                   )}
                 </div>
               )}
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEventDetailOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEventDetailOpen(false)}
+                >
                   닫기
                 </Button>
-                {selectedEvent && canStudentCancelSchedule(selectedEvent.start) && (
-                  <Button
-                    variant="destructive"
-                    onClick={handleCancelSchedule}
-                    disabled={deleteFetcher.state !== "idle"}
-                  >
-                    {deleteFetcher.state !== "idle" ? "취소 중..." : "일정 취소"}
-                  </Button>
-                )}
+                {selectedEvent &&
+                  canStudentCancelSchedule(selectedEvent.start) && (
+                    <Button
+                      variant="destructive"
+                      onClick={handleCancelSchedule}
+                      disabled={deleteFetcher.state !== "idle"}
+                    >
+                      {deleteFetcher.state !== "idle"
+                        ? "취소 중..."
+                        : "일정 취소"}
+                    </Button>
+                  )}
               </DialogFooter>
             </DialogContent>
           </Dialog>

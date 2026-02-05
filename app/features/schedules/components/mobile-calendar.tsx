@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { format, addMonths, subMonths } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ChevronLeftIcon, ChevronRightIcon, ListIcon, PlusIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, ListIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
 import { MobileMonthGrid } from "./mobile-month-grid";
@@ -43,7 +43,10 @@ export function MobileCalendar({
   onDateSelect,
   onEventClick,
   onAddClick,
+  allowedStartDate,
+  allowedEndDate,
 }: MobileCalendarProps) {
+  const [showInfo, setShowInfo] = useState(false);
   const [displayedMonth, setDisplayedMonth] = useState(
     () => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
   );
@@ -70,7 +73,7 @@ export function MobileCalendar({
   const today = new Date();
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)]" onClick={() => setShowInfo(false)}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b pb-2">
         <div className="flex items-center justify-between px-4 py-3">
@@ -127,6 +130,33 @@ export function MobileCalendar({
           onEventClick={onEventClick}
         />
       </div>
+
+      {/* Info button */}
+      {showInfo && (
+        <div
+          className="fixed bottom-22 left-6 z-30 w-64 rounded-lg border bg-card p-4 shadow-lg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-sm font-medium">등록 가능 기간</p>
+          <p className="text-sm text-muted-foreground">
+            {new Date(allowedStartDate).toLocaleDateString("ko-KR")} ~{" "}
+            {new Date(allowedEndDate).toLocaleDateString("ko-KR")}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            * 매월 25일 이후부터 다음 달 일정을 등록할 수 있습니다.
+          </p>
+        </div>
+      )}
+      <button
+        type="button"
+        className="fixed bottom-6 left-6 z-20 w-10 h-10 rounded-full bg-muted text-muted-foreground shadow-md flex items-center justify-center active:scale-95 transition-transform"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowInfo((v) => !v);
+        }}
+      >
+        <InfoIcon className="h-5 w-5" />
+      </button>
 
       {/* FAB */}
       <button
