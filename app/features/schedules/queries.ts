@@ -32,7 +32,8 @@ export async function getMonthlySchedules(
       student:profiles!schedules_student_id_profiles_profile_id_fk(
         profile_id,
         name,
-        color
+        color,
+        region
       ),
       program:programs(
         program_id,

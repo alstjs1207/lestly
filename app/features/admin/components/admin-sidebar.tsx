@@ -41,24 +41,24 @@ import {
 
 const menuItems = [
   {
-    title: "오늘의 수업",
-    url: "/admin/today",
-    icon: CalendarDaysIcon,
-  },
-  {
     title: "홈화면",
     url: "/admin",
     icon: HomeIcon,
   },
   {
-    title: "수강생 관리",
-    url: "/admin/students",
-    icon: UsersIcon,
+    title: "오늘의 수업",
+    url: "/admin/today",
+    icon: CalendarDaysIcon,
   },
   {
     title: "일정 관리",
     url: "/admin/schedules",
     icon: CalendarIcon,
+  },
+  {
+    title: "수강생 관리",
+    url: "/admin/students",
+    icon: UsersIcon,
   },
   {
     title: "클래스 관리",

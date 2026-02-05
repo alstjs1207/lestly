@@ -1,7 +1,7 @@
 import type { Route } from "./+types/dashboard";
 
 import { Link } from "react-router";
-import { CalendarIcon, UsersIcon, GraduationCapIcon, CalendarDaysIcon } from "lucide-react";
+import { CalendarIcon, UsersIcon, CalendarDaysIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/core/components/ui/card";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -95,18 +95,20 @@ export default function AdminDashboardScreen({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 md:pb-2">
-            <CardTitle className="text-sm font-medium">졸업 수강생</CardTitle>
-            <GraduationCapIcon className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold">{stats.graduatedStudents}명</div>
-            <p className="hidden md:block text-xs text-muted-foreground">
-              졸업 처리된 수강생
-            </p>
-          </CardContent>
-        </Card>
+        <Link to="/admin/schedules">
+          <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 md:pb-2">
+              <CardTitle className="text-sm font-medium">일정 관리</CardTitle>
+              <CalendarIcon className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg md:text-2xl font-bold">{stats.monthlyScheduleCount}건</div>
+              <p className="hidden md:block text-xs text-muted-foreground">
+                일정 관리 →
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Link to="/admin/today">
           <Card className="hover:bg-muted/50 transition-colors">

@@ -69,7 +69,7 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
               <NotificationBell organizationId={loaderData.organizationId} />
             )}
             <ThemeSwitcher />
-            <LangSwitcher />
+            <LangSwitcher disabled />
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6">

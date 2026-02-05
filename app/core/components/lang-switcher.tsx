@@ -36,7 +36,7 @@ import {
  * 
  * @returns A dropdown menu component for switching languages
  */
-export default function LangSwitcher() {
+export default function LangSwitcher({ disabled }: { disabled?: boolean } = {}) {
   // Get translation function and i18n instance
   const { t, i18n } = useTranslation();
   
@@ -66,7 +66,7 @@ export default function LangSwitcher() {
         className="cursor-pointer"
         data-testid="lang-switcher" // For testing purposes
       >
-        <Button variant="ghost" size="icon" className="text-lg">
+        <Button variant="ghost" size="icon" className="text-lg" disabled={disabled}>
           {/* Conditionally render the appropriate flag based on current language */}
           {i18n.language === "en"
             ? "🇬🇧" // UK flag for English

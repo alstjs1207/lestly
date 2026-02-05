@@ -5,10 +5,12 @@ import { Link, useSearchParams } from "react-router";
 import { ListIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
+import { useIsMobile } from "~/core/hooks/use-mobile";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getMonthlySchedules } from "~/features/schedules/queries";
 
 import AdminCalendar from "../../components/admin-calendar";
+import { AdminMobileCalendar } from "../../components/admin-mobile-calendar";
 import { requireAdminRole } from "../../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -25,6 +27,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Transform schedules to calendar events
   const events = schedules.map((schedule) => {
     const studentName = schedule.student?.name || "알 수 없음";
+    const studentRegion = schedule.student?.region || null;
     const programName = schedule.program?.title || null;
     const studentColor = schedule.student?.color || "#3B82F6";
 
@@ -41,6 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         scheduleId: schedule.schedule_id,
         programId: schedule.program_id,
         studentName,
+        studentRegion,
         programName,
         studentColor,
       },
@@ -53,7 +57,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function ScheduleCalendarScreen({
   loaderData,
 }: Route.ComponentProps) {
-  const { events } = loaderData;
+  const { events, year, month } = loaderData;
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const handleDatesSet = (dateInfo: DatesSetArg) => {
@@ -68,6 +73,12 @@ export default function ScheduleCalendarScreen({
       setSearchParams({ year: String(newYear), month: String(newMonth) });
     }
   };
+
+  if (isMobile) {
+    return (
+      <AdminMobileCalendar events={events} year={year} month={month} />
+    );
+  }
 
   return (
     <div className="space-y-6">

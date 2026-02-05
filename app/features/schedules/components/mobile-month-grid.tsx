@@ -27,6 +27,8 @@ interface MobileMonthGridProps {
   displayedMonth: Date;
   onDateSelect: (date: Date) => void;
   onMonthChange: (direction: -1 | 1) => void;
+  eventColorsByDate?: Map<string, string[]>;
+  disableDateRestrictions?: boolean;
 }
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -50,6 +52,8 @@ export function MobileMonthGrid({
   displayedMonth,
   onDateSelect,
   onMonthChange,
+  eventColorsByDate,
+  disableDateRestrictions,
 }: MobileMonthGridProps) {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -175,7 +179,9 @@ export function MobileMonthGrid({
             const isSun = date.getDay() === 0;
             const isSat = date.getDay() === 6;
             const isPast = isBefore(date, startOfDay(new Date()));
-            const disabled = !inMonth || isPast || !canStudentRegisterSchedule(date);
+            const disabled = disableDateRestrictions
+              ? !inMonth
+              : !inMonth || isPast || !canStudentRegisterSchedule(date);
 
             return (
               <button
@@ -196,14 +202,28 @@ export function MobileMonthGrid({
                 >
                   {format(date, "d")}
                 </div>
-                <div className="flex gap-0.5 h-1">
+                <div className="flex flex-wrap justify-center gap-0.5 min-h-1">
                   {inMonth &&
-                    Array.from({ length: Math.min(count, 3) }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-1 h-1 rounded-full bg-primary"
-                      />
-                    ))}
+                    (() => {
+                      const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+                      const colors = eventColorsByDate?.get(dateKey);
+                      if (colors && colors.length > 0) {
+                        const uniqueColors = [...new Set(colors)];
+                        return uniqueColors.map((color, i) => (
+                          <div
+                            key={i}
+                            className="w-1 h-1 rounded-full"
+                            style={{ backgroundColor: color }}
+                          />
+                        ));
+                      }
+                      return Array.from({ length: count }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-1 h-1 rounded-full bg-primary"
+                        />
+                      ));
+                    })()}
                 </div>
               </button>
             );

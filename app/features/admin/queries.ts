@@ -387,19 +387,37 @@ export async function getDashboardStats(
   const today = fromKST(now.year, now.month, now.day);
   const tomorrow = fromKST(now.year, now.month, now.day + 1);
 
-  const { count: todayScheduleCount, error: scheduleError } = await client
-    .from("schedules")
-    .select("*", { count: "exact", head: true })
-    .eq("organization_id", organizationId)
-    .gte("start_time", today.toISOString())
-    .lt("start_time", tomorrow.toISOString());
+  const monthStart = fromKST(now.year, now.month, 1);
+  const monthEnd = fromKST(now.year, now.month + 1, 0, 23, 59, 59);
+
+  const [
+    { count: todayScheduleCount, error: scheduleError },
+    { count: monthlyScheduleCount, error: monthlyError },
+  ] = await Promise.all([
+    client
+      .from("schedules")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .gte("start_time", today.toISOString())
+      .lt("start_time", tomorrow.toISOString()),
+    client
+      .from("schedules")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .gte("start_time", monthStart.toISOString())
+      .lte("start_time", monthEnd.toISOString()),
+  ]);
 
   if (scheduleError) {
     throw scheduleError;
+  }
+  if (monthlyError) {
+    throw monthlyError;
   }
 
   return {
     ...stats,
     todayScheduleCount: todayScheduleCount ?? 0,
+    monthlyScheduleCount: monthlyScheduleCount ?? 0,
   };
 }
