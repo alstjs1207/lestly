@@ -1,6 +1,7 @@
 import { useMemo } from "react";
-import { isSameDay, format } from "date-fns";
+import { isSameDay, isBefore, startOfDay, format } from "date-fns";
 import { cn } from "~/core/lib/utils";
+import { canStudentRegisterSchedule } from "~/features/schedules/utils/student-schedule-rules";
 
 interface CalendarEvent {
   id: string;
@@ -42,6 +43,25 @@ export function MobileDayEvents({
   }, [events, selectedDate]);
 
   if (dayEvents.length === 0) {
+    const isPast = isBefore(selectedDate, startOfDay(new Date()));
+    const canRegister = canStudentRegisterSchedule(selectedDate);
+
+    if (isPast) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <p className="text-sm">지난 날짜에는 일정을 등록할 수 없습니다</p>
+        </div>
+      );
+    }
+
+    if (!canRegister) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <p className="text-sm">다음 달 일정은 매월 25일부터 등록할 수 있습니다</p>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
         <p className="text-sm">일정이 없습니다</p>

@@ -5,12 +5,15 @@ import {
   startOfWeek,
   endOfWeek,
   addDays,
+  isBefore,
   isSameDay,
   isSameMonth,
   isToday,
+  startOfDay,
   format,
 } from "date-fns";
 import { cn } from "~/core/lib/utils";
+import { canStudentRegisterSchedule } from "~/features/schedules/utils/student-schedule-rules";
 
 interface CalendarEvent {
   id: string;
@@ -171,6 +174,8 @@ export function MobileMonthGrid({
             const count = getEventCount(date);
             const isSun = date.getDay() === 0;
             const isSat = date.getDay() === 6;
+            const isPast = isBefore(date, startOfDay(new Date()));
+            const disabled = !inMonth || isPast || !canStudentRegisterSchedule(date);
 
             return (
               <button
@@ -182,11 +187,11 @@ export function MobileMonthGrid({
                 <div
                   className={cn(
                     "w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors",
-                    !inMonth && "text-muted-foreground/40",
+                    disabled && !selected && "text-muted-foreground/40",
                     inMonth && selected && "bg-primary text-primary-foreground font-semibold",
                     inMonth && !selected && today && "ring-2 ring-primary font-semibold",
-                    inMonth && !selected && !today && isSun && "text-red-500",
-                    inMonth && !selected && !today && isSat && "text-blue-500",
+                    inMonth && !selected && !today && !disabled && isSun && "text-red-500",
+                    inMonth && !selected && !today && !disabled && isSat && "text-blue-500",
                   )}
                 >
                   {format(date, "d")}
