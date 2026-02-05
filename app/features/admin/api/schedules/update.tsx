@@ -9,6 +9,7 @@ import {
   getScheduleById,
   updateSchedule,
 } from "~/features/schedules/queries";
+import { nowKST, toKST } from "~/features/schedules/utils/kst";
 import {
   applyTimeToDate,
   calculateEndTime,
@@ -40,12 +41,12 @@ export async function action({ request, params }: Route.ActionArgs) {
     scheduleId: parseInt(scheduleId),
   });
 
-  // Check if schedule is in the past (compare date only, not time)
-  const scheduleDate = new Date(currentSchedule.start_time);
-  const today = new Date();
-  scheduleDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  if (scheduleDate < today) {
+  // Check if schedule is in the past (compare date only in KST)
+  const scheduleKST = toKST(new Date(currentSchedule.start_time));
+  const todayKST = nowKST();
+  const scheduleValue = scheduleKST.year * 10000 + scheduleKST.month * 100 + scheduleKST.day;
+  const todayValue = todayKST.year * 10000 + todayKST.month * 100 + todayKST.day;
+  if (scheduleValue < todayValue) {
     throw new Error("과거 날짜의 일정은 수정할 수 없습니다.");
   }
 

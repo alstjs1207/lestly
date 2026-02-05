@@ -8,6 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
 import { getMaxConcurrentStudents } from "~/features/app-settings/queries";
+import { fromKST, nowKST, toKST, toKSTDateString } from "~/features/schedules/utils/kst";
 
 type Schedule = Database["public"]["Tables"]["schedules"]["Row"];
 type ScheduleInsert = Database["public"]["Tables"]["schedules"]["Insert"];
@@ -20,8 +21,8 @@ export async function getMonthlySchedules(
   client: SupabaseClient<Database>,
   { organizationId, year, month }: { organizationId: string; year: number; month: number },
 ) {
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
+  const startDate = fromKST(year, month - 1, 1);
+  const endDate = fromKST(year, month, 0, 23, 59, 59);
 
   const { data, error } = await client
     .from("schedules")
@@ -58,11 +59,9 @@ export async function getDailySchedules(
   client: SupabaseClient<Database>,
   { organizationId, date }: { organizationId: string; date: Date },
 ) {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+  const kst = toKST(date);
+  const startOfDay = fromKST(kst.year, kst.month, kst.day, 0, 0, 0);
+  const endOfDay = fromKST(kst.year, kst.month, kst.day, 23, 59, 59);
 
   const { data, error } = await client
     .from("schedules")
@@ -107,8 +106,8 @@ export async function getStudentSchedules(
   let queryEndDate: Date;
 
   if ("year" in params && "month" in params) {
-    queryStartDate = new Date(params.year, params.month - 1, 1);
-    queryEndDate = new Date(params.year, params.month, 0, 23, 59, 59);
+    queryStartDate = fromKST(params.year, params.month - 1, 1);
+    queryEndDate = fromKST(params.year, params.month, 0, 23, 59, 59);
   } else {
     queryStartDate = params.startDate;
     queryEndDate = params.endDate;
@@ -314,14 +313,10 @@ export async function getStudentWeeklySchedules(
   client: SupabaseClient<Database>,
   { studentId }: { studentId: string },
 ) {
-  const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
+  const now = nowKST();
+  const dayOfWeek = new Date(Date.UTC(now.year, now.month, now.day)).getUTCDay();
+  const startOfWeek = fromKST(now.year, now.month, now.day - dayOfWeek);
+  const endOfWeek = fromKST(now.year, now.month, now.day - dayOfWeek + 6, 23, 59, 59);
 
   const { data, error } = await client
     .from("schedules")
@@ -381,17 +376,14 @@ export async function getStudentNextWeekSchedules(
   client: SupabaseClient<Database>,
   { studentId }: { studentId: string },
 ) {
-  const today = new Date();
+  const now = nowKST();
+  const dayOfWeek = new Date(Date.UTC(now.year, now.month, now.day)).getUTCDay();
 
-  // Start of next week (next Sunday)
-  const startOfNextWeek = new Date(today);
-  startOfNextWeek.setDate(today.getDate() - today.getDay() + 7);
-  startOfNextWeek.setHours(0, 0, 0, 0);
+  // Start of next week (next Sunday) in KST
+  const startOfNextWeek = fromKST(now.year, now.month, now.day - dayOfWeek + 7);
 
-  // End of next week (next Saturday)
-  const endOfNextWeek = new Date(startOfNextWeek);
-  endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
-  endOfNextWeek.setHours(23, 59, 59, 999);
+  // End of next week (next Saturday) in KST
+  const endOfNextWeek = fromKST(now.year, now.month, now.day - dayOfWeek + 13, 23, 59, 59);
 
   const { data, error } = await client
     .from("schedules")
@@ -424,8 +416,8 @@ export async function getStudentYearlyStats(
   client: SupabaseClient<Database>,
   { studentId, year }: { studentId: string; year: number },
 ): Promise<{ month: number; hours: number }[]> {
-  const startDate = new Date(year, 0, 1);
-  const endDate = new Date(year, 11, 31, 23, 59, 59);
+  const startDate = fromKST(year, 0, 1);
+  const endDate = fromKST(year, 11, 31, 23, 59, 59);
 
   const { data, error } = await client
     .from("schedules")
@@ -450,7 +442,7 @@ export async function getStudentYearlyStats(
     const start = new Date(schedule.start_time);
     const end = new Date(schedule.end_time);
     const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    const month = start.getMonth() + 1;
+    const month = toKST(start).month + 1;
     monthlyHours[month] += hours;
   }
 
@@ -473,10 +465,10 @@ export async function getStudentMonthlyStats(
   thisMonthCount: number;
   lastMonthCount: number;
 }> {
-  const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+  const now = nowKST();
+  const thisMonthStart = fromKST(now.year, now.month, 1);
+  const lastMonthStart = fromKST(now.year, now.month - 1, 1);
+  const lastMonthEnd = fromKST(now.year, now.month, 0, 23, 59, 59);
 
   // This month schedules (only past ones)
   const { data: thisMonthData, error: thisMonthError } = await client
@@ -484,7 +476,7 @@ export async function getStudentMonthlyStats(
     .select("start_time, end_time")
     .eq("student_id", studentId)
     .gte("start_time", thisMonthStart.toISOString())
-    .lte("start_time", now.toISOString());
+    .lte("start_time", new Date().toISOString());
 
   if (thisMonthError) throw thisMonthError;
 
@@ -531,23 +523,21 @@ export async function getStudentStreak(
   if (error) throw error;
   if (!data || data.length === 0) return 0;
 
-  // Get unique dates
-  const dates = [...new Set(
-    data.map(s => new Date(s.start_time).toDateString())
-  )].map(d => new Date(d));
+  // Get unique KST date strings
+  const dateStrings = [...new Set(
+    data.map(s => toKSTDateString(new Date(s.start_time)))
+  )];
 
-  dates.sort((a, b) => b.getTime() - a.getTime());
+  dateStrings.sort((a, b) => b.localeCompare(a)); // descending
 
   let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = nowKST();
 
-  for (let i = 0; i < dates.length; i++) {
-    const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - i);
-    expectedDate.setHours(0, 0, 0, 0);
+  for (let i = 0; i < dateStrings.length; i++) {
+    const expectedDate = fromKST(now.year, now.month, now.day - i);
+    const expectedStr = toKSTDateString(expectedDate);
 
-    if (dates[i].toDateString() === expectedDate.toDateString()) {
+    if (dateStrings[i] === expectedStr) {
       streak++;
     } else {
       break;

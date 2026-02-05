@@ -3,6 +3,7 @@
  *
  * Business logic for student schedule registration and cancellation rules.
  */
+import { fromKST, nowKST, toKST } from "./kst";
 
 /**
  * Check if a student can register a schedule for a given date
@@ -12,25 +13,20 @@
  * - After the 25th, can also register for the next month
  */
 export function canStudentRegisterSchedule(date: Date): boolean {
-  const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const currentDay = today.getDate();
-
-  const targetMonth = date.getMonth();
-  const targetYear = date.getFullYear();
+  const now = nowKST();
+  const target = toKST(date);
 
   // Same month and year - allowed
-  if (targetYear === currentYear && targetMonth === currentMonth) {
+  if (target.year === now.year && target.month === now.month) {
     return true;
   }
 
   // After 25th, can register for next month
-  if (currentDay >= 25) {
-    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+  if (now.day >= 25) {
+    const nextMonth = now.month === 11 ? 0 : now.month + 1;
+    const nextYear = now.month === 11 ? now.year + 1 : now.year;
 
-    if (targetYear === nextYear && targetMonth === nextMonth) {
+    if (target.year === nextYear && target.month === nextMonth) {
       return true;
     }
   }
@@ -45,14 +41,15 @@ export function canStudentRegisterSchedule(date: Date): boolean {
  * - Cannot cancel on the same day (must be at least one day before)
  */
 export function canStudentCancelSchedule(scheduleDate: Date): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = nowKST();
+  const schedule = toKST(scheduleDate);
 
-  const scheduleDay = new Date(scheduleDate);
-  scheduleDay.setHours(0, 0, 0, 0);
+  // Compare KST dates (year * 10000 + month * 100 + day for simple comparison)
+  const todayValue = now.year * 10000 + now.month * 100 + now.day;
+  const scheduleValue = schedule.year * 10000 + schedule.month * 100 + schedule.day;
 
   // Can only cancel if the schedule is after today
-  return scheduleDay > today;
+  return scheduleValue > todayValue;
 }
 
 /**
@@ -61,24 +58,21 @@ export function canStudentCancelSchedule(scheduleDate: Date): boolean {
  * Returns the start and end dates that a student can register schedules for.
  */
 export function getStudentAllowedDateRange(): { startDate: Date; endDate: Date } {
-  const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const currentDay = today.getDate();
+  const now = nowKST();
 
-  // Start date is always the first of the current month
-  const startDate = new Date(currentYear, currentMonth, 1);
+  // Start date is always the first of the current month (KST)
+  const startDate = fromKST(now.year, now.month, 1);
 
   // End date depends on whether we're past the 25th
   let endDate: Date;
-  if (currentDay >= 25) {
-    // Can register until the end of next month
-    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-    endDate = new Date(nextYear, nextMonth + 1, 0, 23, 59, 59);
+  if (now.day >= 25) {
+    // Can register until the end of next month (KST)
+    const nextMonth = now.month === 11 ? 0 : now.month + 1;
+    const nextYear = now.month === 11 ? now.year + 1 : now.year;
+    endDate = fromKST(nextYear, nextMonth + 1, 0, 23, 59, 59);
   } else {
-    // Can only register until the end of current month
-    endDate = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
+    // Can only register until the end of current month (KST)
+    endDate = fromKST(now.year, now.month + 1, 0, 23, 59, 59);
   }
 
   return { startDate, endDate };
@@ -127,26 +121,23 @@ export const DURATION_OPTIONS = [
  * Calculate end time based on start time and duration
  */
 export function calculateEndTime(startTime: Date, durationHours: number): Date {
-  const endTime = new Date(startTime);
-  endTime.setHours(endTime.getHours() + durationHours);
-  return endTime;
+  return new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
 }
 
 /**
- * Parse date string (YYYY-MM-DD) as local timezone
- * Avoids UTC interpretation issue with new Date("YYYY-MM-DD")
+ * Parse date string (YYYY-MM-DD) as KST midnight.
+ * Returns a UTC Date representing 00:00 KST on the given date.
  */
 export function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day);
+  return fromKST(year, month - 1, day);
 }
 
 /**
- * Parse time string (HH:MM) and apply to a date
+ * Parse time string (HH:MM) and apply to a date as KST time.
  */
 export function applyTimeToDate(date: Date, timeString: string): Date {
   const [hours, minutes] = timeString.split(":").map(Number);
-  const result = new Date(date);
-  result.setHours(hours, minutes, 0, 0);
-  return result;
+  const kst = toKST(date);
+  return fromKST(kst.year, kst.month, kst.day, hours, minutes);
 }

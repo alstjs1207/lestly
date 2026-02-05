@@ -8,6 +8,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "database.types";
 
+import { fromKST, nowKST } from "~/features/schedules/utils/kst";
+
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 type UserState = "NORMAL" | "GRADUATE" | "DELETED";
@@ -380,11 +382,10 @@ export async function getDashboardStats(
       memberStats?.filter((s) => s.state === "DELETED").length ?? 0,
   };
 
-  // Get today's schedule count for this organization
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Get today's schedule count for this organization (KST)
+  const now = nowKST();
+  const today = fromKST(now.year, now.month, now.day);
+  const tomorrow = fromKST(now.year, now.month, now.day + 1);
 
   const { count: todayScheduleCount, error: scheduleError } = await client
     .from("schedules")

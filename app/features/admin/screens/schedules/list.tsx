@@ -15,6 +15,7 @@ import {
 } from "~/core/components/ui/table";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getMonthlySchedules } from "~/features/schedules/queries";
+import { nowKST, toKSTDateString } from "~/features/schedules/utils/kst";
 
 import { requireAdminRole } from "../../guards.server";
 
@@ -23,16 +24,16 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { organizationId } = await requireAdminRole(client);
 
   const url = new URL(request.url);
-  const now = new Date();
-  const year = parseInt(url.searchParams.get("year") || String(now.getFullYear()));
-  const month = parseInt(url.searchParams.get("month") || String(now.getMonth() + 1));
+  const now = nowKST();
+  const year = parseInt(url.searchParams.get("year") || String(now.year));
+  const month = parseInt(url.searchParams.get("month") || String(now.month + 1));
 
   const schedules = await getMonthlySchedules(client, { organizationId, year, month });
 
-  // Group schedules by date
+  // Group schedules by KST date
   const schedulesByDate = schedules.reduce(
     (acc, schedule) => {
-      const date = new Date(schedule.start_time).toISOString().split("T")[0];
+      const date = toKSTDateString(new Date(schedule.start_time));
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -43,6 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   );
 
   // Get all days in the month
+  const todayStr = `${now.year}-${String(now.month + 1).padStart(2, "0")}-${String(now.day).padStart(2, "0")}`;
   const daysInMonth = new Date(year, month, 0).getDate();
   const allDays = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
@@ -51,8 +53,8 @@ export async function loader({ request }: Route.LoaderArgs) {
       date: dateStr,
       day,
       schedules: schedulesByDate[dateStr] || [],
-      isToday: dateStr === new Date().toISOString().split("T")[0],
-      isPast: new Date(dateStr) < new Date(new Date().toISOString().split("T")[0]),
+      isToday: dateStr === todayStr,
+      isPast: dateStr < todayStr,
     };
   });
 

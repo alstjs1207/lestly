@@ -9,6 +9,7 @@ import {
   createSchedule,
   createSchedules,
 } from "~/features/schedules/queries";
+import { fromKST } from "~/features/schedules/utils/kst";
 import {
   applyTimeToDate,
   calculateEndTime,
@@ -65,7 +66,8 @@ export async function action({ request }: Route.ActionArgs) {
       throw new Error("수강생의 수업 종료일이 설정되어 있지 않습니다.");
     }
 
-    const endDate = new Date(student.class_end_date);
+    const [ey, em, ed] = student.class_end_date.split("-").map(Number);
+    const endDate = fromKST(ey, em - 1, ed, 23, 59, 59);
     const weeklyDates = generateWeeklyDates(startTime, endDate);
 
     // Create main schedule
