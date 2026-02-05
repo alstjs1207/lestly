@@ -1,11 +1,11 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { format, addMonths, subMonths, addDays } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
 import { ko } from "date-fns/locale";
 import { ChevronLeftIcon, ChevronRightIcon, ListIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
-import { MobileWeekStrip } from "./mobile-week-strip";
+import { MobileMonthGrid } from "./mobile-month-grid";
 import { MobileDayEvents } from "./mobile-day-events";
 
 interface CalendarEvent {
@@ -43,51 +43,55 @@ export function MobileCalendar({
   onDateSelect,
   onEventClick,
   onAddClick,
-  allowedStartDate,
-  allowedEndDate,
 }: MobileCalendarProps) {
-  // displayedMonth tracks the month shown in the header, driven by the week strip's mid-point (Wednesday)
-  const [displayedMonth, setDisplayedMonth] = useState(() => {
-    return new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-  });
+  const [displayedMonth, setDisplayedMonth] = useState(
+    () => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+  );
 
-  const handleWeekChange = useCallback((weekStart: Date) => {
-    // Use Wednesday (mid-point) to determine the displayed month
-    const midWeek = addDays(weekStart, 3);
-    setDisplayedMonth(new Date(midWeek.getFullYear(), midWeek.getMonth(), 1));
-  }, []);
-
-  const handlePrevMonth = () => {
-    const prev = subMonths(displayedMonth, 1);
-    // Navigate to 1st of previous month
-    const target = new Date(prev.getFullYear(), prev.getMonth(), 1);
-    onDateSelect(target);
-    setDisplayedMonth(prev);
+  const navigateMonth = (direction: -1 | 1) => {
+    const next =
+      direction === -1
+        ? subMonths(displayedMonth, 1)
+        : addMonths(displayedMonth, 1);
+    setDisplayedMonth(next);
   };
 
-  const handleNextMonth = () => {
-    const next = addMonths(displayedMonth, 1);
-    // Navigate to 1st of next month
-    const target = new Date(next.getFullYear(), next.getMonth(), 1);
-    onDateSelect(target);
-    setDisplayedMonth(next);
+  const handleDateSelect = (date: Date) => {
+    onDateSelect(date);
+    // If tapped date is in a different month, switch displayed month
+    if (
+      date.getMonth() !== displayedMonth.getMonth() ||
+      date.getFullYear() !== displayedMonth.getFullYear()
+    ) {
+      setDisplayedMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+    }
   };
 
   const today = new Date();
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 bg-background border-b">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background border-b pb-2">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevMonth}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => navigateMonth(-1)}
+            >
               <ChevronLeftIcon className="h-4 w-4" />
             </Button>
             <h2 className="text-base font-semibold min-w-[120px] text-center">
               {format(displayedMonth, "yyyy년 M월", { locale: ko })}
             </h2>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNextMonth}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => navigateMonth(1)}
+            >
               <ChevronRightIcon className="h-4 w-4" />
             </Button>
           </div>
@@ -98,17 +102,13 @@ export function MobileCalendar({
           </Button>
         </div>
 
-        {/* Today banner */}
-        <div className="px-4 pb-2 text-sm text-muted-foreground">
-          오늘 · {format(today, "EEE d", { locale: ko })}
-        </div>
-
-        {/* Week strip */}
-        <MobileWeekStrip
+        {/* Month grid */}
+        <MobileMonthGrid
           events={events}
           selectedDate={selectedDate}
-          onDateSelect={onDateSelect}
-          onWeekChange={handleWeekChange}
+          displayedMonth={displayedMonth}
+          onDateSelect={handleDateSelect}
+          onMonthChange={navigateMonth}
         />
       </div>
 

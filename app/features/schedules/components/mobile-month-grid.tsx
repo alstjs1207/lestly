@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  startOfMonth,
+  endOfMonth,
   startOfWeek,
-  addWeeks,
+  endOfWeek,
   addDays,
   isSameDay,
+  isSameMonth,
   isToday,
   format,
 } from "date-fns";
@@ -15,41 +18,43 @@ interface CalendarEvent {
   end: string | Date;
 }
 
-interface MobileWeekStripProps {
+interface MobileMonthGridProps {
   events: CalendarEvent[];
   selectedDate: Date;
+  displayedMonth: Date;
   onDateSelect: (date: Date) => void;
-  onWeekChange?: (weekStart: Date) => void;
+  onMonthChange: (direction: -1 | 1) => void;
 }
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 const SWIPE_THRESHOLD = 50;
 
-function getWeekStart(date: Date): Date {
-  return startOfWeek(date, { weekStartsOn: 0 });
+function getMonthDays(month: Date): Date[] {
+  const start = startOfWeek(startOfMonth(month), { weekStartsOn: 0 });
+  const end = endOfWeek(endOfMonth(month), { weekStartsOn: 0 });
+  const days: Date[] = [];
+  let current = start;
+  while (current <= end) {
+    days.push(current);
+    current = addDays(current, 1);
+  }
+  return days;
 }
 
-function getWeekDays(weekStart: Date): Date[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-}
-
-export function MobileWeekStrip({
+export function MobileMonthGrid({
   events,
   selectedDate,
+  displayedMonth,
   onDateSelect,
-  onWeekChange,
-}: MobileWeekStripProps) {
-  const [weekStart, setWeekStart] = useState(() =>
-    getWeekStart(selectedDate),
-  );
+  onMonthChange,
+}: MobileMonthGridProps) {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchLockedRef = useRef<"horizontal" | "vertical" | null>(null);
 
-  const currentWeek = useMemo(() => getWeekDays(weekStart), [weekStart]);
+  const days = useMemo(() => getMonthDays(displayedMonth), [displayedMonth]);
 
-  // Count events per date for dots
   const eventCountByDate = useMemo(() => {
     const map = new Map<string, number>();
     for (const event of events) {
@@ -68,15 +73,6 @@ export function MobileWeekStrip({
     [eventCountByDate],
   );
 
-  const changeWeek = useCallback(
-    (direction: -1 | 1) => {
-      const newStart = addWeeks(weekStart, direction);
-      setWeekStart(newStart);
-      onWeekChange?.(newStart);
-    },
-    [weekStart, onWeekChange],
-  );
-
   // Touch swipe handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isAnimating) return;
@@ -93,7 +89,6 @@ export function MobileWeekStrip({
     const dx = e.touches[0].clientX - touchStartRef.current.x;
     const dy = e.touches[0].clientY - touchStartRef.current.y;
 
-    // Lock direction on first significant movement
     if (!touchLockedRef.current) {
       if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
         touchLockedRef.current =
@@ -104,7 +99,6 @@ export function MobileWeekStrip({
 
     if (touchLockedRef.current === "vertical") return;
 
-    // Prevent vertical scrolling while swiping horizontally
     e.preventDefault();
     setSwipeOffset(dx);
   };
@@ -114,13 +108,10 @@ export function MobileWeekStrip({
 
     if (touchLockedRef.current === "horizontal") {
       if (swipeOffset > SWIPE_THRESHOLD) {
-        // Swiped right -> previous week
-        animateAndChangeWeek(-1);
+        animateAndChange(-1); // swipe right → prev month
       } else if (swipeOffset < -SWIPE_THRESHOLD) {
-        // Swiped left -> next week
-        animateAndChangeWeek(1);
+        animateAndChange(1); // swipe left → next month
       } else {
-        // Snap back
         setSwipeOffset(0);
       }
     } else {
@@ -131,63 +122,52 @@ export function MobileWeekStrip({
     touchLockedRef.current = null;
   };
 
-  const animateAndChangeWeek = (direction: -1 | 1) => {
+  const animateAndChange = (direction: -1 | 1) => {
     setIsAnimating(true);
-    // Animate off-screen in the swipe direction
     setSwipeOffset(direction === 1 ? -window.innerWidth : window.innerWidth);
 
     setTimeout(() => {
-      // Change week data, reset position instantly
-      changeWeek(direction);
+      onMonthChange(direction);
       setSwipeOffset(0);
       setIsAnimating(false);
     }, 200);
   };
 
-  // When selectedDate changes externally, update weekStart if needed
-  useEffect(() => {
-    const newWeekStart = getWeekStart(selectedDate);
-    if (!isSameDay(newWeekStart, weekStart)) {
-      setWeekStart(newWeekStart);
-      onWeekChange?.(newWeekStart);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
-
   return (
-    <div>
-      {/* Day labels header */}
-      <div className="grid grid-cols-7 text-center text-xs text-muted-foreground mb-1 px-2">
-        {DAY_LABELS.map((label, i) => (
-          <div
-            key={label}
-            className={cn(
-              i === 0 && "text-red-500",
-              i === 6 && "text-blue-500",
-            )}
-          >
-            {label}
-          </div>
-        ))}
-      </div>
-
-      {/* Week dates with touch swipe */}
+    <div
+      className="overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div
-        className="overflow-hidden touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isAnimating ? "transform 200ms ease-out" : "none",
+        }}
       >
-        <div
-          className="grid grid-cols-7 px-2"
-          style={{
-            transform: `translateX(${swipeOffset}px)`,
-            transition: isAnimating ? "transform 200ms ease-out" : "none",
-          }}
-        >
-          {currentWeek.map((date) => {
+        {/* Day labels */}
+        <div className="grid grid-cols-7 text-center text-xs text-muted-foreground mb-1 px-2">
+          {DAY_LABELS.map((label, i) => (
+            <div
+              key={label}
+              className={cn(
+                "py-1",
+                i === 0 && "text-red-500",
+                i === 6 && "text-blue-500",
+              )}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* Date grid */}
+        <div className="grid grid-cols-7 px-2">
+          {days.map((date) => {
             const today = isToday(date);
             const selected = isSameDay(date, selectedDate);
+            const inMonth = isSameMonth(date, displayedMonth);
             const count = getEventCount(date);
             const isSun = date.getDay() === 0;
             const isSat = date.getDay() === 6;
@@ -196,28 +176,29 @@ export function MobileWeekStrip({
               <button
                 key={date.toISOString()}
                 type="button"
-                className="flex flex-col items-center py-2 gap-1"
+                className="flex flex-col items-center py-1.5 gap-0.5"
                 onClick={() => onDateSelect(date)}
               >
                 <div
                   className={cn(
-                    "w-9 h-9 flex items-center justify-center rounded-full text-sm font-medium transition-colors",
-                    selected && "bg-primary text-primary-foreground",
-                    !selected && today && "ring-2 ring-primary",
-                    !selected && !today && isSun && "text-red-500",
-                    !selected && !today && isSat && "text-blue-500",
+                    "w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors",
+                    !inMonth && "text-muted-foreground/40",
+                    inMonth && selected && "bg-primary text-primary-foreground font-semibold",
+                    inMonth && !selected && today && "ring-2 ring-primary font-semibold",
+                    inMonth && !selected && !today && isSun && "text-red-500",
+                    inMonth && !selected && !today && isSat && "text-blue-500",
                   )}
                 >
                   {format(date, "d")}
                 </div>
-                {/* Event dots */}
-                <div className="flex gap-0.5 h-1.5">
-                  {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-primary"
-                    />
-                  ))}
+                <div className="flex gap-0.5 h-1">
+                  {inMonth &&
+                    Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1 h-1 rounded-full bg-primary"
+                      />
+                    ))}
                 </div>
               </button>
             );
