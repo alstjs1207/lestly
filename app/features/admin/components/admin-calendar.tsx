@@ -179,32 +179,102 @@ export default function AdminCalendar({
         }}
       />
       <style>{`
+        /* FC Variables — Light */
         .admin-calendar .fc {
-          --fc-border-color: hsl(var(--border));
-          --fc-button-bg-color: hsl(var(--primary));
-          --fc-button-border-color: hsl(var(--primary));
-          --fc-button-hover-bg-color: hsl(var(--primary) / 0.9);
-          --fc-button-hover-border-color: hsl(var(--primary) / 0.9);
-          --fc-button-active-bg-color: hsl(var(--primary) / 0.8);
-          --fc-button-active-border-color: hsl(var(--primary) / 0.8);
-          --fc-today-bg-color: hsl(var(--accent));
+          --fc-border-color: oklch(0.922 0 0);
+          --fc-button-bg-color: var(--primary);
+          --fc-button-border-color: var(--primary);
+          --fc-button-hover-bg-color: oklch(0.205 0 0 / 0.9);
+          --fc-button-hover-border-color: oklch(0.205 0 0 / 0.9);
+          --fc-button-active-bg-color: oklch(0.205 0 0 / 0.8);
+          --fc-button-active-border-color: oklch(0.205 0 0 / 0.8);
+          --fc-today-bg-color: oklch(0.97 0 0);
         }
+        /* FC Variables — Dark */
+        .dark .admin-calendar .fc {
+          --fc-border-color: oklch(1 0 0 / 10%);
+          --fc-button-bg-color: oklch(0.35 0 0);
+          --fc-button-border-color: oklch(0.4 0 0);
+          --fc-button-hover-bg-color: oklch(0.4 0 0);
+          --fc-button-hover-border-color: oklch(0.45 0 0);
+          --fc-button-active-bg-color: oklch(0.45 0 0);
+          --fc-button-active-border-color: oklch(0.5 0 0);
+          --fc-today-bg-color: oklch(0.269 0 0);
+          --fc-button-text-color: oklch(0.985 0 0);
+        }
+        /* Toolbar */
         .admin-calendar .fc-toolbar-title {
           font-size: 1.25rem;
-          font-weight: 600;
+          font-weight: 700;
+          letter-spacing: -0.025em;
         }
         .admin-calendar .fc-button {
           font-size: 0.875rem;
           padding: 0.375rem 0.75rem;
+          border-radius: 0.5rem !important;
         }
+        /* Column header */
+        .admin-calendar .fc-col-header-cell-cushion {
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          color: oklch(0.556 0 0) !important;
+        }
+        .dark .admin-calendar .fc-col-header-cell-cushion {
+          color: oklch(0.708 0 0) !important;
+        }
+        .admin-calendar .fc-col-header-cell {
+          background-color: oklch(0.97 0 0) !important;
+        }
+        .admin-calendar .fc-col-header {
+          background-color: oklch(0.97 0 0) !important;
+        }
+        .admin-calendar .fc-scrollgrid-section-header th {
+          background-color: oklch(0.97 0 0) !important;
+        }
+        .dark .admin-calendar .fc-col-header-cell,
+        .dark .admin-calendar .fc-col-header,
+        .dark .admin-calendar .fc-scrollgrid-section-header th {
+          background-color: oklch(0.269 0 0) !important;
+        }
+        /* Date numbers — pill shape */
+        .admin-calendar .fc-daygrid-day-number {
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          min-height: 28px;
+          padding: 2px 8px;
+          border-radius: 9999px;
+          font-size: 0.875rem;
+          white-space: nowrap;
+          color: var(--foreground) !important;
+          text-decoration: none !important;
+        }
+        .admin-calendar .fc-day-today .fc-daygrid-day-number {
+          background-color: oklch(0.205 0 0) !important;
+          color: oklch(0.985 0 0) !important;
+          font-weight: 600;
+        }
+        .dark .admin-calendar .fc-day-today .fc-daygrid-day-number {
+          background-color: oklch(0.488 0.243 264.376) !important;
+          color: oklch(0.985 0 0) !important;
+        }
+        /* Cells */
         .admin-calendar .fc-daygrid-day {
-          border: 1px solid rgba(128, 128, 128, 0.4) !important;
+          border: 1px solid oklch(0.922 0 0) !important;
           min-height: 100px;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: box-shadow 0.2s;
+        }
+        .dark .admin-calendar .fc-daygrid-day {
+          border-color: oklch(1 0 0 / 10%) !important;
         }
         .admin-calendar .fc-daygrid-day:hover {
-          background-color: rgba(128, 128, 128, 0.2);
+          box-shadow: inset 0 0 0 2px oklch(0.922 0 0);
+        }
+        .dark .admin-calendar .fc-daygrid-day:hover {
+          box-shadow: inset 0 0 0 2px oklch(1 0 0 / 15%);
         }
         .admin-calendar .fc-daygrid-day-frame {
           padding: 8px;
@@ -213,36 +283,82 @@ export default function AdminCalendar({
         .admin-calendar .fc-daygrid-day-top {
           padding: 4px;
         }
+        /* Events — layout/interaction only, colors kept from studentColor */
+        .admin-calendar .fc-daygrid-event,
+        .admin-calendar .fc-timegrid-event {
+          border-radius: 0.375rem !important;
+          box-shadow: 0 1px 2px oklch(0 0 0 / 0.05);
+          transition: transform 0.15s, box-shadow 0.15s;
+          cursor: pointer;
+        }
+        .admin-calendar .fc-daygrid-event:hover,
+        .admin-calendar .fc-timegrid-event:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 6px oklch(0 0 0 / 0.08);
+        }
+        /* TimeGrid */
+        .admin-calendar .fc-timegrid-slot {
+          height: 48px !important;
+          border-bottom: 1px solid oklch(0.922 0 0 / 0.5) !important;
+        }
+        .dark .admin-calendar .fc-timegrid-slot {
+          border-bottom-color: oklch(1 0 0 / 6%) !important;
+        }
+        .admin-calendar .fc-timegrid-slot-minor {
+          border-bottom-style: dotted !important;
+        }
+        .admin-calendar .fc-timegrid-slot-label-cushion {
+          font-size: 0.75rem;
+          color: oklch(0.556 0 0) !important;
+          padding-right: 12px !important;
+        }
+        .dark .admin-calendar .fc-timegrid-slot-label-cushion {
+          color: oklch(0.708 0 0) !important;
+        }
+        .admin-calendar .fc-timegrid-col {
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        .admin-calendar .fc-timegrid-col:hover {
+          background-color: oklch(0.97 0 0 / 0.5);
+        }
+        .dark .admin-calendar .fc-timegrid-col:hover {
+          background-color: oklch(1 0 0 / 3%);
+        }
+        .admin-calendar .fc-timegrid-event .fc-event-main {
+          padding: 6px 8px !important;
+        }
+        .admin-calendar .fc-timegrid-now-indicator-line {
+          border-color: oklch(0.577 0.245 27.325) !important;
+          border-width: 2px !important;
+        }
+        .admin-calendar .fc-timegrid-now-indicator-arrow {
+          border-color: oklch(0.577 0.245 27.325) !important;
+        }
+        .admin-calendar .fc-timegrid-axis {
+          width: 60px !important;
+        }
+        /* Outer table */
         .admin-calendar .fc-scrollgrid {
-          border: 1px solid rgba(128, 128, 128, 0.4) !important;
+          border: none !important;
+          border-radius: 0.75rem;
+          overflow: hidden;
         }
         .admin-calendar .fc-scrollgrid td,
         .admin-calendar .fc-scrollgrid th {
-          border: 1px solid rgba(128, 128, 128, 0.4) !important;
+          border: 1px solid oklch(0.922 0 0) !important;
         }
-        .admin-calendar .fc-col-header-cell-cushion,
-        .admin-calendar .fc-daygrid-day-number {
-          color: hsl(var(--foreground)) !important;
+        .dark .admin-calendar .fc-scrollgrid td,
+        .dark .admin-calendar .fc-scrollgrid th {
+          border-color: oklch(1 0 0 / 10%) !important;
         }
-        .admin-calendar .fc-col-header-cell {
-          background-color: hsl(var(--muted)) !important;
-        }
-        .admin-calendar .fc-col-header {
-          background-color: hsl(var(--muted)) !important;
-        }
-        .admin-calendar .fc-scrollgrid-section-header th {
-          background-color: hsl(var(--muted)) !important;
-        }
-        .admin-calendar .fc-daygrid-event {
-          cursor: pointer;
-        }
-        .admin-calendar .fc-timegrid-event {
-          cursor: pointer;
-        }
-        /* More link styles */
+        /* More link */
         .admin-calendar .fc-more-link {
-          color: hsl(var(--primary));
+          color: var(--primary);
           font-weight: 500;
+        }
+        .admin-calendar .fc-more-link:hover {
+          opacity: 0.8;
         }
         /* Mobile responsive styles */
         @media (max-width: 767px) {

@@ -75,24 +75,24 @@ export function MobileCalendar({
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)]" onClick={() => setShowInfo(false)}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b pb-2">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b pb-2">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full"
               onClick={() => navigateMonth(-1)}
             >
               <ChevronLeftIcon className="h-4 w-4" />
             </Button>
-            <h2 className="text-base font-semibold min-w-[120px] text-center">
+            <h2 className="text-base font-bold tracking-tight min-w-[120px] text-center">
               {format(displayedMonth, "yyyy년 M월", { locale: ko })}
             </h2>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full"
               onClick={() => navigateMonth(1)}
             >
               <ChevronRightIcon className="h-4 w-4" />
@@ -117,7 +117,7 @@ export function MobileCalendar({
 
       {/* Selected date header */}
       <div className="px-4 pt-4 pb-2">
-        <h3 className="text-sm font-medium text-muted-foreground">
+        <h3 className="text-sm font-semibold text-foreground">
           {format(selectedDate, "M월 d일 EEEE", { locale: ko })}
         </h3>
       </div>
@@ -134,7 +134,7 @@ export function MobileCalendar({
       {/* Info button */}
       {showInfo && (
         <div
-          className="fixed bottom-22 left-6 z-30 w-64 rounded-lg border bg-card p-4 shadow-lg"
+          className="fixed bottom-22 left-6 z-30 w-64 rounded-xl border bg-card p-4 shadow-lg shadow-black/5 animate-in fade-in slide-in-from-bottom-2"
           onClick={(e) => e.stopPropagation()}
         >
           <p className="text-sm font-medium">등록 가능 기간</p>
@@ -149,7 +149,7 @@ export function MobileCalendar({
       )}
       <button
         type="button"
-        className="fixed bottom-6 left-6 z-20 w-10 h-10 rounded-full bg-muted text-muted-foreground shadow-md flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed bottom-6 left-6 z-20 w-10 h-10 rounded-full bg-card border shadow-sm text-muted-foreground flex items-center justify-center active:scale-95 transition-transform"
         onClick={(e) => {
           e.stopPropagation();
           setShowInfo((v) => !v);
@@ -161,7 +161,7 @@ export function MobileCalendar({
       {/* FAB */}
       <button
         type="button"
-        className="fixed bottom-6 right-6 z-20 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed bottom-6 right-6 z-20 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 flex items-center justify-center active:scale-95 hover:shadow-xl transition-all"
         onClick={() => onAddClick(selectedDate)}
       >
         <PlusIcon className="h-6 w-6" />

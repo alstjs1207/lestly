@@ -84,19 +84,19 @@ export default function ScheduleCalendarScreen({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">일정 관리</h1>
-          <p className="hidden md:block text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">일정 관리</h1>
+          <p className="hidden md:block text-sm text-muted-foreground">
             수강생들의 수업 일정을 관리합니다.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="sm" className="rounded-lg" asChild>
             <Link to={`/admin/schedules/list?${searchParams.toString()}`}>
               <ListIcon className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">목록 보기</span>
             </Link>
           </Button>
-          <Button asChild>
+          <Button size="sm" className="rounded-lg" asChild>
             <Link to="/admin/schedules/new">
               <PlusIcon className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">일정 등록</span>
@@ -105,7 +105,7 @@ export default function ScheduleCalendarScreen({
         </div>
       </div>
 
-      <div className="rounded-md border bg-card p-4">
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
         <AdminCalendar events={events} onDatesSet={handleDatesSet} />
       </div>
     </div>

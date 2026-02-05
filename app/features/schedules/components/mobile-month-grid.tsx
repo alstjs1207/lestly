@@ -154,14 +154,14 @@ export function MobileMonthGrid({
         }}
       >
         {/* Day labels */}
-        <div className="grid grid-cols-7 text-center text-xs text-muted-foreground mb-1 px-2">
+        <div className="grid grid-cols-7 text-center text-[0.6875rem] font-medium tracking-wider text-muted-foreground mb-1 px-2">
           {DAY_LABELS.map((label, i) => (
             <div
               key={label}
               className={cn(
                 "py-1",
-                i === 0 && "text-red-500",
-                i === 6 && "text-blue-500",
+                i === 0 && "text-red-400",
+                i === 6 && "text-blue-400",
               )}
             >
               {label}
@@ -192,12 +192,13 @@ export function MobileMonthGrid({
               >
                 <div
                   className={cn(
-                    "w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors",
+                    "w-9 h-9 flex items-center justify-center rounded-full text-sm transition-all duration-200",
                     disabled && !selected && "text-muted-foreground/40",
-                    inMonth && selected && "bg-primary text-primary-foreground font-semibold",
+                    inMonth && selected && "bg-primary text-primary-foreground font-semibold shadow-sm shadow-primary/25",
                     inMonth && !selected && today && "ring-2 ring-primary font-semibold",
-                    inMonth && !selected && !today && !disabled && isSun && "text-red-500",
-                    inMonth && !selected && !today && !disabled && isSat && "text-blue-500",
+                    inMonth && !selected && !today && !disabled && "hover:bg-muted active:bg-muted",
+                    inMonth && !selected && !today && !disabled && isSun && "text-red-400",
+                    inMonth && !selected && !today && !disabled && isSat && "text-blue-400",
                   )}
                 >
                   {format(date, "d")}
@@ -212,7 +213,7 @@ export function MobileMonthGrid({
                         return uniqueColors.map((color, i) => (
                           <div
                             key={i}
-                            className="w-1 h-1 rounded-full"
+                            className="w-1.5 h-1.5 rounded-full"
                             style={{ backgroundColor: color }}
                           />
                         ));
@@ -220,7 +221,7 @@ export function MobileMonthGrid({
                       return Array.from({ length: count }).map((_, i) => (
                         <div
                           key={i}
-                          className="w-1 h-1 rounded-full bg-primary"
+                          className="w-1.5 h-1.5 rounded-full bg-primary/80"
                         />
                       ));
                     })()}
