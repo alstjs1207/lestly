@@ -60,7 +60,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       thisMonthCount: 0,
       totalHours: 0,
       nextSchedule: null,
-      upcomingSchedules: [],
+      upcomingSchedules: [] as Awaited<ReturnType<typeof getStudentSchedules>>,
       yearlyStats: [],
       monthlyStats: {
         thisMonthHours: 0,
