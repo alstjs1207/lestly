@@ -1,4 +1,5 @@
 import {
+  BrainCircuitIcon,
   CalendarIcon,
   LayoutDashboardIcon,
   SettingsIcon,
@@ -39,6 +40,11 @@ const menuItems = [
     title: "대시보드",
     url: "/dashboard",
     icon: LayoutDashboardIcon,
+  },
+  {
+    title: "AI 코칭",
+    url: "/dashboard/coaching",
+    icon: BrainCircuitIcon,
   },
   {
     title: "나의 일정",

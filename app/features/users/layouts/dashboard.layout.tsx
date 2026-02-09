@@ -2,7 +2,6 @@ import type { Route } from "./+types/dashboard.layout";
 
 import { Outlet } from "react-router";
 
-import LangSwitcher from "~/core/components/lang-switcher";
 import ThemeSwitcher from "~/core/components/theme-switcher";
 import {
   SidebarInset,
@@ -56,7 +55,6 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
           </div>
           <div className="ml-auto flex items-center gap-2 px-4">
             <ThemeSwitcher />
-            <LangSwitcher />
           </div>
         </header>
         <Outlet />

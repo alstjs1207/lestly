@@ -570,6 +570,69 @@ export async function getStudentClassDates(
 }
 
 /**
+ * Get program-wise hours breakdown for a student
+ * Returns hours grouped by program for the given year
+ */
+export async function getStudentProgramHoursBreakdown(
+  client: SupabaseClient<Database>,
+  { studentId, year }: { studentId: string; year: number }
+): Promise<{ programId: number | null; programTitle: string; hours: number; color: string }[]> {
+  const startDate = fromKST(year, 0, 1);
+  const endDate = fromKST(year, 11, 31, 23, 59, 59);
+
+  const { data, error } = await client
+    .from("schedules")
+    .select(`
+      start_time,
+      end_time,
+      program_id,
+      program:programs(
+        program_id,
+        title
+      )
+    `)
+    .eq("student_id", studentId)
+    .gte("start_time", startDate.toISOString())
+    .lte("start_time", endDate.toISOString())
+    .lte("start_time", new Date().toISOString());
+
+  if (error) throw error;
+
+  const programColors = [
+    "#6366f1", // indigo
+    "#8b5cf6", // violet
+    "#ec4899", // pink
+    "#f97316", // orange
+    "#10b981", // emerald
+    "#06b6d4", // cyan
+  ];
+
+  const programHours: Record<string, { programId: number | null; programTitle: string; hours: number }> = {};
+
+  for (const schedule of data || []) {
+    const start = new Date(schedule.start_time);
+    const end = new Date(schedule.end_time);
+    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    const programId = schedule.program_id;
+    const programTitle = schedule.program?.title || "미지정";
+    const key = programId?.toString() || "null";
+
+    if (!programHours[key]) {
+      programHours[key] = { programId, programTitle, hours: 0 };
+    }
+    programHours[key].hours += hours;
+  }
+
+  return Object.values(programHours)
+    .map((item, index) => ({
+      ...item,
+      hours: Math.round(item.hours * 10) / 10,
+      color: programColors[index % programColors.length],
+    }))
+    .sort((a, b) => b.hours - a.hours);
+}
+
+/**
  * Check if a student has a time conflict across all programs
  * Returns true if there is a conflict
  */
