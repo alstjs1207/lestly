@@ -193,7 +193,9 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Login({ actionData }: Route.ComponentProps) {
   // Reference to the form element for accessing form data
   const formRef = useRef<HTMLFormElement>(null);
-  const rootData = useRouteLoaderData<{ env: { SHOW_ADMIN_SIGNUP: boolean } }>("root");
+  const rootData = useRouteLoaderData<{ env: { SHOW_ADMIN_SIGNUP: boolean } }>(
+    "root",
+  );
   const showAdminSignup = rootData?.env?.SHOW_ADMIN_SIGNUP ?? true;
 
   // Fetcher for submitting the email verification resend request
@@ -225,11 +227,12 @@ export default function Login({ actionData }: Route.ComponentProps) {
       <div className="bg-primary text-primary-foreground hidden flex-col items-center justify-center p-12 lg:flex lg:w-1/2">
         <div className="max-w-md space-y-8 text-center">
           {/* 로고 */}
-          <div className="flex items-center justify-center gap-3">
-            <div className="bg-primary-foreground text-primary flex aspect-square size-12 items-center justify-center rounded-lg">
-              <CalendarIcon className="size-6" />
-            </div>
-            <span className="text-4xl font-bold">Lestly</span>
+          <div className="flex items-center justify-center">
+            <img
+              src="/logo/08_primary_transparent.png"
+              alt="Lestly"
+              className="h-28 object-contain"
+            />
           </div>
 
           {/* 서비스 소개 */}
@@ -244,7 +247,9 @@ export default function Login({ actionData }: Route.ComponentProps) {
           {/* CTA */}
           {showAdminSignup && (
             <div className="space-y-4 pt-8">
-              <p className="text-xl font-semibold">지금 바로 Lestly 사용해보기</p>
+              <p className="text-xl font-semibold">
+                지금 바로 Lestly 사용해보기
+              </p>
               <Button
                 asChild
                 size="lg"
@@ -260,13 +265,14 @@ export default function Login({ actionData }: Route.ComponentProps) {
 
       {/* 오른쪽 패널 - 로그인 폼 */}
       <div className="flex w-full flex-col items-center justify-center p-6 lg:w-1/2">
-        <div className="w-full max-w-md space-y-6">
+        <div className="w-full max-w-md space-y-6 pt-20">
           {/* 모바일용 로고 */}
-          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
-            <div className="bg-primary text-primary-foreground flex aspect-square size-10 items-center justify-center rounded-lg">
-              <CalendarIcon className="size-5" />
-            </div>
-            <span className="text-2xl font-bold">Lestly</span>
+          <div className="mb-8 flex items-center justify-center lg:hidden">
+            <img
+              src="/logo/09_dark_transparent.png"
+              alt="Lestly"
+              className="h-28 object-contain"
+            />
           </div>
 
           <Card>

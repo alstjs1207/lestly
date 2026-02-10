@@ -1,4 +1,4 @@
-import type { Route } from "./+types/dashboard";
+import type { MetaFunction, LoaderFunctionArgs } from "react-router";
 
 import {
   CalendarDaysIcon,
@@ -45,11 +45,31 @@ import {
   getStudentYearlyStats,
 } from "~/features/schedules/queries";
 
-export const meta: Route.MetaFunction = () => {
+// Schedule 타입 정의
+type ScheduleItem = Awaited<ReturnType<typeof getStudentSchedules>>[number];
+
+// loader 반환 타입 정의
+type LoaderData = {
+  thisMonthCount: number;
+  totalHours: number;
+  nextSchedule: ScheduleItem | null;
+  upcomingSchedules: ScheduleItem[];
+  yearlyStats: { month: number; hours: number }[];
+  monthlyStats: {
+    thisMonthHours: number;
+    lastMonthHours: number;
+    thisMonthCount: number;
+    lastMonthCount: number;
+  };
+  classDates: { classStartDate: string | null; classEndDate: string | null };
+  daysRemaining: number | null;
+};
+
+export const meta: MetaFunction = () => {
   return [{ title: `대시보드 | ${import.meta.env.VITE_APP_NAME}` }];
 };
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: LoaderFunctionArgs): Promise<LoaderData> {
   const [client] = makeServerClient(request);
   const {
     data: { user },
@@ -131,7 +151,7 @@ const MONTH_NAMES = [
   "12월",
 ];
 
-export default function Dashboard({ loaderData }: Route.ComponentProps) {
+export default function Dashboard({ loaderData }: { loaderData: LoaderData }) {
   const {
     thisMonthCount,
     totalHours,
@@ -172,7 +192,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         : 0;
 
   // 차트 데이터 변환
-  const chartData = yearlyStats.map((stat) => ({
+  const chartData = yearlyStats.map((stat: { month: number; hours: number }) => ({
     name: MONTH_NAMES[stat.month - 1],
     hours: stat.hours,
   }));
@@ -390,8 +410,8 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           {upcomingSchedules.length > 0 ? (
             <div className="space-y-4">
               {Object.entries(
-                upcomingSchedules.reduce<Record<string, typeof upcomingSchedules>>(
-                  (groups, schedule) => {
+                upcomingSchedules.reduce<Record<string, ScheduleItem[]>>(
+                  (groups: Record<string, ScheduleItem[]>, schedule: ScheduleItem) => {
                     const key = schedule.program?.title || "미지정";
                     if (!groups[key]) groups[key] = [];
                     groups[key].push(schedule);
@@ -399,7 +419,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                   },
                   {},
                 ),
-              ).map(([programTitle, schedules]) => (
+              ).map(([programTitle, schedules]: [string, ScheduleItem[]]) => (
                 <div key={programTitle}>
                   <h4 className="mb-2 text-sm font-semibold">{programTitle}</h4>
                   <Table>
@@ -410,7 +430,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {schedules.map((schedule) => {
+                      {schedules.map((schedule: ScheduleItem) => {
                         const date = new Date(schedule.start_time);
                         const dayOfWeek = ["일", "월", "화", "수", "목", "금", "토"][
                           date.getDay()

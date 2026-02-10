@@ -1,6 +1,6 @@
 import type { Route } from "./+types/templates";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useFetcher } from "react-router";
 import { ChevronLeftIcon, SendIcon } from "lucide-react";
 
@@ -8,6 +8,7 @@ import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -112,8 +113,16 @@ export default function TemplatesScreen({
   const updateFetcher = useFetcher<{ success: boolean; templateId?: number }>();
   const testSendFetcher = useFetcher<{ success: boolean; error?: string }>();
   const [selectedTemplate, setSelectedTemplate] = useState<typeof templates[0] | null>(null);
+  const [openSettingsId, setOpenSettingsId] = useState<number | null>(null);
 
   const canTestSend = testSendCount < maxTestSendPerDay;
+
+  // 저장 성공 시 다이얼로그 닫기
+  useEffect(() => {
+    if (updateFetcher.data?.success && updateFetcher.state === "idle") {
+      setOpenSettingsId(null);
+    }
+  }, [updateFetcher.data?.success, updateFetcher.state]);
 
   return (
     <div className="space-y-6">
@@ -139,15 +148,13 @@ export default function TemplatesScreen({
         {templates.map((template) => (
           <Card key={template.super_template_id}>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">
-                    {templateTypeLabels[template.type] || template.name}
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    {template.kakao_template_code}
-                  </CardDescription>
-                </div>
+              <CardTitle className="min-w-0 text-lg">
+                {templateTypeLabels[template.type] || template.name}
+              </CardTitle>
+              <CardDescription className="min-w-0 truncate">
+                {template.kakao_template_code}
+              </CardDescription>
+              <CardAction>
                 <Badge
                   variant={
                     template.orgSettings?.status === "INACTIVE"
@@ -163,7 +170,7 @@ export default function TemplatesScreen({
                       ? "설정됨"
                       : "기본값"}
                 </Badge>
-              </div>
+              </CardAction>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-sm">
@@ -206,13 +213,15 @@ export default function TemplatesScreen({
               </div>
 
               <div className="flex gap-2">
-                <Dialog>
+                <Dialog
+                  open={openSettingsId === template.super_template_id}
+                  onOpenChange={(open) => setOpenSettingsId(open ? template.super_template_id : null)}
+                >
                   <DialogTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => setSelectedTemplate(template)}
                     >
                       설정
                     </Button>

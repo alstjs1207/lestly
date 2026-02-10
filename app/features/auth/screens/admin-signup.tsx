@@ -94,11 +94,12 @@ export default function AdminSignup({ actionData }: Route.ComponentProps) {
       <div className="bg-primary text-primary-foreground hidden flex-col items-center justify-center p-12 lg:flex lg:w-1/2">
         <div className="max-w-md space-y-8 text-center">
           {/* 로고 */}
-          <div className="flex items-center justify-center gap-3">
-            <div className="bg-primary-foreground text-primary flex aspect-square size-12 items-center justify-center rounded-lg">
-              <CalendarIcon className="size-6" />
-            </div>
-            <span className="text-4xl font-bold">Lestly</span>
+          <div className="flex items-center justify-center">
+            <img
+              src="/logo/08_primary_transparent.png"
+              alt="Lestly"
+              className="h-28 object-contain"
+            />
           </div>
 
           {/* 서비스 소개 */}
@@ -106,7 +107,7 @@ export default function AdminSignup({ actionData }: Route.ComponentProps) {
             <h1 className="text-3xl font-bold">스케줄 관리의 새로운 방법</h1>
             <p className="text-primary-foreground/80 text-lg">
               수강생 관리부터 일정까지 한 곳에서.
-              <br />더 쉽고 효율적인 학원 운영을 경험하세요.
+              <br />더 쉽고 효율적인 일정 관리를 경험하세요.
             </p>
           </div>
 
@@ -132,11 +133,12 @@ export default function AdminSignup({ actionData }: Route.ComponentProps) {
       <div className="flex w-full flex-col items-center justify-center overflow-y-auto p-6 lg:w-1/2">
         <div className="w-full max-w-md space-y-6">
           {/* 모바일용 로고 */}
-          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
-            <div className="bg-primary text-primary-foreground flex aspect-square size-10 items-center justify-center rounded-lg">
-              <CalendarIcon className="size-5" />
-            </div>
-            <span className="text-2xl font-bold">Lestly</span>
+          <div className="mb-8 flex items-center justify-center lg:hidden">
+            <img
+              src="/logo/09_dark_transparent.png"
+              alt="Lestly"
+              className="h-28 object-contain"
+            />
           </div>
 
           <Card>

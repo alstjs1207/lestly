@@ -122,9 +122,11 @@ export default function AdminSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/admin">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <CalendarIcon className="size-4" />
-                </div>
+                <img
+                  src="/logo/07_app_icon_512.png"
+                  alt="Lestly"
+                  className="size-8 rounded-lg object-cover"
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Lestly</span>
                   <span className="truncate text-xs text-muted-foreground">

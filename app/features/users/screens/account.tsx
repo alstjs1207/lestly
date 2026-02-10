@@ -58,7 +58,8 @@ export default function Account({ loaderData }: Route.ComponentProps) {
           }}
         </Await>
       </Suspense>
-      <ChangeEmailForm email={user?.email ?? ""} />
+      {/* 이메일 변경 기능 임시 비활성화 */}
+      {/* <ChangeEmailForm email={user?.email ?? ""} /> */}
       <ChangePasswordForm hasPassword={hasEmailIdentity ?? false} />
     </div>
   );

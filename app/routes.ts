@@ -122,8 +122,8 @@ export default [
   layout("core/layouts/private.layout.tsx", { id: "private-dashboard" }, [
     layout("features/users/layouts/dashboard.layout.tsx", [
       ...prefix("/dashboard", [
-        index("features/users/screens/dashboard.tsx"),
-        route("/coaching", "features/users/screens/coaching-dashboard.tsx"),
+        index("features/users/screens/coaching-dashboard.tsx"),
+        // route("/coaching", "features/users/screens/coaching-dashboard.tsx"),
         route("/payments", "features/payments/screens/payments.tsx"),
       ]),
       route("/account", "features/users/screens/account.tsx"),

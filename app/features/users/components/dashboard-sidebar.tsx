@@ -36,14 +36,14 @@ import {
 
 // 학생용 메뉴
 const menuItems = [
+  // {
+  //   title: "대시보드",
+  //   url: "/dashboard",
+  //   icon: LayoutDashboardIcon,
+  // },
   {
-    title: "대시보드",
+    title: "AI 코칭 대시보드",
     url: "/dashboard",
-    icon: LayoutDashboardIcon,
-  },
-  {
-    title: "AI 코칭",
-    url: "/dashboard/coaching",
     icon: BrainCircuitIcon,
   },
   {
@@ -237,9 +237,11 @@ export default function DashboardSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/dashboard">
-                <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <CalendarIcon className="size-4" />
-                </div>
+                <img
+                  src="/logo/07_app_icon_512.png"
+                  alt="Lestly"
+                  className="size-8 rounded-lg object-cover"
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Lestly</span>
                   <span className="text-muted-foreground truncate text-xs">

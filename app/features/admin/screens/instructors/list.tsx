@@ -1,9 +1,18 @@
 import type { Route } from "./+types/list";
 
-import { Link } from "react-router";
-import { UserPlusIcon } from "lucide-react";
+import { useState } from "react";
+import { Link, useFetcher } from "react-router";
+import { TrashIcon, UserPlusIcon } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/core/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -30,6 +39,8 @@ export default function InstructorListScreen({
   loaderData,
 }: Route.ComponentProps) {
   const { instructors } = loaderData;
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const deleteFetcher = useFetcher();
 
   return (
     <div className="space-y-6">
@@ -87,11 +98,20 @@ export default function InstructorListScreen({
                     {new Date(instructor.created_at).toLocaleDateString("ko-KR")}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/admin/instructors/${instructor.instructor_id}/edit`}>
-                        수정
-                      </Link>
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/admin/instructors/${instructor.instructor_id}/edit`}>
+                          수정
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTarget({ id: instructor.instructor_id, name: instructor.name })}
+                      >
+                        <TrashIcon className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -99,6 +119,34 @@ export default function InstructorListScreen({
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>강사 삭제</DialogTitle>
+            <DialogDescription>
+              {deleteTarget?.name} 강사를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              취소
+            </Button>
+            <deleteFetcher.Form
+              method="post"
+              action={`/api/admin/instructors/${deleteTarget?.id}/delete`}
+            >
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={deleteFetcher.state !== "idle"}
+              >
+                {deleteFetcher.state !== "idle" ? "삭제 중..." : "삭제"}
+              </Button>
+            </deleteFetcher.Form>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
