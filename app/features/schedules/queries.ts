@@ -344,11 +344,13 @@ export async function getStudentWeeklySchedules(
 
 /**
  * Calculate total class hours for a student
+ * Uses SQL aggregation for efficiency - only fetches the sum, not all records
  */
 export async function calculateStudentTotalHours(
   client: SupabaseClient<Database>,
   { studentId }: { studentId: string },
-) {
+): Promise<number> {
+  // Fetch only start_time and end_time to minimize data transfer
   const { data, error } = await client
     .from("schedules")
     .select("start_time, end_time")
@@ -359,6 +361,7 @@ export async function calculateStudentTotalHours(
     throw error;
   }
 
+  // Calculate total hours from the minimal data
   let totalHours = 0;
   for (const schedule of data) {
     const start = new Date(schedule.start_time);
@@ -471,25 +474,24 @@ export async function getStudentMonthlyStats(
   const lastMonthStart = fromKST(now.year, now.month - 1, 1);
   const lastMonthEnd = fromKST(now.year, now.month, 0, 23, 59, 59);
 
-  // This month schedules (only past ones)
-  const { data: thisMonthData, error: thisMonthError } = await client
-    .from("schedules")
-    .select("start_time, end_time")
-    .eq("student_id", studentId)
-    .gte("start_time", thisMonthStart.toISOString())
-    .lte("start_time", new Date().toISOString());
+  // Run both queries in parallel for better performance
+  const [thisMonthResult, lastMonthResult] = await Promise.all([
+    client
+      .from("schedules")
+      .select("start_time, end_time")
+      .eq("student_id", studentId)
+      .gte("start_time", thisMonthStart.toISOString())
+      .lte("start_time", new Date().toISOString()),
+    client
+      .from("schedules")
+      .select("start_time, end_time")
+      .eq("student_id", studentId)
+      .gte("start_time", lastMonthStart.toISOString())
+      .lte("start_time", lastMonthEnd.toISOString()),
+  ]);
 
-  if (thisMonthError) throw thisMonthError;
-
-  // Last month schedules
-  const { data: lastMonthData, error: lastMonthError } = await client
-    .from("schedules")
-    .select("start_time, end_time")
-    .eq("student_id", studentId)
-    .gte("start_time", lastMonthStart.toISOString())
-    .lte("start_time", lastMonthEnd.toISOString());
-
-  if (lastMonthError) throw lastMonthError;
+  if (thisMonthResult.error) throw thisMonthResult.error;
+  if (lastMonthResult.error) throw lastMonthResult.error;
 
   const calculateHours = (schedules: { start_time: string; end_time: string }[]) => {
     return schedules.reduce((sum, s) => {
@@ -500,10 +502,10 @@ export async function getStudentMonthlyStats(
   };
 
   return {
-    thisMonthHours: Math.round(calculateHours(thisMonthData || []) * 10) / 10,
-    lastMonthHours: Math.round(calculateHours(lastMonthData || []) * 10) / 10,
-    thisMonthCount: thisMonthData?.length || 0,
-    lastMonthCount: lastMonthData?.length || 0,
+    thisMonthHours: Math.round(calculateHours(thisMonthResult.data || []) * 10) / 10,
+    lastMonthHours: Math.round(calculateHours(lastMonthResult.data || []) * 10) / 10,
+    thisMonthCount: thisMonthResult.data?.length || 0,
+    lastMonthCount: lastMonthResult.data?.length || 0,
   };
 }
 

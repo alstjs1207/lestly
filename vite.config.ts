@@ -36,6 +36,23 @@ export default defineConfig((config) => {
     },
     build: {
       sourcemap: Boolean(process.env.SENTRY_DSN),
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // Only apply to client build (node_modules)
+            if (id.includes("node_modules")) {
+              // FullCalendar packages - separate chunk for lazy loading
+              if (id.includes("@fullcalendar")) {
+                return "vendor-fullcalendar";
+              }
+              // Radix UI components
+              if (id.includes("@radix-ui")) {
+                return "vendor-ui";
+              }
+            }
+          },
+        },
+      },
     },
     plugins,
     sentryConfig,
