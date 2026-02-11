@@ -13,6 +13,7 @@ import { data, redirect } from "react-router";
 
 import type { Database } from "database.types";
 import adminClient from "~/core/lib/supa-admin-client.server";
+import { getSessionUser } from "~/core/lib/supa-client.server";
 import { getNotificationsEnabled } from "~/features/app-settings/queries";
 
 export interface AdminUser {
@@ -48,9 +49,7 @@ export async function requireAdminRole(
   client: SupabaseClient<Database>,
   organizationId?: string,
 ): Promise<AdminUser> {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     throw redirect("/login");
@@ -118,9 +117,7 @@ export async function requireAdminRole(
 export async function isAdmin(
   client: SupabaseClient<Database>,
 ): Promise<boolean> {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     return false;
@@ -160,9 +157,7 @@ export async function isAdminWithOrganization(
  * @returns The user's profile or null
  */
 export async function getCurrentUserProfile(client: SupabaseClient<Database>) {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     return null;
@@ -190,9 +185,7 @@ export async function getCurrentUserProfile(client: SupabaseClient<Database>) {
 export async function getCurrentOrganizationId(
   client: SupabaseClient<Database>,
 ): Promise<string | null> {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     return null;
@@ -221,9 +214,7 @@ export async function getCurrentOrganizationId(
 export async function getAdminOrganizations(
   client: SupabaseClient<Database>,
 ): Promise<AdminMembership[]> {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     return [];
@@ -254,9 +245,7 @@ export async function isAdminOfOrganization(
   client: SupabaseClient<Database>,
   organizationId: string,
 ): Promise<boolean> {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     return false;
@@ -290,9 +279,7 @@ export async function isAdminOfOrganization(
 export async function isSuperAdmin(
   client: SupabaseClient<Database>,
 ): Promise<boolean> {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     return false;
@@ -318,9 +305,7 @@ export async function isSuperAdmin(
 export async function requireSuperAdmin(
   client: SupabaseClient<Database>,
 ): Promise<SuperAdminUser> {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getSessionUser(client);
 
   if (!user) {
     throw redirect("/login");
