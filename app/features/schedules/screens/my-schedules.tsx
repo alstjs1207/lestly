@@ -29,8 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/core/components/ui/table";
-import { requireAuthentication } from "~/core/lib/guards.server";
-import makeServerClient from "~/core/lib/supa-client.server";
+import makeServerClient, { getSessionUser } from "~/core/lib/supa-client.server";
 import { getStudentSchedules } from "~/features/schedules/queries";
 import {
   canStudentCancelSchedule,
@@ -39,7 +38,10 @@ import {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  const user = await requireAuthentication(client);
+  const user = await getSessionUser(client);
+  if (!user) {
+    throw new Response(null, { status: 401 });
+  }
 
   const { startDate, endDate } = getStudentAllowedDateRange();
 

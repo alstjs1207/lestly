@@ -42,8 +42,7 @@ import {
   SheetTitle,
 } from "~/core/components/ui/sheet";
 import { useIsMobile } from "~/core/hooks/use-mobile";
-import { requireAuthentication } from "~/core/lib/guards.server";
-import makeServerClient from "~/core/lib/supa-client.server";
+import makeServerClient, { getSessionUser } from "~/core/lib/supa-client.server";
 import { getOrganizationMembership } from "~/features/organizations/queries";
 import { getActivePrograms } from "~/features/programs/queries";
 import { MobileCalendar } from "~/features/schedules/components/mobile-calendar";
@@ -58,7 +57,10 @@ import {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  const user = await requireAuthentication(client);
+  const user = await getSessionUser(client);
+  if (!user) {
+    throw new Response(null, { status: 401 });
+  }
 
   // Get user's organization
   const membership = await getOrganizationMembership(client, {

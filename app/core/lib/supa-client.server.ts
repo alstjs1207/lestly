@@ -68,3 +68,12 @@ export function getAuthUser(client: SupabaseClient): Promise<User | null> {
   userCache.set(client, cached);
   return cached;
 }
+
+export async function getSessionUser(
+  client: SupabaseClient,
+): Promise<User | null> {
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+  return session?.user ?? null;
+}
