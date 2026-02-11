@@ -6,9 +6,8 @@ import { requireMethod } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import {
-  checkConcurrentLimit,
-  checkStudentTimeConflict,
   createSchedule,
+  validateScheduleCreation,
 } from "~/features/schedules/queries";
 import {
   applyTimeToDate,
@@ -82,12 +81,16 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  // Check concurrent limit (use adminClient to bypass RLS and count all schedules)
-  const { allowed, currentCount, maxCount } = await checkConcurrentLimit(adminClient, {
-    organizationId,
-    startTime,
-    endTime,
-  });
+  // Validate concurrent limit and student time conflict in a single query
+  const { allowed, currentCount, maxCount, hasConflict } = await validateScheduleCreation(
+    adminClient,
+    {
+      organizationId,
+      studentId: user.id,
+      startTime,
+      endTime,
+    },
+  );
 
   if (!allowed) {
     return data(
@@ -98,13 +101,6 @@ export async function action({ request }: Route.ActionArgs) {
       { status: 400 },
     );
   }
-
-  // Check for time conflict across all programs for this student
-  const hasConflict = await checkStudentTimeConflict(adminClient, {
-    studentId: user.id,
-    startTime,
-    endTime,
-  });
 
   if (hasConflict) {
     return data(

@@ -209,6 +209,46 @@ export async function checkConcurrentLimit(
 }
 
 /**
+ * Validate schedule creation by checking concurrent limit and student time conflict in a single query
+ */
+export async function validateScheduleCreation(
+  client: SupabaseClient<Database>,
+  {
+    organizationId,
+    studentId,
+    startTime,
+    endTime,
+  }: {
+    organizationId: string;
+    studentId: string;
+    startTime: Date;
+    endTime: Date;
+  },
+) {
+  const maxConcurrent = await getMaxConcurrentStudents(client, { organizationId });
+
+  const { data, error } = await client
+    .from("schedules")
+    .select("schedule_id, student_id")
+    .lt("start_time", endTime.toISOString())
+    .gt("end_time", startTime.toISOString());
+
+  if (error) {
+    throw error;
+  }
+
+  const currentCount = data?.length ?? 0;
+  const hasConflict = data?.some((s) => s.student_id === studentId) ?? false;
+
+  return {
+    allowed: currentCount < maxConcurrent,
+    currentCount,
+    maxCount: maxConcurrent,
+    hasConflict,
+  };
+}
+
+/**
  * Create a new schedule
  */
 export async function createSchedule(
