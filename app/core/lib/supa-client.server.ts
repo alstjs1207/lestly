@@ -14,7 +14,7 @@
  * This is used throughout the application for server-side data fetching, authentication,
  * and other Supabase operations that need to run on the server.
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
 import {
@@ -23,37 +23,15 @@ import {
   serializeCookieHeader,
 } from "@supabase/ssr";
 
-/**
- * Creates a Supabase client for server-side operations with proper cookie handling
- * 
- * This function creates a Supabase client that can be used in server-side code (loaders, actions)
- * while properly handling authentication cookies. It returns both the client and headers that
- * need to be included in the response to maintain the authentication state.
- * 
- * The function:
- * 1. Creates a new Headers object to collect Set-Cookie headers
- * 2. Creates a Supabase client with environment variables
- * 3. Sets up cookie handlers to read cookies from the request and write cookies to the response
- * 4. Returns both the client and headers for use in server functions
- * 
- * @example
- * // In a loader or action function
- * export async function loader({ request }: LoaderArgs) {
- *   const [client, headers] = makeServerClient(request);
- *   const { data } = await client.from('table').select();
- *   return json({ data }, { headers });
- * }
- * 
- * @param request - The incoming request object containing cookies
- * @returns A tuple with the Supabase client and headers for the response
- */
+const clientCache = new WeakMap<Request, [SupabaseClient<Database>, Headers]>();
+
 export default function makeServerClient(
   request: Request,
 ): [SupabaseClient<Database>, Headers] {
-  // Create headers object to collect Set-Cookie headers
-  const headers = new Headers();
+  const cached = clientCache.get(request);
+  if (cached) return cached;
 
-  // Create Supabase client with cookie handling
+  const headers = new Headers();
   const client = createServerClient(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
@@ -61,11 +39,9 @@ export default function makeServerClient(
       cookies: {
         // @ts-ignore - The type definitions don't match exactly but this works
         getAll() {
-          // Parse cookies from the request headers
           return parseCookieHeader(request.headers.get("Cookie") ?? "");
         },
         setAll(cookiesToSet) {
-          // Add Set-Cookie headers to the response headers
           cookiesToSet.forEach(({ name, value, options }) =>
             headers.append(
               "Set-Cookie",
@@ -77,6 +53,18 @@ export default function makeServerClient(
     },
   );
 
-  // Return both the client and headers
-  return [client, headers];
+  const result: [SupabaseClient<Database>, Headers] = [client, headers];
+  clientCache.set(request, result);
+  return result;
+}
+
+const userCache = new WeakMap<SupabaseClient, Promise<User | null>>();
+
+export function getAuthUser(client: SupabaseClient): Promise<User | null> {
+  let cached = userCache.get(client);
+  if (cached) return cached;
+
+  cached = client.auth.getUser().then(({ data: { user } }) => user);
+  userCache.set(client, cached);
+  return cached;
 }

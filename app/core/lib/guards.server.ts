@@ -14,30 +14,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { data } from "react-router";
 
-/**
- * Require user authentication for a route or action
- * 
- * This function checks if a user is currently authenticated by querying the Supabase
- * client. If no user is found, it throws a 401 Unauthorized response, which will be
- * handled by React Router's error boundary system.
- * 
- * @example
- * // In a loader or action function
- * export async function loader({ request }: LoaderArgs) {
- *   const [client] = makeServerClient(request);
- *   await requireAuthentication(client);
- *   
- *   // Continue with authenticated logic...
- *   return json({ ... });
- * }
- * 
- * @param client - The Supabase client instance to use for authentication check
- * @throws {Response} 401 Unauthorized if no user is authenticated
- */
+import { getAuthUser } from "~/core/lib/supa-client.server";
+
 export async function requireAuthentication(client: SupabaseClient) {
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getAuthUser(client);
   if (!user) {
     throw data(null, { status: 401 });
   }

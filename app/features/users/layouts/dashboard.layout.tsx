@@ -8,16 +8,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "~/core/components/ui/sidebar";
-import makeServerClient from "~/core/lib/supa-client.server";
+import makeServerClient, { getAuthUser } from "~/core/lib/supa-client.server";
 import { getUserOrganizations } from "~/features/organizations/queries";
 
 import DashboardSidebar from "../components/dashboard-sidebar";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getAuthUser(client);
 
   // 사용자의 조직 정보 조회
   let organizationName = null;
