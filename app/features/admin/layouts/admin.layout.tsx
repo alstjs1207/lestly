@@ -25,15 +25,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Check admin role
   const adminUser = await requireAdminRole(client);
 
-  // Get user profile for sidebar
-  const { data: profile } = await client
-    .from("profiles")
-    .select("name, avatar_url")
-    .eq("profile_id", adminUser.user.id)
-    .single();
-
-  // Get organization info and notifications setting
-  const [organization, notificationsEnabled] = await Promise.all([
+  // Get profile, organization, and notifications setting in parallel
+  const [{ data: profile }, organization, notificationsEnabled] = await Promise.all([
+    client
+      .from("profiles")
+      .select("name, avatar_url")
+      .eq("profile_id", adminUser.user.id)
+      .single(),
     getOrganization(client, { organizationId: adminUser.organizationId }),
     getNotificationsEnabled(adminClient, { organizationId: adminUser.organizationId }),
   ]);

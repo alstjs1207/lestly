@@ -333,24 +333,17 @@ export async function getStudentEmails(
 ): Promise<Record<string, string>> {
   if (studentIds.length === 0) return {};
 
-  const { data, error } = await adminClient.auth.admin.listUsers({
-    perPage: 1000,
-  });
-
-  if (error) {
-    console.error("Failed to get user emails:", error);
-    return {};
-  }
+  const results = await Promise.all(
+    studentIds.map(async (id) => {
+      const { data } = await adminClient.auth.admin.getUserById(id);
+      return { id, email: data.user?.email };
+    }),
+  );
 
   const emailMap: Record<string, string> = {};
-  const studentIdSet = new Set(studentIds);
-
-  for (const user of data.users) {
-    if (studentIdSet.has(user.id) && user.email) {
-      emailMap[user.id] = user.email;
-    }
+  for (const { id, email } of results) {
+    if (email) emailMap[id] = email;
   }
-
   return emailMap;
 }
 
@@ -361,27 +354,6 @@ export async function getDashboardStats(
   client: SupabaseClient<Database>,
   { organizationId }: { organizationId: string },
 ) {
-  // Get student counts by state from organization_members
-  const { data: memberStats, error: memberError } = await client
-    .from("organization_members")
-    .select("state")
-    .eq("organization_id", organizationId)
-    .eq("role", "STUDENT");
-
-  if (memberError) {
-    throw memberError;
-  }
-
-  const stats = {
-    totalStudents: memberStats?.length ?? 0,
-    activeStudents:
-      memberStats?.filter((s) => s.state === "NORMAL").length ?? 0,
-    graduatedStudents:
-      memberStats?.filter((s) => s.state === "GRADUATE").length ?? 0,
-    deletedStudents:
-      memberStats?.filter((s) => s.state === "DELETED").length ?? 0,
-  };
-
   // Get today's schedule count for this organization (KST)
   const now = nowKST();
   const today = fromKST(now.year, now.month, now.day);
@@ -390,10 +362,17 @@ export async function getDashboardStats(
   const monthStart = fromKST(now.year, now.month, 1);
   const monthEnd = fromKST(now.year, now.month + 1, 0, 23, 59, 59);
 
+  // Run all 3 queries in parallel
   const [
+    { data: memberStats, error: memberError },
     { count: todayScheduleCount, error: scheduleError },
     { count: monthlyScheduleCount, error: monthlyError },
   ] = await Promise.all([
+    client
+      .from("organization_members")
+      .select("state")
+      .eq("organization_id", organizationId)
+      .eq("role", "STUDENT"),
     client
       .from("schedules")
       .select("*", { count: "exact", head: true })
@@ -408,6 +387,9 @@ export async function getDashboardStats(
       .lte("start_time", monthEnd.toISOString()),
   ]);
 
+  if (memberError) {
+    throw memberError;
+  }
   if (scheduleError) {
     throw scheduleError;
   }
@@ -416,7 +398,13 @@ export async function getDashboardStats(
   }
 
   return {
-    ...stats,
+    totalStudents: memberStats?.length ?? 0,
+    activeStudents:
+      memberStats?.filter((s) => s.state === "NORMAL").length ?? 0,
+    graduatedStudents:
+      memberStats?.filter((s) => s.state === "GRADUATE").length ?? 0,
+    deletedStudents:
+      memberStats?.filter((s) => s.state === "DELETED").length ?? 0,
     todayScheduleCount: todayScheduleCount ?? 0,
     monthlyScheduleCount: monthlyScheduleCount ?? 0,
   };

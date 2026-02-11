@@ -28,7 +28,7 @@ export async function getMonthlySchedules(
     .from("schedules")
     .select(
       `
-      *,
+      schedule_id, student_id, program_id, start_time, end_time,
       student:profiles!schedules_student_id_profiles_profile_id_fk(
         profile_id,
         name,
@@ -68,7 +68,7 @@ export async function getDailySchedules(
     .from("schedules")
     .select(
       `
-      *,
+      schedule_id, student_id, program_id, start_time, end_time,
       student:profiles!schedules_student_id_profiles_profile_id_fk(
         profile_id,
         name,

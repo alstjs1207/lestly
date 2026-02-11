@@ -36,13 +36,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     | "ARCHIVED"
     | undefined;
 
-  let programs = await getPrograms(client, { organizationId });
-
-  if (statusFilter) {
-    programs = programs.filter(p => p.status === statusFilter);
-  }
-
-  const scheduleCounts = await countSchedulesByProgram(client, { organizationId });
+  const [programs, scheduleCounts] = await Promise.all([
+    getPrograms(client, { organizationId, statusFilter: statusFilter || undefined }),
+    countSchedulesByProgram(client, { organizationId }),
+  ]);
 
   return {
     programs,

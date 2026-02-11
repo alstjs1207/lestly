@@ -16,13 +16,26 @@ type ProgramUpdate = Database["public"]["Tables"]["programs"]["Update"];
  */
 export async function getPrograms(
   client: SupabaseClient<Database>,
-  { organizationId }: { organizationId: string },
+  {
+    organizationId,
+    statusFilter,
+  }: {
+    organizationId: string;
+    statusFilter?: Database["public"]["Enums"]["program_status"];
+  },
 ) {
-  const { data, error } = await client
+  let query = client
     .from("programs")
     .select("*, instructor:instructors(*)")
-    .eq("organization_id", organizationId)
-    .order("created_at", { ascending: false });
+    .eq("organization_id", organizationId);
+
+  if (statusFilter) {
+    query = query.eq("status", statusFilter);
+  }
+
+  query = query.order("created_at", { ascending: false });
+
+  const { data, error } = await query;
 
   if (error) {
     throw error;
