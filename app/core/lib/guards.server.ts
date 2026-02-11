@@ -41,6 +41,7 @@ export async function requireAuthentication(client: SupabaseClient) {
   if (!user) {
     throw data(null, { status: 401 });
   }
+  return user;
 }
 
 /**

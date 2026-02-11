@@ -39,16 +39,12 @@ import {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAuthentication(client);
-
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await requireAuthentication(client);
 
   const { startDate, endDate } = getStudentAllowedDateRange();
 
   const schedules = await getStudentSchedules(client, {
-    studentId: user!.id,
+    studentId: user.id,
     startDate,
     endDate,
   });

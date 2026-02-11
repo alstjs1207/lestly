@@ -67,16 +67,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   
   // Verify the user is authenticated, redirects to login if not
-  await requireAuthentication(client);
-  
-  // Get the authenticated user's information
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  
+  const user = await requireAuthentication(client);
+
   // Fetch the user's payment history from the database
   // Note: Only fetches payments belonging to the authenticated user
-  const payments = await getPayments(client, { userId: user!.id });
+  const payments = await getPayments(client, { userId: user.id });
   
   // Return payment data for the component
   return { payments };

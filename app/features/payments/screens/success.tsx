@@ -104,17 +104,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   
   // Verify the user is authenticated, redirects to login if not
-  await requireAuthentication(client);
-  
-  // Get the authenticated user's information
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  
-  // Redirect to checkout if user is not found
-  if (!user) {
-    throw redirect("/payments/checkout");
-  }
+  const user = await requireAuthentication(client);
   
   // Extract and validate payment parameters from URL
   const url = new URL(request.url);
@@ -186,7 +176,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     requested_at: paymentResponse.data.requestedAt,
     metadata: paymentResponse.data.metadata,
     raw_data: data,
-    user_id: user!.id,
+    user_id: user.id,
   });
   
   // Return payment data for the success page

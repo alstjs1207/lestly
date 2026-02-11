@@ -52,15 +52,10 @@ export async function action({ request }: Route.ActionArgs) {
   const [client] = makeServerClient(request);
 
   // Verify the user is authenticated
-  await requireAuthentication(client);
-
-  // Get the authenticated user's information
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await requireAuthentication(client);
 
   // Delete the user from Supabase Auth
-  const { error } = await adminClient.auth.admin.deleteUser(user!.id);
+  const { error } = await adminClient.auth.admin.deleteUser(user.id);
 
   // Handle API errors
   if (error) {
@@ -77,7 +72,7 @@ export async function action({ request }: Route.ActionArgs) {
   // Clean up user's avatar from storage
   // Note: We don't fail the request if this cleanup fails
   try {
-    await adminClient.storage.from("avatars").remove([user!.id]);
+    await adminClient.storage.from("avatars").remove([user.id]);
   } catch (error) {
     // We don't really care if this fails, as the main user deletion succeeded
     // This is just cleanup of associated resources

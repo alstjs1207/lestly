@@ -58,15 +58,11 @@ import {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAuthentication(client);
-
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await requireAuthentication(client);
 
   // Get user's organization
   const membership = await getOrganizationMembership(client, {
-    profileId: user!.id,
+    profileId: user.id,
   });
   const organizationId = membership?.organization_id;
 
@@ -74,7 +70,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const [schedules, programs] = await Promise.all([
     getStudentSchedules(client, {
-      studentId: user!.id,
+      studentId: user.id,
       startDate,
       endDate,
     }),
