@@ -1,7 +1,7 @@
 import type { Route } from "./+types/my-schedules";
 
 import { useEffect, useState } from "react";
-import { Link, useFetcher, useRevalidator } from "react-router";
+import { Link, useFetcher } from "react-router";
 import { CalendarIcon } from "lucide-react";
 
 import { Button } from "~/core/components/ui/button";
@@ -61,7 +61,6 @@ const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) {
   const { schedules, allowedStartDate, allowedEndDate } = loaderData;
   const cancelFetcher = useFetcher<{ success: boolean; error?: string }>();
-  const revalidator = useRevalidator();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Handle cancel fetcher response
@@ -69,11 +68,8 @@ export default function MySchedulesScreen({ loaderData }: Route.ComponentProps) 
     if (cancelFetcher.data) {
       if (!cancelFetcher.data.success && cancelFetcher.data.error) {
         setErrorMessage(cancelFetcher.data.error);
-      } else if (cancelFetcher.data.success) {
-        revalidator.revalidate();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cancelFetcher.data]);
 
   const today = new Date();

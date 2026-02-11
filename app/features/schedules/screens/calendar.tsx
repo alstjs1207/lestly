@@ -2,7 +2,7 @@ import type { Route } from "./+types/calendar";
 
 import { ListIcon, Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Link, useFetcher, useRevalidator } from "react-router";
+import { Link, useFetcher } from "react-router";
 
 import { CalendarSkeleton } from "~/core/components/calendar-skeleton";
 
@@ -129,11 +129,9 @@ export default function StudentCalendarScreen({
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const deleteFetcher = useFetcher<{ success: boolean; error?: string }>();
-  const revalidator = useRevalidator();
   const isLoading =
     fetcher.state !== "idle" ||
-    deleteFetcher.state !== "idle" ||
-    revalidator.state === "loading";
+    deleteFetcher.state !== "idle";
 
   // Initialize selectedDate to today when switching to mobile
   useEffect(() => {
@@ -147,11 +145,8 @@ export default function StudentCalendarScreen({
     if (fetcher.data) {
       if (!fetcher.data.success && fetcher.data.error) {
         setErrorMessage(fetcher.data.error);
-      } else if (fetcher.data.success) {
-        revalidator.revalidate();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.data]);
 
   // Handle delete fetcher response
@@ -162,10 +157,8 @@ export default function StudentCalendarScreen({
       } else if (deleteFetcher.data.success) {
         setIsEventDetailOpen(false);
         setSelectedEvent(null);
-        revalidator.revalidate();
       }
     }
-    // eslint-disable-next-line react-hooks-exhaustive-deps
   }, [deleteFetcher.data]);
 
   const timeSlots = generateTimeSlots(30);
