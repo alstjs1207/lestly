@@ -125,7 +125,7 @@ export default function ForgotPassword({ actionData }: Route.ComponentProps) {
     <div className="flex min-h-screen">
       {/* 왼쪽 패널 - 서비스 소개 (데스크톱만 표시) */}
       <div className="bg-primary text-primary-foreground hidden flex-col items-center justify-center p-12 lg:flex lg:w-1/2">
-        <div className="max-w-md space-y-8 text-center">
+        <div className="max-w-md space-y-8 pb-18 text-center">
           {/* 로고 */}
           <div className="flex items-center justify-center">
             <img
@@ -187,7 +187,10 @@ export default function ForgotPassword({ actionData }: Route.ComponentProps) {
                 ref={formRef}
               >
                 <div className="flex flex-col items-start space-y-2">
-                  <Label htmlFor="email" className="flex flex-col items-start gap-1">
+                  <Label
+                    htmlFor="email"
+                    className="flex flex-col items-start gap-1"
+                  >
                     이메일
                   </Label>
                   <Input
