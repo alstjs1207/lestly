@@ -1,5 +1,5 @@
 import { type Route } from "@rr/app/features/users/api/+types/edit-profile";
-import { UserIcon } from "lucide-react";
+import { UserIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 
@@ -11,6 +11,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "~/core/components/ui/avatar";
+import { Button } from "~/core/components/ui/button";
 import {
   Card,
   CardContent,
@@ -43,10 +44,20 @@ export default function EditProfileForm({
     }
   }, [fetcher.data]);
   const [avatar, setAvatar] = useState<string | null>(avatarUrl);
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatar(URL.createObjectURL(file));
+      setRemoveAvatar(false);
+    }
+  };
+  const onRemoveAvatar = () => {
+    setAvatar(null);
+    setRemoveAvatar(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
   return (
@@ -65,18 +76,30 @@ export default function EditProfileForm({
         <CardContent>
           <div className="flex w-full flex-col gap-7">
             <div className="flex items-center gap-10">
-              <Label
-                htmlFor="avatar"
-                className="flex flex-col items-start gap-2"
-              >
-                <span>아바타</span>
-                <Avatar className="size-24">
-                  {avatar ? <AvatarImage src={avatar} alt="Avatar" /> : null}
-                  <AvatarFallback>
-                    <UserIcon className="text-muted-foreground size-10" />
-                  </AvatarFallback>
-                </Avatar>
-              </Label>
+              <div className="flex flex-col items-start gap-2">
+                <Label htmlFor="avatar">아바타</Label>
+                <div className="relative">
+                  <Avatar className="size-24">
+                    {avatar ? (
+                      <AvatarImage src={avatar} alt="Avatar" />
+                    ) : null}
+                    <AvatarFallback>
+                      <UserIcon className="text-muted-foreground size-10" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {avatar ? (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-1 -right-1 size-6 rounded-full"
+                      onClick={onRemoveAvatar}
+                    >
+                      <XIcon className="size-3" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
               <div className="text-muted-foreground flex w-1/2 flex-col gap-2 text-sm">
                 <div className="flex flex-col gap-1">
                   <span>최대 크기: 1MB</span>
@@ -86,9 +109,15 @@ export default function EditProfileForm({
                   id="avatar"
                   name="avatar"
                   type="file"
+                  ref={fileInputRef}
                   onChange={onChangeAvatar}
                 />
               </div>
+              <input
+                type="hidden"
+                name="removeAvatar"
+                value={removeAvatar ? "true" : "false"}
+              />
             </div>
             <div className="flex flex-col items-start space-y-2">
               <Label htmlFor="name" className="flex flex-col items-start gap-1">

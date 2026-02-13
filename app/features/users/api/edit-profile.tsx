@@ -36,6 +36,7 @@ const schema = z.object({
   name: z.string().min(1),
   avatar: z.instanceof(File),
   marketingConsent: z.coerce.boolean(),
+  removeAvatar: z.string().optional(),
 });
 
 /**
@@ -92,9 +93,14 @@ export async function action({ request }: Route.ActionArgs) {
   // Get current user profile to determine existing avatar URL
   const profile = await getUserProfile(client, { userId: user.id });
   let avatarUrl = profile?.avatar_url || null;
-  
+
+  // Handle avatar removal if requested
+  if (validData.removeAvatar === "true") {
+    await client.storage.from("avatars").remove([user.id]);
+    avatarUrl = null;
+  }
   // Handle avatar image upload if a valid file was provided
-  if (
+  else if (
     validData.avatar &&
     validData.avatar instanceof File &&
     validData.avatar.size > 0 &&
@@ -107,12 +113,12 @@ export async function action({ request }: Route.ActionArgs) {
       .upload(user.id, validData.avatar, {
         upsert: true, // Replace existing avatar if any
       });
-      
+
     // Handle upload errors
     if (uploadError) {
       return data({ error: uploadError.message }, { status: 400 });
     }
-    
+
     // Get public URL for the uploaded avatar
     const {
       data: { publicUrl },

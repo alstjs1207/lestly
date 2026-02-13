@@ -225,7 +225,7 @@ export default function Login({ actionData }: Route.ComponentProps) {
     <div className="flex min-h-screen">
       {/* 왼쪽 패널 - 서비스 소개 (데스크톱만 표시) */}
       <div className="bg-primary text-primary-foreground hidden flex-col items-center justify-center p-12 lg:flex lg:w-1/2">
-        <div className="max-w-md space-y-8 text-center">
+        <div className="max-w-md space-y-8 pb-18 text-center">
           {/* 로고 */}
           <div className="flex items-center justify-center">
             <img
@@ -265,7 +265,7 @@ export default function Login({ actionData }: Route.ComponentProps) {
 
       {/* 오른쪽 패널 - 로그인 폼 */}
       <div className="flex w-full flex-col items-center justify-center p-6 lg:w-1/2">
-        <div className="w-full max-w-md space-y-6 pt-20">
+        <div className="w-full max-w-md space-y-6">
           {/* 모바일용 로고 */}
           <div className="mb-8 flex items-center justify-center lg:hidden">
             <img
