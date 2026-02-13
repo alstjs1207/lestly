@@ -12,17 +12,20 @@ import {
   CardTitle,
 } from "~/core/components/ui/card";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getInstructors } from "~/features/instructors/queries";
 
 import ProgramForm from "../../components/program-form";
 import { requireAdminRole } from "../../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAdminRole(client);
-  return {};
+  const { organizationId } = await requireAdminRole(client);
+  const instructors = await getInstructors(client, { organizationId });
+  return { instructors };
 }
 
-export default function ProgramCreateScreen() {
+export default function ProgramCreateScreen({ loaderData }: Route.ComponentProps) {
+  const { instructors } = loaderData;
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -47,7 +50,7 @@ export default function ProgramCreateScreen() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ProgramForm mode="create" />
+          <ProgramForm mode="create" instructors={instructors} />
         </CardContent>
       </Card>
     </div>
