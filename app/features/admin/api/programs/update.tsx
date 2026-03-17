@@ -4,8 +4,9 @@
  * Updates an existing program.
  */
 import type { Route } from "./+types/update";
+import type { Json } from "database.types";
 
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -59,7 +60,14 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   // JSONB 필드
   const curriculumStr = formData.get("curriculum") as string | null;
-  const curriculum = curriculumStr ? JSON.parse(curriculumStr) : [];
+  let curriculum: Json[] = [];
+  if (curriculumStr) {
+    try {
+      curriculum = JSON.parse(curriculumStr);
+    } catch {
+      return data({ error: "잘못된 커리큘럼 데이터 형식입니다." }, { status: 400 });
+    }
+  }
 
   // 커버 이미지 처리
   let coverImageUrl: string | null = null;

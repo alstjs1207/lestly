@@ -2,8 +2,9 @@
  * Instructor Creation API
  */
 import type { Route } from "./+types/create";
+import type { Json } from "database.types";
 
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -26,7 +27,14 @@ export async function action({ request }: Route.ActionArgs) {
 
   // JSONB 필드
   const careerStr = formData.get("career") as string | null;
-  const career = careerStr ? JSON.parse(careerStr) : [];
+  let career: Json[] = [];
+  if (careerStr) {
+    try {
+      career = JSON.parse(careerStr);
+    } catch {
+      return data({ error: "잘못된 경력 데이터 형식입니다." }, { status: 400 });
+    }
+  }
 
   // SNS
   const snsInstagram = formData.get("sns_instagram") as string | null;

@@ -188,6 +188,7 @@ export async function checkConcurrentLimit(
   let query = client
     .from("schedules")
     .select("schedule_id", { count: "exact" })
+    .eq("organization_id", organizationId)
     .lt("start_time", endTime.toISOString())
     .gt("end_time", startTime.toISOString());
 
@@ -230,6 +231,7 @@ export async function validateScheduleCreation(
   const { data, error } = await client
     .from("schedules")
     .select("schedule_id, student_id")
+    .eq("organization_id", organizationId)
     .lt("start_time", endTime.toISOString())
     .gt("end_time", startTime.toISOString());
 

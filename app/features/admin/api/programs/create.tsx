@@ -4,8 +4,9 @@
  * Creates a new program for the organization.
  */
 import type { Route } from "./+types/create";
+import type { Json } from "database.types";
 
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -58,7 +59,14 @@ export async function action({ request }: Route.ActionArgs) {
 
   // JSONB 필드
   const curriculumStr = formData.get("curriculum") as string | null;
-  const curriculum = curriculumStr ? JSON.parse(curriculumStr) : [];
+  let curriculum: Json[] = [];
+  if (curriculumStr) {
+    try {
+      curriculum = JSON.parse(curriculumStr);
+    } catch {
+      return data({ error: "잘못된 커리큘럼 데이터 형식입니다." }, { status: 400 });
+    }
+  }
 
   // 먼저 프로그램 생성 (ID 획득)
   const program = await createProgram(client, {
