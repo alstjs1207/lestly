@@ -1,7 +1,8 @@
 import type { Route } from "./+types/detail";
 
+import { useState } from "react";
 import { Link, useFetcher } from "react-router";
-import { ChevronLeftIcon, EditIcon, GraduationCapIcon, MailIcon, TrashIcon } from "lucide-react";
+import { CheckIcon, ChevronLeftIcon, ClipboardIcon, EditIcon, GraduationCapIcon, MailIcon, TrashIcon } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -34,8 +35,10 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import {
   calculateStudentTotalHours,
   getStudentNextWeekSchedules,
+  getStudentSchedules,
   getStudentWeeklySchedules,
 } from "~/features/schedules/queries";
+import { nowKST } from "~/features/schedules/utils/kst";
 
 import { requireAdminRole } from "../../guards.server";
 import { getStudentById } from "../../queries";
@@ -44,10 +47,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
-  const [student, weeklySchedules, nextWeekSchedules, totalHours, authUser] = await Promise.all([
+  const now = nowKST();
+  const currentYear = now.year;
+  const currentMonth = now.month + 1; // nowKST returns 0-indexed month
+
+  const [student, weeklySchedules, nextWeekSchedules, monthlySchedules, totalHours, authUser] = await Promise.all([
     getStudentById(client, { organizationId, studentId: params.studentId }),
     getStudentWeeklySchedules(client, { studentId: params.studentId }),
     getStudentNextWeekSchedules(client, { studentId: params.studentId }),
+    getStudentSchedules(client, { studentId: params.studentId, year: currentYear, month: currentMonth }),
     calculateStudentTotalHours(client, { studentId: params.studentId }),
     adminClient.auth.admin.getUserById(params.studentId),
   ]);
@@ -58,6 +66,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     student,
     weeklySchedules,
     nextWeekSchedules,
+    monthlySchedules,
+    currentYear,
+    currentMonth,
     totalHours: Math.round(totalHours * 10) / 10,
     email,
   };
@@ -80,10 +91,11 @@ const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 export default function StudentDetailScreen({
   loaderData,
 }: Route.ComponentProps) {
-  const { student, weeklySchedules, nextWeekSchedules, totalHours, email } = loaderData;
+  const { student, weeklySchedules, nextWeekSchedules, monthlySchedules, currentYear, currentMonth, totalHours, email } = loaderData;
   const graduateFetcher = useFetcher();
   const deleteFetcher = useFetcher();
   const inviteFetcher = useFetcher<{ success: boolean; error?: string }>();
+  const [copied, setCopied] = useState(false);
 
   const calculateAge = (birthDate: string) => {
     const today = new Date();
@@ -313,6 +325,101 @@ export default function StudentDetailScreen({
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>{currentYear}년 {currentMonth}월 일정</CardTitle>
+            <CardDescription>이번 달의 수업 일정입니다.</CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={monthlySchedules.length === 0}
+            onClick={() => {
+              const lines = monthlySchedules.map((schedule) => {
+                const startDate = new Date(schedule.start_time);
+                const endDate = new Date(schedule.end_time);
+                const dateStr = startDate.toLocaleDateString("ko-KR", {
+                  month: "long",
+                  day: "numeric",
+                });
+                const day = dayLabels[startDate.getDay()];
+                const startTime = startDate.toLocaleTimeString("ko-KR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const endTime = endDate.toLocaleTimeString("ko-KR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const program = schedule.program?.title || "-";
+                return `${dateStr} (${day}) ${startTime}-${endTime} ${program}`;
+              });
+              const text = `[${student.name}] ${currentYear}년 ${currentMonth}월 일정\n${lines.join("\n")}`;
+              navigator.clipboard.writeText(text).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              });
+            }}
+          >
+            {copied ? (
+              <><CheckIcon className="h-4 w-4 mr-1" />복사됨</>
+            ) : (
+              <><ClipboardIcon className="h-4 w-4 mr-1" />복사</>
+            )}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {monthlySchedules.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">
+              이번 달 등록된 일정이 없습니다.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>날짜</TableHead>
+                  <TableHead className="hidden md:table-cell">요일</TableHead>
+                  <TableHead>클래스</TableHead>
+                  <TableHead>시간</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {monthlySchedules.map((schedule) => {
+                  const startDate = new Date(schedule.start_time);
+                  const endDate = new Date(schedule.end_time);
+                  return (
+                    <TableRow key={schedule.schedule_id}>
+                      <TableCell>
+                        {startDate.toLocaleDateString("ko-KR", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{dayLabels[startDate.getDay()]}</TableCell>
+                      <TableCell>
+                        {schedule.program?.title || "-"}
+                      </TableCell>
+                      <TableCell>
+                        {startDate.toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {" - "}
+                        {endDate.toLocaleTimeString("ko-KR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
