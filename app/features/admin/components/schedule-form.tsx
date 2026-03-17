@@ -59,6 +59,27 @@ export default function ScheduleForm({
   const isSubmitting = fetcher.state !== "idle";
   const [isRecurring, setIsRecurring] = useState(defaultValues?.is_recurring || false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+  const [selectedTime, setSelectedTime] = useState(defaultValues?.start_time || "");
+
+  const allSelected = students.length > 0 && selectedStudents.size === students.length;
+
+  function toggleStudent(id: string) {
+    setSelectedStudents((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedStudents(new Set());
+    } else {
+      setSelectedStudents(new Set(students.map((s) => s.profile_id)));
+    }
+  }
 
   useEffect(() => {
     if (fetcher.data && !fetcher.data.success && fetcher.data.error) {
@@ -77,31 +98,69 @@ export default function ScheduleForm({
     <>
     <fetcher.Form method="post" action={actionUrl} className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="student_id">수강생 *</Label>
-          <Select
-            name="student_id"
-            defaultValue={defaultValues?.student_id}
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="수강생 선택" />
-            </SelectTrigger>
-            <SelectContent>
+        {mode === "create" ? (
+          <div className="space-y-2 md:col-span-2">
+            <Label>수강생 * {selectedStudents.size > 0 && <span className="text-muted-foreground text-xs font-normal">({selectedStudents.size}명 선택됨)</span>}</Label>
+            <div className="rounded-md border p-3 space-y-2 max-h-48 overflow-y-auto">
+              <div className="flex items-center space-x-2 pb-2 border-b">
+                <Checkbox
+                  id="select-all"
+                  checked={allSelected}
+                  onCheckedChange={toggleAll}
+                />
+                <label htmlFor="select-all" className="text-sm font-medium">전체 선택</label>
+              </div>
               {students.map((student) => (
-                <SelectItem key={student.profile_id} value={student.profile_id}>
-                  <div className="flex items-center gap-2">
+                <div key={student.profile_id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`student-${student.profile_id}`}
+                    checked={selectedStudents.has(student.profile_id)}
+                    onCheckedChange={() => toggleStudent(student.profile_id)}
+                  />
+                  <label htmlFor={`student-${student.profile_id}`} className="flex items-center gap-2 text-sm">
                     <div
                       className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: student.color || "#3B82F6" }}
                     />
                     {student.name}
-                  </div>
-                </SelectItem>
+                  </label>
+                </div>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
+            </div>
+            {selectedStudents.size === 0 && (
+              <p className="text-xs text-destructive">수강생을 1명 이상 선택해주세요.</p>
+            )}
+            {Array.from(selectedStudents).map((id) => (
+              <input key={id} type="hidden" name="student_ids" value={id} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Label htmlFor="student_id">수강생 *</Label>
+            <Select
+              name="student_id"
+              defaultValue={defaultValues?.student_id}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="수강생 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map((student) => (
+                  <SelectItem key={student.profile_id} value={student.profile_id}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: student.color || "#3B82F6" }}
+                      />
+                      {student.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {programs.length > 1 ? (
           <div className="space-y-2">
@@ -145,23 +204,25 @@ export default function ScheduleForm({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="start_time">시작 시간 *</Label>
-          <Select name="start_time" defaultValue={defaultValues?.start_time} required>
-            <SelectTrigger>
-              <SelectValue placeholder="시작 시간 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              {timeSlots.map((slot) => (
-                <SelectItem key={slot.value} value={slot.value}>
-                  {slot.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-2 md:col-span-2">
+          <Label>시작 시간 *</Label>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+            {timeSlots.map((slot) => (
+              <Button
+                key={slot.value}
+                type="button"
+                variant={selectedTime === slot.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedTime(slot.value)}
+              >
+                {slot.label}
+              </Button>
+            ))}
+          </div>
           <p className="text-xs text-muted-foreground">
             시작 시간: 09:00 ~ 20:00
           </p>
+          <input type="hidden" name="start_time" value={selectedTime} />
         </div>
 
         <div className="space-y-2">
@@ -246,7 +307,7 @@ export default function ScheduleForm({
         <Button type="button" variant="outline" onClick={() => history.back()}>
           취소
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || (mode === "create" && selectedStudents.size === 0) || !selectedTime}>
           {isSubmitting
             ? "저장 중..."
             : mode === "create"
