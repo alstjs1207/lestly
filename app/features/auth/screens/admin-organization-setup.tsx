@@ -25,6 +25,8 @@ import {
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import { Textarea } from "~/core/components/ui/textarea";
+import { getAuthenticatedProfile } from "~/core/lib/authenticated-profile.server";
+import { requireMethod } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
@@ -43,30 +45,33 @@ export const meta: Route.MetaFunction = () => {
  * Loader to check if user is authenticated and needs organization setup
  */
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
 
   if (!user) {
-    return redirect("/admin/signup");
+    return redirect("/admin/signup", { headers });
   }
+
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return redirect("/admin/signup", { headers });
 
   // Check if user already has admin membership in any organization
   const { data: memberships } = await client
     .from("organization_members")
     .select("organization_id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.profile_id)
     .eq("role", "ADMIN")
     .eq("state", "NORMAL")
     .limit(1);
 
   // If already has admin organization, redirect to admin dashboard
   if (memberships && memberships.length > 0) {
-    return redirect("/admin");
+    return redirect("/admin", { headers });
   }
 
-  return { user };
+  return data({ user }, { headers });
 }
 
 /**
@@ -81,26 +86,37 @@ const organizationSchema = z.object({
  * Server action for handling organization creation
  */
 export async function action({ request }: Route.ActionArgs) {
-  const [client] = makeServerClient(request);
+  requireMethod("POST")(request);
+  const [client, headers] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
 
   if (!user) {
-    return redirect("/admin/signup");
+    return redirect("/admin/signup", { headers });
   }
 
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return redirect("/admin/signup", { headers });
+
   // Check if user already has admin membership
-  const { data: existingMemberships } = await client
+  const { data: existingMemberships, error: membershipError } = await client
     .from("organization_members")
     .select("organization_id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.profile_id)
     .eq("role", "ADMIN")
     .eq("state", "NORMAL")
     .limit(1);
 
+  if (membershipError) {
+    return data(
+      { error: "Failed to check organization membership" },
+      { status: 500, headers },
+    );
+  }
+
   if (existingMemberships && existingMemberships.length > 0) {
-    return redirect("/admin");
+    return redirect("/admin", { headers });
   }
 
   // Parse form data
@@ -112,7 +128,10 @@ export async function action({ request }: Route.ActionArgs) {
   } = organizationSchema.safeParse(Object.fromEntries(formData));
 
   if (!success) {
-    return data({ fieldErrors: error.flatten().fieldErrors }, { status: 400 });
+    return data(
+      { fieldErrors: error.flatten().fieldErrors },
+      { status: 400, headers },
+    );
   }
 
   // Create organization using admin client (bypasses RLS)
@@ -126,7 +145,7 @@ export async function action({ request }: Route.ActionArgs) {
     .single();
 
   if (orgError) {
-    return data({ error: orgError.message }, { status: 400 });
+    return data({ error: orgError.message }, { status: 400, headers });
   }
 
   // Create organization_members entry with ADMIN role
@@ -134,7 +153,7 @@ export async function action({ request }: Route.ActionArgs) {
     .from("organization_members")
     .insert({
       organization_id: organization.organization_id,
-      profile_id: user.id,
+      profile_id: profile.profile_id,
       role: "ADMIN",
       state: "NORMAL",
     });
@@ -145,14 +164,14 @@ export async function action({ request }: Route.ActionArgs) {
       .from("organizations")
       .delete()
       .eq("organization_id", organization.organization_id);
-    return data({ error: memberError.message }, { status: 400 });
+    return data({ error: memberError.message }, { status: 400, headers });
   }
 
   // Mark signup as complete
   const { error: profileUpdateError } = await adminClient
     .from("profiles")
     .update({ is_signup_complete: true })
-    .eq("profile_id", user.id);
+    .eq("profile_id", profile.profile_id);
 
   if (profileUpdateError) {
     // Rollback: delete membership and organization
@@ -160,16 +179,19 @@ export async function action({ request }: Route.ActionArgs) {
       .from("organization_members")
       .delete()
       .eq("organization_id", organization.organization_id)
-      .eq("profile_id", user.id);
+      .eq("profile_id", profile.profile_id);
     await adminClient
       .from("organizations")
       .delete()
       .eq("organization_id", organization.organization_id);
-    return data({ error: profileUpdateError.message }, { status: 400 });
+    return data(
+      { error: profileUpdateError.message },
+      { status: 400, headers },
+    );
   }
 
   // Redirect to admin dashboard
-  return redirect("/admin");
+  return redirect("/admin", { headers });
 }
 
 /**

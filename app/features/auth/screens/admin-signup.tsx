@@ -23,6 +23,7 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -47,6 +48,7 @@ const emailSchema = z.object({
  * Server action for sending OTP code
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   const formData = await request.formData();
   const {
     data: validData,

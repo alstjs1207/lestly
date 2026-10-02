@@ -1,15 +1,15 @@
 import type { Route } from "./+types/org-dashboard";
 
-import { useTranslation } from "react-i18next";
-import { Link, useFetcher } from "react-router";
 import {
-  CalendarIcon,
-  UsersIcon,
-  GraduationCapIcon,
-  CalendarDaysIcon,
   ArrowLeftIcon,
   BellIcon,
+  CalendarDaysIcon,
+  CalendarIcon,
+  GraduationCapIcon,
+  UsersIcon,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link, data, useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -18,14 +18,16 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
+import { requireMethod } from "~/core/lib/guards.server";
+import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-
 import AdminCalendar from "~/features/admin/components/admin-calendar";
 import { requireSuperAdmin } from "~/features/admin/guards.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
+import { getMonthlySchedules } from "~/features/schedules/queries";
+import { fromKST, nowKST } from "~/features/schedules/utils/kst";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { orgId } = params;
 
   // Check super admin role
@@ -42,51 +44,61 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw new Response("Organization not found", { status: 404 });
   }
 
-  // Get notifications_enabled setting
-  const { data: notifSetting } = await adminClient
-    .from("settings")
-    .select("setting_value")
-    .eq("organization_id", orgId)
-    .eq("setting_key", "notifications_enabled")
-    .single();
+  const now = nowKST();
+  const today = fromKST(now.year, now.month, now.day);
+  const tomorrow = fromKST(now.year, now.month, now.day + 1);
+  const [counts, { data: notifSetting, error: settingsError }, schedules] =
+    await Promise.all([
+      Promise.all([
+        adminClient
+          .from("organization_members")
+          .select("profile_id", { count: "exact", head: true })
+          .eq("organization_id", orgId)
+          .eq("role", "STUDENT"),
+        adminClient
+          .from("organization_members")
+          .select("profile_id", { count: "exact", head: true })
+          .eq("organization_id", orgId)
+          .eq("role", "STUDENT")
+          .eq("state", "NORMAL"),
+        adminClient
+          .from("organization_members")
+          .select("profile_id", { count: "exact", head: true })
+          .eq("organization_id", orgId)
+          .eq("role", "STUDENT")
+          .eq("state", "GRADUATE"),
+        adminClient
+          .from("schedules")
+          .select("schedule_id", { count: "exact", head: true })
+          .eq("organization_id", orgId)
+          .gte("start_time", today.toISOString())
+          .lt("start_time", tomorrow.toISOString()),
+      ]),
+      adminClient
+        .from("settings")
+        .select("setting_value")
+        .eq("organization_id", orgId)
+        .eq("setting_key", "notifications_enabled")
+        .maybeSingle(),
+      getMonthlySchedules(adminClient, {
+        organizationId: orgId,
+        year: now.year,
+        month: now.month + 1,
+      }),
+    ]);
 
-  const notificationsEnabled =
-    (notifSetting?.setting_value as { value?: boolean } | null)?.value ?? false;
-
-  // Get stats for this organization
+  for (const result of counts) {
+    if (result.error) throw result.error;
+  }
+  if (settingsError) throw settingsError;
   const [
     { count: totalStudents },
     { count: activeStudents },
     { count: graduatedStudents },
     { count: todayScheduleCount },
-  ] = await Promise.all([
-    adminClient
-      .from("organization_members")
-      .select("profile_id", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .eq("role", "STUDENT"),
-    adminClient
-      .from("organization_members")
-      .select("profile_id", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .eq("role", "STUDENT")
-      .eq("state", "NORMAL"),
-    adminClient
-      .from("organization_members")
-      .select("profile_id", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .eq("role", "STUDENT")
-      .eq("state", "GRADUATE"),
-    adminClient
-      .from("schedules")
-      .select("schedule_id", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .gte("start_time", new Date().toISOString().split("T")[0])
-      .lt(
-        "start_time",
-        new Date(Date.now() + 86400000).toISOString().split("T")[0]
-      ),
-  ]);
+  ] = counts;
+  const notificationsEnabled =
+    (notifSetting?.setting_value as { value?: boolean } | null)?.value === true;
 
   const stats = {
     totalStudents: totalStudents ?? 0,
@@ -95,50 +107,27 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     todayScheduleCount: todayScheduleCount ?? 0,
   };
 
-  // Get schedules for calendar (using admin client)
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
-
-  const { data: schedules } = await adminClient
-    .from("schedules")
-    .select(
-      `
-      schedule_id,
-      start_time,
-      end_time,
-      student_id,
-      profiles!schedules_student_id_fkey (
-        name,
-        color
-      )
-    `
-    )
-    .eq("organization_id", orgId)
-    .gte("start_time", startDate.toISOString())
-    .lte("start_time", endDate.toISOString())
-    .order("start_time", { ascending: true });
-
-  const events = (schedules ?? []).map((schedule: any) => ({
+  const events = schedules.map((schedule) => ({
     id: String(schedule.schedule_id),
-    title: schedule.profiles?.name || "Unknown",
+    title: schedule.student?.name || "Unknown",
     start: schedule.start_time,
     end: schedule.end_time,
-    backgroundColor: schedule.profiles?.color || "#3B82F6",
-    borderColor: schedule.profiles?.color || "#3B82F6",
+    backgroundColor: schedule.student?.color || "#3B82F6",
+    borderColor: schedule.student?.color || "#3B82F6",
     extendedProps: {
       studentId: schedule.student_id,
       scheduleId: schedule.schedule_id,
     },
   }));
 
-  return { organization, stats, events, notificationsEnabled };
+  return data(
+    { organization, stats, events, notificationsEnabled },
+    { headers },
+  );
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   const [client] = makeServerClient(request);
   const { orgId } = params;
 
@@ -215,11 +204,11 @@ export default function OrgDashboardScreen({
             <CardTitle className="text-sm font-medium">
               {t("superAdmin.orgDashboard.totalStudents")}
             </CardTitle>
-            <UsersIcon className="h-4 w-4 text-muted-foreground" />
+            <UsersIcon className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalStudents}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.orgDashboard.allStudents")}
             </p>
           </CardContent>
@@ -234,7 +223,7 @@ export default function OrgDashboardScreen({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeStudents}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.orgDashboard.currentlyEnrolled")}
             </p>
           </CardContent>
@@ -249,7 +238,7 @@ export default function OrgDashboardScreen({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.graduatedStudents}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.orgDashboard.completedProgram")}
             </p>
           </CardContent>
@@ -264,7 +253,7 @@ export default function OrgDashboardScreen({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.todayScheduleCount}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.orgDashboard.scheduledToday")}
             </p>
           </CardContent>

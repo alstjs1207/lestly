@@ -11,7 +11,7 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link, data, useFetcher } from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -52,7 +52,7 @@ import { requireAdminRole } from "../../guards.server";
 import { getStudentById } from "../../queries";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
   const now = nowKST();
@@ -70,33 +70,47 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     totalHours,
   ] = await Promise.all([
     getStudentById(client, { organizationId, studentId: params.studentId }),
-    getStudentWeeklySchedules(client, { studentId: params.studentId }),
-    getStudentNextWeekSchedules(client, { studentId: params.studentId }),
+    getStudentWeeklySchedules(client, {
+      studentId: params.studentId,
+      organizationId,
+    }),
+    getStudentNextWeekSchedules(client, {
+      studentId: params.studentId,
+      organizationId,
+    }),
     getStudentSchedules(client, {
       studentId: params.studentId,
+      organizationId,
       year: currentYear,
       month: currentMonth,
     }),
     getStudentSchedules(client, {
       studentId: params.studentId,
+      organizationId,
       year: nextMonthYear,
       month: nextMonth,
     }),
-    calculateStudentTotalHours(client, { studentId: params.studentId }),
+    calculateStudentTotalHours(client, {
+      studentId: params.studentId,
+      organizationId,
+    }),
   ]);
 
-  return {
-    student,
-    weeklySchedules,
-    nextWeekSchedules,
-    monthlySchedules,
-    nextMonthSchedules,
-    currentYear,
-    currentMonth,
-    nextMonthYear,
-    nextMonth,
-    totalHours: Math.round(totalHours * 10) / 10,
-  };
+  return data(
+    {
+      student,
+      weeklySchedules,
+      nextWeekSchedules,
+      monthlySchedules,
+      nextMonthSchedules,
+      currentYear,
+      currentMonth,
+      nextMonthYear,
+      nextMonth,
+      totalHours: Math.round(totalHours * 10) / 10,
+    },
+    { headers },
+  );
 }
 
 const stateLabels: Record<

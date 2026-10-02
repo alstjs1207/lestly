@@ -19,14 +19,16 @@ export interface InstructorSns {
  */
 export async function getPublicProgramBySlug(
   client: SupabaseClient<Database>,
-  { slug }: { slug: string }
+  { slug }: { slug: string },
 ) {
   const { data, error } = await client
     .from("programs")
-    .select(`
+    .select(
+      `
       *,
-      instructor:instructors(*)
-    `)
+      instructor:instructors!programs_instructor_id_instructors_instructor_id_fk(*)
+    `,
+    )
     .eq("slug", slug)
     .eq("is_public", true)
     .eq("status", "ACTIVE")
@@ -44,7 +46,7 @@ export async function getPublicProgramBySlug(
  */
 export async function getNextScheduleForProgram(
   client: SupabaseClient<Database>,
-  { programId }: { programId: number }
+  { programId }: { programId: number },
 ) {
   const now = new Date().toISOString();
 

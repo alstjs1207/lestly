@@ -879,6 +879,10 @@ export type Database = {
         Returns: string
       }
       get_current_profile_id: { Args: never; Returns: string }
+      get_student_total_hours: {
+        Args: { p_student_ids: string[]; p_organization_id?: string | null }
+        Returns: { student_id: string; total_hours: number }[]
+      }
       get_user_organization_id: { Args: never; Returns: string }
       is_org_admin: { Args: { org_id: string }; Returns: boolean }
       is_org_member: { Args: { org_id: string }; Returns: boolean }

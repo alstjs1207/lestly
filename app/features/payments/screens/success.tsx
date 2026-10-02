@@ -13,15 +13,19 @@
  * - Database recording of verified payments
  * - Detailed success page with payment information
  */
-
 import type { Route } from "./+types/success";
 
-import { redirect } from "react-router";
+import { redirect, data as routeData } from "react-router";
 import { z } from "zod";
 
 import { requireAuthentication } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import {
+  DEMO_PAYMENT_AMOUNT,
+  isPaymentDemoEnabled,
+  isValidDemoOrder,
+} from "~/features/payments/lib/payment-demo.server";
 
 /**
  * Meta function for setting page metadata
@@ -48,10 +52,9 @@ export const meta: Route.MetaFunction = () => [
  * - paymentType: Method of payment (card, transfer, etc.)
  */
 const paramsSchema = z.object({
-  orderId: z.string(),
-  paymentKey: z.string(),
-  amount: z.coerce.number(),
-  paymentType: z.string(),
+  orderId: z.string().min(6).max(64),
+  paymentKey: z.string().min(1).max(200),
+  amount: z.coerce.number().int().positive(),
 });
 
 /**
@@ -100,21 +103,37 @@ const paymentResponseSchema = z.object({
  * @returns Object with payment data for the success page
  */
 export async function loader({ request }: Route.LoaderArgs) {
+  if (
+    !isPaymentDemoEnabled(
+      process.env.NODE_ENV,
+      process.env.TOSS_PAYMENTS_SECRET_KEY,
+    )
+  ) {
+    throw routeData(null, { status: 404 });
+  }
   // Create a server-side Supabase client with the user's session
-  const [client] = makeServerClient(request);
-  
+  const [client, headers] = makeServerClient(request);
+
   // Verify the user is authenticated, redirects to login if not
   const user = await requireAuthentication(client);
-  
+
   // Extract and validate payment parameters from URL
   const url = new URL(request.url);
   const result = paramsSchema.safeParse(Object.fromEntries(url.searchParams));
-  
+
   // Redirect to failure page if parameters are invalid
-  if (!result.success) {
-    return redirect(`/payments/failure?`);
+  if (
+    !result.success ||
+    result.data.amount !== DEMO_PAYMENT_AMOUNT ||
+    !isValidDemoOrder(
+      result.data.orderId,
+      user.id,
+      process.env.TOSS_PAYMENTS_SECRET_KEY!,
+    )
+  ) {
+    return redirect(`/payments/failure?code=invalid-order`, { headers });
   }
-  
+
   // Prepare authorization header for Toss Payments API
   const encryptedSecretKey =
     "Basic " +
@@ -134,19 +153,20 @@ export async function loader({ request }: Route.LoaderArgs) {
         Authorization: encryptedSecretKey,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(15_000),
     },
   );
-  
+
   // Parse API response
   const data = await response.json();
-  
+
   // Handle API errors by redirecting to failure page with error details
   if (response.status !== 200 && data.code && data.message) {
     throw redirect(
       `/payments/failure?code=${encodeURIComponent(data.code)}&message=${encodeURIComponent(data.message)}`,
     );
   }
-  
+
   // Validate API response structure
   const paymentResponse = paymentResponseSchema.safeParse(data);
   if (!paymentResponse.success) {
@@ -154,18 +174,23 @@ export async function loader({ request }: Route.LoaderArgs) {
       `/payments/failure?code=${encodeURIComponent("validation-error")}&message=${encodeURIComponent("Invalid response from Toss")}`,
     );
   }
-  
+
   // CRITICAL SECURITY CHECK: Validate payment amount
   // This prevents attackers from manipulating the payment amount
   // 🚨⚠️ In a production app, you would compare against the expected amount from your database
-  if (paymentResponse.data.totalAmount !== 10_000) {
+  if (
+    paymentResponse.data.totalAmount !== DEMO_PAYMENT_AMOUNT ||
+    paymentResponse.data.orderId !== result.data.orderId ||
+    paymentResponse.data.paymentKey !== result.data.paymentKey ||
+    paymentResponse.data.status !== "DONE"
+  ) {
     throw redirect(
       `/payments/failure?code=${encodeURIComponent("validation-error")}&message=${encodeURIComponent("Invalid amount")}`,
     );
   }
-  
+
   // Record the verified payment in the database
-  await adminClient.from("payments").insert({
+  const { error: insertError } = await adminClient.from("payments").insert({
     payment_key: paymentResponse.data.paymentKey,
     order_id: paymentResponse.data.orderId,
     order_name: paymentResponse.data.orderName,
@@ -178,9 +203,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     raw_data: data,
     user_id: user.id,
   });
-  
+  if (insertError) {
+    throw routeData("결제 기록을 저장하지 못했습니다.", {
+      status: 500,
+      headers,
+    });
+  }
+
   // Return payment data for the success page
-  return { data };
+  return routeData({ data }, { headers });
 }
 
 /**
@@ -211,14 +242,14 @@ export default function Success({ loaderData }: Route.ComponentProps) {
             className="w-full rounded-2xl object-cover"
           />
         </div>
-        
+
         {/* Payment confirmation section */}
         <div className="flex flex-col items-start gap-10 overflow-x-scroll">
           {/* Success message */}
           <h1 className="text-center text-4xl font-semibold tracking-tight lg:text-5xl">
             Payment Complete
           </h1>
-          
+
           {/* Explanation text */}
           <p className="text-muted-foreground text-lg font-medium">
             We have verified the payment with the Toss API.
@@ -226,7 +257,7 @@ export default function Success({ loaderData }: Route.ComponentProps) {
             <br />
             Here is the data we got from Toss.
           </p>
-          
+
           {/* Raw payment data (for demonstration purposes) */}
           <pre className="break-all">
             {JSON.stringify(loaderData.data, null, 2)}

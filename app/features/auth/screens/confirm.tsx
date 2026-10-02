@@ -18,6 +18,7 @@ import type { Route } from "./+types/confirm";
 import { data, redirect } from "react-router";
 import { z } from "zod";
 
+import { getSafeRedirectPath } from "~/core/lib/request-security";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -80,28 +81,34 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // Create Supabase client and get response headers for auth cookies
   const [client, headers] = makeServerClient(request);
+  const next = getSafeRedirectPath(validData.next);
 
   // Verify the token with Supabase
   const { error, data: verifyOtpData } = await client.auth.verifyOtp({
-    ...validData,
+    token_hash: validData.token_hash,
+    type: validData.type,
   });
 
   // Return error if verification fails
   if (error) {
-    return data({ error: error.message }, { status: 400 });
+    return data({ error: error.message }, { status: 400, headers });
   }
 
   // Special handling for email change confirmations
   if (validData.type === "email_change") {
-    return redirect(
-      // @ts-ignore - Supabase returns a message in the user object for email changes
-      `${validData.next}?message=${encodeURIComponent(verifyOtpData.user.msg ?? "Your email has been updated")}`,
-      { headers },
+    const target = new URL(next, request.url);
+    const message = (verifyOtpData.user as { msg?: string } | null)?.msg;
+    target.searchParams.set(
+      "message",
+      message ?? "Your email has been updated",
     );
+    return redirect(`${target.pathname}${target.search}${target.hash}`, {
+      headers,
+    });
   }
 
   // Redirect to the next URL with auth cookies in headers
-  return redirect(validData.next, { headers });
+  return redirect(next, { headers });
 }
 
 /**

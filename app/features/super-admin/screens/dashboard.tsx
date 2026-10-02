@@ -1,13 +1,13 @@
 import type { Route } from "./+types/dashboard";
 
-import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
 import {
   Building2Icon,
-  UsersIcon,
   CalendarIcon,
   TrendingUpIcon,
+  UsersIcon,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link, data } from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import {
@@ -25,62 +25,27 @@ import {
   TableHeader,
   TableRow,
 } from "~/core/components/ui/table";
+import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-
 import {
-  getAllOrganizations,
   getGlobalStats,
   requireSuperAdmin,
 } from "~/features/admin/guards.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
+
+import { getOrganizationsWithStats } from "../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
 
   // Check super admin role
   await requireSuperAdmin(client);
 
-  // Get global stats
-  const stats = await getGlobalStats();
+  const [stats, organizations] = await Promise.all([
+    getGlobalStats(),
+    getOrganizationsWithStats(adminClient),
+  ]);
 
-  // Get all organizations with member counts
-  const organizations = await getAllOrganizations();
-
-  // Get member counts and notification settings per organization
-  const orgStats = await Promise.all(
-    organizations.map(async (org) => {
-      const [{ count: memberCount }, { count: scheduleCount }, notifSetting] =
-        await Promise.all([
-          adminClient
-            .from("organization_members")
-            .select("profile_id", { count: "exact", head: true })
-            .eq("organization_id", org.organization_id),
-          adminClient
-            .from("schedules")
-            .select("schedule_id", { count: "exact", head: true })
-            .eq("organization_id", org.organization_id),
-          adminClient
-            .from("settings")
-            .select("setting_value")
-            .eq("organization_id", org.organization_id)
-            .eq("setting_key", "notifications_enabled")
-            .single(),
-        ]);
-
-      const notificationsEnabled =
-        (notifSetting.data?.setting_value as { value?: boolean } | null)
-          ?.value ?? false;
-
-      return {
-        ...org,
-        memberCount: memberCount ?? 0,
-        scheduleCount: scheduleCount ?? 0,
-        notificationsEnabled,
-      };
-    })
-  );
-
-  return { stats, organizations: orgStats };
+  return data({ stats, organizations }, { headers });
 }
 
 export default function SuperAdminDashboardScreen({
@@ -102,11 +67,11 @@ export default function SuperAdminDashboardScreen({
             <CardTitle className="text-sm font-medium">
               {t("superAdmin.stats.totalOrganizations")}
             </CardTitle>
-            <Building2Icon className="h-4 w-4 text-muted-foreground" />
+            <Building2Icon className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalOrganizations}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.stats.registeredOrganizations")}
             </p>
           </CardContent>
@@ -121,7 +86,7 @@ export default function SuperAdminDashboardScreen({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalMembers}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.stats.acrossAllOrganizations")}
             </p>
           </CardContent>
@@ -136,7 +101,7 @@ export default function SuperAdminDashboardScreen({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalSchedules}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.stats.allTimeSchedules")}
             </p>
           </CardContent>
@@ -155,7 +120,7 @@ export default function SuperAdminDashboardScreen({
                 ? Math.round(stats.totalMembers / stats.totalOrganizations)
                 : 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t("superAdmin.stats.perOrganization")}
             </p>
           </CardContent>
@@ -168,7 +133,9 @@ export default function SuperAdminDashboardScreen({
             <Building2Icon className="h-5 w-5" />
             {t("superAdmin.organizations")}
           </CardTitle>
-          <CardDescription>{t("superAdmin.table.selectToManage")}</CardDescription>
+          <CardDescription>
+            {t("superAdmin.table.selectToManage")}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -202,16 +169,22 @@ export default function SuperAdminDashboardScreen({
                   <TableCell className="text-muted-foreground">
                     {org.description || "-"}
                   </TableCell>
-                  <TableCell className="text-right">{org.memberCount}</TableCell>
+                  <TableCell className="text-right">
+                    {org.memberCount}
+                  </TableCell>
                   <TableCell className="text-right">
                     {org.scheduleCount}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant={org.notificationsEnabled ? "default" : "secondary"}>
+                    <Badge
+                      variant={
+                        org.notificationsEnabled ? "default" : "secondary"
+                      }
+                    >
                       {org.notificationsEnabled ? "사용" : "미사용"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-right">
                     {new Date(org.created_at).toLocaleDateString()}
                   </TableCell>
                 </TableRow>
@@ -220,7 +193,7 @@ export default function SuperAdminDashboardScreen({
                 <TableRow>
                   <TableCell
                     colSpan={6}
-                    className="text-center text-muted-foreground"
+                    className="text-muted-foreground text-center"
                   >
                     {t("superAdmin.table.noOrganizationsFound")}
                   </TableCell>

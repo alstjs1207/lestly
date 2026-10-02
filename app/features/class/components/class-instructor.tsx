@@ -1,5 +1,7 @@
 import type { InstructorSns } from "../queries";
 
+import { getSafeHttpUrl } from "~/core/lib/web-url";
+
 interface ClassInstructorProps {
   name?: string | null;
   info?: string | null;
@@ -33,6 +35,8 @@ export default function ClassInstructor({
   sns,
 }: ClassInstructorProps) {
   if (!name) return null;
+  const instagramUrl = getSafeHttpUrl(sns.instagram);
+  const youtubeUrl = getSafeHttpUrl(sns.youtube);
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -71,11 +75,11 @@ export default function ClassInstructor({
       )}
 
       {/* SNS 링크 */}
-      {(sns.instagram || sns.youtube) && (
+      {(instagramUrl || youtubeUrl) && (
         <div className="flex gap-3 pt-2">
-          {sns.instagram && (
+          {instagramUrl && (
             <a
-              href={sns.instagram}
+              href={instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white transition-opacity hover:opacity-90"
@@ -83,9 +87,9 @@ export default function ClassInstructor({
               <InstagramIcon className="h-5 w-5" />
             </a>
           )}
-          {sns.youtube && (
+          {youtubeUrl && (
             <a
-              href={sns.youtube}
+              href={youtubeUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 text-white transition-opacity hover:opacity-90"

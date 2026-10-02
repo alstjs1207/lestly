@@ -1,0 +1,114 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { isWorkerAuthorized } from "../supabase/functions/_shared/worker-auth.ts";
+import { loadMockedModule } from "./helpers/mocked-module.ts";
+
+function setup() {
+  let handler!: (request: Request) => Promise<Response>;
+  let dbCalls = 0;
+  const filters: Array<[string, unknown]> = [];
+  const chain = {
+    update() {
+      return chain;
+    },
+    eq(column: string, value: unknown) {
+      filters.push([column, value]);
+      return chain;
+    },
+    select() {
+      return chain;
+    },
+    single: async () => ({ data: null, error: { code: "PGRST116" } }),
+  };
+  loadMockedModule(
+    new URL("../supabase/functions/send-alimtalk/index.ts", import.meta.url),
+    {
+      "https://esm.sh/@supabase/supabase-js@2": {
+        createClient: () => ({
+          from() {
+            dbCalls += 1;
+            return chain;
+          },
+        }),
+      },
+      "../_shared/worker-auth.ts": { isWorkerAuthorized },
+    },
+    {
+      Deno: {
+        env: {
+          get: (key: string) =>
+            key === "SUPABASE_SERVICE_ROLE_KEY"
+              ? "service-secret"
+              : "test-value",
+        },
+        serve: (callback: typeof handler) => {
+          handler = callback;
+        },
+      },
+    },
+  );
+  return {
+    handler,
+    filters,
+    get dbCalls() {
+      return dbCalls;
+    },
+  };
+}
+
+function request(
+  authorization?: string,
+  notificationId: unknown = 1,
+  method = "POST",
+) {
+  return new Request("https://lestly.test/functions/v1/send-alimtalk", {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...(authorization ? { Authorization: authorization } : {}),
+    },
+    body:
+      method === "GET"
+        ? undefined
+        : JSON.stringify({ notification_id: notificationId }),
+  });
+}
+
+test("real Edge handler rejects anon/user/raw/missing credentials before all database and send operations", async () => {
+  const state = setup();
+  assert.equal(
+    (await state.handler(request("Bearer service-secret", 1, "GET"))).status,
+    405,
+  );
+  for (const credentials of [
+    undefined,
+    "Bearer anon-key",
+    "Bearer user-jwt",
+    "service-secret",
+    "Bearer wrong-secret",
+  ]) {
+    assert.equal((await state.handler(request(credentials))).status, 401);
+  }
+  assert.equal(state.dbCalls, 0);
+});
+
+test("real Edge handler rejects malformed IDs and only claims ALIMTALK PENDING notifications", async () => {
+  const state = setup();
+  for (const id of ["1", 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(
+      (await state.handler(request("Bearer service-secret", id))).status,
+      400,
+    );
+  }
+  assert.equal(state.dbCalls, 0);
+  const response = await state.handler(request("Bearer service-secret", 42));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).skipped, true);
+  assert.equal(state.dbCalls, 1);
+  assert.deepEqual(state.filters, [
+    ["notification_id", 42],
+    ["type", "ALIMTALK"],
+    ["alimtalk_status", "PENDING"],
+  ]);
+});

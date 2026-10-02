@@ -32,6 +32,7 @@ import { InputOTPSeparator } from "~/core/components/ui/input-otp";
 import { InputOTPGroup } from "~/core/components/ui/input-otp";
 import { InputOTPSlot } from "~/core/components/ui/input-otp";
 import { InputOTP } from "~/core/components/ui/input-otp";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -72,12 +73,12 @@ export function loader({ request }: Route.LoaderArgs) {
   const { success, data: validData } = paramsSchema.safeParse(
     Object.fromEntries(url.searchParams),
   );
-  
+
   // Redirect to start page if email is missing or invalid
   if (!success) {
     return redirect("/auth/otp/start");
   }
-  
+
   // Return the validated email to the component
   return { email: validData.email };
 }
@@ -96,6 +97,7 @@ export function loader({ request }: Route.LoaderArgs) {
  * @returns Validation errors, auth errors, or redirect to home page with auth cookies
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   // Schema for validating the OTP verification form
   const otpCompleteSchema = z.object({
     email: z.string().email(),
@@ -158,15 +160,15 @@ export default function OtpComplete({
 }: Route.ComponentProps) {
   // Reference to the form element for submission
   const formRef = useRef<HTMLFormElement>(null);
-  
+
   // Hook to programmatically submit the form
   const submit = useSubmit();
-  
+
   // Handler to automatically submit the form when all OTP digits are entered
   const handleComplete = () => {
     submit(formRef.current);
   };
-  
+
   return (
     <div className="flex items-center justify-center">
       <Card className="w-full max-w-md">

@@ -4,7 +4,6 @@
  * Database query functions for program management.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-
 import type { Database } from "database.types";
 
 type Program = Database["public"]["Tables"]["programs"]["Row"];
@@ -26,7 +25,9 @@ export async function getPrograms(
 ) {
   let query = client
     .from("programs")
-    .select("*, instructor:instructors(*)")
+    .select(
+      "*, instructor:instructors!programs_instructor_id_instructors_instructor_id_fk(*)",
+    )
     .eq("organization_id", organizationId);
 
   if (statusFilter) {
@@ -74,7 +75,9 @@ export async function getProgram(
 ) {
   const { data, error } = await client
     .from("programs")
-    .select("*, instructor:instructors(*)")
+    .select(
+      "*, instructor:instructors!programs_instructor_id_instructors_instructor_id_fk(*)",
+    )
     .eq("program_id", programId)
     .single();
 

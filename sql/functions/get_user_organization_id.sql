@@ -1,27 +1,23 @@
--- Get User Organizations Function
--- Returns all organization IDs that the current user belongs to
--- Uses organization_members junction table for N:N relationship
-
 CREATE OR REPLACE FUNCTION public.get_user_organizations()
 RETURNS SETOF uuid
 LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT organization_id FROM public.organization_members
-  WHERE profile_id = auth.uid()
-  AND state = 'NORMAL';
+  SELECT om.organization_id
+  FROM public.organization_members om
+  JOIN public.profiles p ON p.profile_id = om.profile_id
+  WHERE p.auth_user_id = auth.uid() AND om.state = 'NORMAL'
+  ORDER BY om.organization_id;
 $$;
 
--- Get first organization ID (for backwards compatibility)
 CREATE OR REPLACE FUNCTION public.get_user_organization_id()
 RETURNS uuid
 LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT organization_id FROM public.organization_members
-  WHERE profile_id = auth.uid()
-  AND state = 'NORMAL'
-  LIMIT 1;
+  SELECT organization_id FROM public.get_user_organizations() AS membership(organization_id) LIMIT 1;
 $$;

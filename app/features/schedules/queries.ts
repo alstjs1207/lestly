@@ -6,17 +6,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
+import { fetchAllRows } from "~/core/lib/query-utils";
 import { getMaxConcurrentStudents } from "~/features/app-settings/queries";
-import {
-  fromKST,
-  nowKST,
-  toKST,
-  toKSTDateString,
-} from "~/features/schedules/utils/kst";
+import { getKSTMonthRange } from "~/features/schedules/utils/calendar-month";
+import { fromKST, nowKST, toKST } from "~/features/schedules/utils/kst";
 import {
   type ScheduleCandidate,
   validateScheduleCandidatesAgainstExisting,
 } from "~/features/schedules/utils/schedule-validation";
+import { getStudentHoursTotals } from "~/features/schedules/utils/student-hours";
+import { getCurrentScheduleStreak } from "~/features/schedules/utils/student-streak";
 
 type Schedule = Database["public"]["Tables"]["schedules"]["Row"];
 type ScheduleInsert = Database["public"]["Tables"]["schedules"]["Insert"];
@@ -33,13 +32,13 @@ export async function getMonthlySchedules(
     month,
   }: { organizationId: string; year: number; month: number },
 ) {
-  const startDate = fromKST(year, month - 1, 1);
-  const endDate = fromKST(year, month, 0, 23, 59, 59);
+  const { startDate, endDate } = getKSTMonthRange(year, month);
 
-  const { data, error } = await client
-    .from("schedules")
-    .select(
-      `
+  return fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select(
+        `
       schedule_id, student_id, program_id, start_time, end_time,
       student:profiles!schedules_student_id_profiles_profile_id_fk(
         profile_id,
@@ -47,22 +46,19 @@ export async function getMonthlySchedules(
         color,
         region
       ),
-      program:programs(
+      program:programs!schedules_program_id_programs_program_id_fk(
         program_id,
         title
       )
     `,
-    )
-    .eq("organization_id", organizationId)
-    .gte("start_time", startDate.toISOString())
-    .lte("start_time", endDate.toISOString())
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+      )
+      .eq("organization_id", organizationId)
+      .gte("start_time", startDate.toISOString())
+      .lt("start_time", endDate.toISOString())
+      .order("start_time", { ascending: true })
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
 }
 
 /**
@@ -74,12 +70,13 @@ export async function getDailySchedules(
 ) {
   const kst = toKST(date);
   const startOfDay = fromKST(kst.year, kst.month, kst.day, 0, 0, 0);
-  const endOfDay = fromKST(kst.year, kst.month, kst.day, 23, 59, 59);
+  const endOfDay = fromKST(kst.year, kst.month, kst.day + 1);
 
-  const { data, error } = await client
-    .from("schedules")
-    .select(
-      `
+  return fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select(
+        `
       schedule_id, student_id, program_id, start_time, end_time,
       student:profiles!schedules_student_id_profiles_profile_id_fk(
         profile_id,
@@ -88,22 +85,19 @@ export async function getDailySchedules(
         phone,
         region
       ),
-      program:programs(
+      program:programs!schedules_program_id_programs_program_id_fk(
         program_id,
         title
       )
     `,
-    )
-    .eq("organization_id", organizationId)
-    .gte("start_time", startOfDay.toISOString())
-    .lte("start_time", endOfDay.toISOString())
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+      )
+      .eq("organization_id", organizationId)
+      .gte("start_time", startOfDay.toISOString())
+      .lt("start_time", endOfDay.toISOString())
+      .order("start_time", { ascending: true })
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
 }
 
 /**
@@ -117,10 +111,11 @@ export async function getUpcomingSchedules(
   const startDate = fromKST(now.year, now.month, now.day);
   const endDate = fromKST(now.year, now.month, now.day + days);
 
-  const { data, error } = await client
-    .from("schedules")
-    .select(
-      `
+  return fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select(
+        `
       schedule_id, student_id, program_id, start_time, end_time,
       student:profiles!schedules_student_id_profiles_profile_id_fk(
         profile_id,
@@ -129,22 +124,19 @@ export async function getUpcomingSchedules(
         phone,
         region
       ),
-      program:programs(
+      program:programs!schedules_program_id_programs_program_id_fk(
         program_id,
         title
       )
     `,
-    )
-    .eq("organization_id", organizationId)
-    .gte("start_time", startDate.toISOString())
-    .lt("start_time", endDate.toISOString())
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+      )
+      .eq("organization_id", organizationId)
+      .gte("start_time", startDate.toISOString())
+      .lt("start_time", endDate.toISOString())
+      .order("start_time", { ascending: true })
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
 }
 
 /**
@@ -153,41 +145,56 @@ export async function getUpcomingSchedules(
 export async function getStudentSchedules(
   client: SupabaseClient<Database>,
   params:
-    | { studentId: string; year: number; month: number }
-    | { studentId: string; startDate: Date; endDate: Date },
+    | {
+        studentId: string;
+        organizationId?: string;
+        year: number;
+        month: number;
+      }
+    | {
+        studentId: string;
+        organizationId?: string;
+        startDate: Date;
+        endDate: Date;
+        endExclusive?: boolean;
+      },
 ) {
   let queryStartDate: Date;
   let queryEndDate: Date;
 
   if ("year" in params && "month" in params) {
-    queryStartDate = fromKST(params.year, params.month - 1, 1);
-    queryEndDate = fromKST(params.year, params.month, 0, 23, 59, 59);
+    const range = getKSTMonthRange(params.year, params.month);
+    queryStartDate = range.startDate;
+    queryEndDate = range.endDate;
   } else {
     queryStartDate = params.startDate;
     queryEndDate = params.endDate;
   }
 
-  const { data, error } = await client
-    .from("schedules")
-    .select(
-      `
+  return fetchAllRows((from, to) => {
+    let query = client
+      .from("schedules")
+      .select(
+        `
       *,
-      program:programs(
+      program:programs!schedules_program_id_programs_program_id_fk(
         program_id,
         title
       )
     `,
-    )
-    .eq("student_id", params.studentId)
-    .gte("start_time", queryStartDate.toISOString())
-    .lte("start_time", queryEndDate.toISOString())
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+      )
+      .eq("student_id", params.studentId)
+      .gte("start_time", queryStartDate.toISOString())
+      .order("start_time", { ascending: true })
+      .order("schedule_id", { ascending: true });
+    if (params.organizationId)
+      query = query.eq("organization_id", params.organizationId);
+    query =
+      "year" in params || params.endExclusive
+        ? query.lt("start_time", queryEndDate.toISOString())
+        : query.lte("start_time", queryEndDate.toISOString());
+    return query.range(from, to);
+  });
 }
 
 /**
@@ -242,7 +249,7 @@ export async function checkConcurrentLimit(
 
   let query = client
     .from("schedules")
-    .select("schedule_id", { count: "exact" })
+    .select("schedule_id", { count: "exact", head: true })
     .eq("organization_id", organizationId)
     .lt("start_time", endTime.toISOString())
     .gt("end_time", startTime.toISOString());
@@ -285,16 +292,16 @@ export async function validateScheduleCreation(
     organizationId,
   });
 
-  const { data, error } = await client
-    .from("schedules")
-    .select("schedule_id, student_id")
-    .eq("organization_id", organizationId)
-    .lt("start_time", endTime.toISOString())
-    .gt("end_time", startTime.toISOString());
-
-  if (error) {
-    throw error;
-  }
+  const data = await fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select("schedule_id, student_id")
+      .eq("organization_id", organizationId)
+      .lt("start_time", endTime.toISOString())
+      .gt("end_time", startTime.toISOString())
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
 
   const currentCount = data?.length ?? 0;
   const hasConflict = data?.some((s) => s.student_id === studentId) ?? false;
@@ -336,16 +343,16 @@ export async function validateScheduleBatch(
     Math.max(...candidates.map((candidate) => candidate.endTime.getTime())),
   );
 
-  const { data, error } = await client
-    .from("schedules")
-    .select("schedule_id, student_id, start_time, end_time")
-    .eq("organization_id", organizationId)
-    .lt("start_time", latestEnd.toISOString())
-    .gt("end_time", earliestStart.toISOString());
-
-  if (error) {
-    throw error;
-  }
+  const data = await fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select("schedule_id, student_id, start_time, end_time")
+      .eq("organization_id", organizationId)
+      .lt("start_time", latestEnd.toISOString())
+      .gt("end_time", earliestStart.toISOString())
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
 
   const excludedIds = new Set(excludeScheduleIds);
   const existingSchedules = (data ?? [])
@@ -468,74 +475,36 @@ export async function deleteFutureSchedules(
  */
 export async function getStudentWeeklySchedules(
   client: SupabaseClient<Database>,
-  { studentId }: { studentId: string },
+  { studentId, organizationId }: { studentId: string; organizationId?: string },
 ) {
   const now = nowKST();
   const dayOfWeek = new Date(
     Date.UTC(now.year, now.month, now.day),
   ).getUTCDay();
   const startOfWeek = fromKST(now.year, now.month, now.day - dayOfWeek);
-  const endOfWeek = fromKST(
-    now.year,
-    now.month,
-    now.day - dayOfWeek + 6,
-    23,
-    59,
-    59,
-  );
-
-  const { data, error } = await client
-    .from("schedules")
-    .select(
-      `
-      *,
-      program:programs(
-        program_id,
-        title
-      )
-    `,
-    )
-    .eq("student_id", studentId)
-    .gte("start_time", startOfWeek.toISOString())
-    .lte("start_time", endOfWeek.toISOString())
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  const endOfWeek = fromKST(now.year, now.month, now.day - dayOfWeek + 7);
+  return getStudentSchedules(client, {
+    studentId,
+    organizationId,
+    startDate: startOfWeek,
+    endDate: endOfWeek,
+    endExclusive: true,
+  });
 }
 
 /**
  * Calculate total class hours for a student
- * Uses SQL aggregation for efficiency - only fetches the sum, not all records
+ * Uses an RLS-protected SQL aggregate instead of downloading schedule history.
  */
 export async function calculateStudentTotalHours(
   client: SupabaseClient<Database>,
-  { studentId }: { studentId: string },
+  { studentId, organizationId }: { studentId: string; organizationId?: string },
 ): Promise<number> {
-  // Fetch only start_time and end_time to minimize data transfer
-  const { data, error } = await client
-    .from("schedules")
-    .select("start_time, end_time")
-    .eq("student_id", studentId)
-    .lte("start_time", new Date().toISOString());
-
-  if (error) {
-    throw error;
-  }
-
-  // Calculate total hours from the minimal data
-  let totalHours = 0;
-  for (const schedule of data) {
-    const start = new Date(schedule.start_time);
-    const end = new Date(schedule.end_time);
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    totalHours += hours;
-  }
-
-  return totalHours;
+  const totals = await getStudentHoursTotals(client, {
+    studentIds: [studentId],
+    organizationId,
+  });
+  return totals[studentId] ?? 0;
 }
 
 /**
@@ -543,7 +512,7 @@ export async function calculateStudentTotalHours(
  */
 export async function getStudentNextWeekSchedules(
   client: SupabaseClient<Database>,
-  { studentId }: { studentId: string },
+  { studentId, organizationId }: { studentId: string; organizationId?: string },
 ) {
   const now = nowKST();
   const dayOfWeek = new Date(
@@ -554,36 +523,14 @@ export async function getStudentNextWeekSchedules(
   const startOfNextWeek = fromKST(now.year, now.month, now.day - dayOfWeek + 7);
 
   // End of next week (next Saturday) in KST
-  const endOfNextWeek = fromKST(
-    now.year,
-    now.month,
-    now.day - dayOfWeek + 13,
-    23,
-    59,
-    59,
-  );
-
-  const { data, error } = await client
-    .from("schedules")
-    .select(
-      `
-      *,
-      program:programs(
-        program_id,
-        title
-      )
-    `,
-    )
-    .eq("student_id", studentId)
-    .gte("start_time", startOfNextWeek.toISOString())
-    .lte("start_time", endOfNextWeek.toISOString())
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  const endOfNextWeek = fromKST(now.year, now.month, now.day - dayOfWeek + 14);
+  return getStudentSchedules(client, {
+    studentId,
+    organizationId,
+    startDate: startOfNextWeek,
+    endDate: endOfNextWeek,
+    endExclusive: true,
+  });
 }
 
 /**
@@ -594,20 +541,20 @@ export async function getStudentYearlyStats(
   client: SupabaseClient<Database>,
   { studentId, year }: { studentId: string; year: number },
 ): Promise<{ month: number; hours: number }[]> {
-  const startDate = fromKST(year, 0, 1);
-  const endDate = fromKST(year, 11, 31, 23, 59, 59);
-
-  const { data, error } = await client
-    .from("schedules")
-    .select("start_time, end_time")
-    .eq("student_id", studentId)
-    .gte("start_time", startDate.toISOString())
-    .lte("start_time", endDate.toISOString())
-    .lte("start_time", new Date().toISOString()); // Only count past schedules
-
-  if (error) {
-    throw error;
-  }
+  const startDate = getKSTMonthRange(year, 1).startDate;
+  const endDate = getKSTMonthRange(year, 12).endDate;
+  const now = new Date().toISOString();
+  const data = await fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select("start_time, end_time")
+      .eq("student_id", studentId)
+      .gte("start_time", startDate.toISOString())
+      .lt("start_time", endDate.toISOString())
+      .lte("start_time", now)
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
 
   // Initialize all months with 0 hours
   const monthlyHours: Record<number, number> = {};
@@ -646,26 +593,23 @@ export async function getStudentMonthlyStats(
   const now = nowKST();
   const thisMonthStart = fromKST(now.year, now.month, 1);
   const lastMonthStart = fromKST(now.year, now.month - 1, 1);
-  const lastMonthEnd = fromKST(now.year, now.month, 0, 23, 59, 59);
-
-  // Run both queries in parallel for better performance
-  const [thisMonthResult, lastMonthResult] = await Promise.all([
-    client
-      .from("schedules")
-      .select("start_time, end_time")
-      .eq("student_id", studentId)
-      .gte("start_time", thisMonthStart.toISOString())
-      .lte("start_time", new Date().toISOString()),
+  const currentTime = new Date().toISOString();
+  const schedules = await fetchAllRows((from, to) =>
     client
       .from("schedules")
       .select("start_time, end_time")
       .eq("student_id", studentId)
       .gte("start_time", lastMonthStart.toISOString())
-      .lte("start_time", lastMonthEnd.toISOString()),
-  ]);
-
-  if (thisMonthResult.error) throw thisMonthResult.error;
-  if (lastMonthResult.error) throw lastMonthResult.error;
+      .lte("start_time", currentTime)
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
+  const thisMonth = schedules.filter(
+    (schedule) => new Date(schedule.start_time) >= thisMonthStart,
+  );
+  const lastMonth = schedules.filter(
+    (schedule) => new Date(schedule.start_time) < thisMonthStart,
+  );
 
   const calculateHours = (
     schedules: { start_time: string; end_time: string }[],
@@ -678,12 +622,10 @@ export async function getStudentMonthlyStats(
   };
 
   return {
-    thisMonthHours:
-      Math.round(calculateHours(thisMonthResult.data || []) * 10) / 10,
-    lastMonthHours:
-      Math.round(calculateHours(lastMonthResult.data || []) * 10) / 10,
-    thisMonthCount: thisMonthResult.data?.length || 0,
-    lastMonthCount: lastMonthResult.data?.length || 0,
+    thisMonthHours: Math.round(calculateHours(thisMonth) * 10) / 10,
+    lastMonthHours: Math.round(calculateHours(lastMonth) * 10) / 10,
+    thisMonthCount: thisMonth.length,
+    lastMonthCount: lastMonth.length,
   };
 }
 
@@ -694,38 +636,17 @@ export async function getStudentStreak(
   client: SupabaseClient<Database>,
   { studentId }: { studentId: string },
 ): Promise<number> {
-  const { data, error } = await client
-    .from("schedules")
-    .select("start_time")
-    .eq("student_id", studentId)
-    .lte("start_time", new Date().toISOString())
-    .order("start_time", { ascending: false });
-
-  if (error) throw error;
-  if (!data || data.length === 0) return 0;
-
-  // Get unique KST date strings
-  const dateStrings = [
-    ...new Set(data.map((s) => toKSTDateString(new Date(s.start_time)))),
-  ];
-
-  dateStrings.sort((a, b) => b.localeCompare(a)); // descending
-
-  let streak = 0;
-  const now = nowKST();
-
-  for (let i = 0; i < dateStrings.length; i++) {
-    const expectedDate = fromKST(now.year, now.month, now.day - i);
-    const expectedStr = toKSTDateString(expectedDate);
-
-    if (dateStrings[i] === expectedStr) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-
-  return streak;
+  const now = new Date().toISOString();
+  return getCurrentScheduleStreak((from, to) =>
+    client
+      .from("schedules")
+      .select("start_time")
+      .eq("student_id", studentId)
+      .lte("start_time", now)
+      .order("start_time", { ascending: false })
+      .order("schedule_id", { ascending: false })
+      .range(from, to),
+  );
 }
 
 /**
@@ -764,28 +685,30 @@ export async function getStudentProgramHoursBreakdown(
     color: string;
   }[]
 > {
-  const startDate = fromKST(year, 0, 1);
-  const endDate = fromKST(year, 11, 31, 23, 59, 59);
-
-  const { data, error } = await client
-    .from("schedules")
-    .select(
-      `
+  const startDate = getKSTMonthRange(year, 1).startDate;
+  const endDate = getKSTMonthRange(year, 12).endDate;
+  const now = new Date().toISOString();
+  const data = await fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select(
+        `
       start_time,
       end_time,
       program_id,
-      program:programs(
+      program:programs!schedules_program_id_programs_program_id_fk(
         program_id,
         title
       )
     `,
-    )
-    .eq("student_id", studentId)
-    .gte("start_time", startDate.toISOString())
-    .lte("start_time", endDate.toISOString())
-    .lte("start_time", new Date().toISOString());
-
-  if (error) throw error;
+      )
+      .eq("student_id", studentId)
+      .gte("start_time", startDate.toISOString())
+      .lt("start_time", endDate.toISOString())
+      .lte("start_time", now)
+      .order("schedule_id", { ascending: true })
+      .range(from, to),
+  );
 
   const programColors = [
     "#6366f1", // indigo
@@ -844,7 +767,7 @@ export async function checkStudentTimeConflict(
 ): Promise<boolean> {
   let query = client
     .from("schedules")
-    .select("schedule_id", { count: "exact" })
+    .select("schedule_id")
     .eq("student_id", studentId)
     .lt("start_time", endTime.toISOString())
     .gt("end_time", startTime.toISOString());
@@ -853,11 +776,11 @@ export async function checkStudentTimeConflict(
     query = query.neq("schedule_id", excludeScheduleId);
   }
 
-  const { count, error } = await query;
+  const { data, error } = await query.limit(1);
 
   if (error) {
     throw error;
   }
 
-  return (count ?? 0) > 0;
+  return (data?.length ?? 0) > 0;
 }

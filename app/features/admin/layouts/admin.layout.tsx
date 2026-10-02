@@ -11,6 +11,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "~/core/components/ui/sidebar";
+import { getAuthenticatedProfile } from "~/core/lib/authenticated-profile.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getNotificationsEnabled } from "~/features/app-settings/queries";
@@ -28,18 +29,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   const adminUser = await requireAdminRole(client);
 
   // Get profile, organization, and notifications setting in parallel
-  const [{ data: profile }, organization, notificationsEnabled] =
-    await Promise.all([
-      client
-        .from("profiles")
-        .select("name, avatar_url")
-        .eq("profile_id", adminUser.user.id)
-        .single(),
-      getOrganization(client, { organizationId: adminUser.organizationId }),
-      getNotificationsEnabled(adminClient, {
-        organizationId: adminUser.organizationId,
-      }),
-    ]);
+  const [profile, organization, notificationsEnabled] = await Promise.all([
+    getAuthenticatedProfile(client, adminUser.user.id),
+    getOrganization(client, { organizationId: adminUser.organizationId }),
+    getNotificationsEnabled(adminClient, {
+      organizationId: adminUser.organizationId,
+    }),
+  ]);
 
   return {
     user: {

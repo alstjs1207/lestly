@@ -1,8 +1,8 @@
 import type { Route } from "./+types/templates";
 
+import { FileTextIcon, PencilIcon } from "lucide-react";
 import { useState } from "react";
 import { useFetcher } from "react-router";
-import { FileTextIcon, PencilIcon } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -40,9 +40,11 @@ import {
   TableRow,
 } from "~/core/components/ui/table";
 import { Textarea } from "~/core/components/ui/textarea";
-import makeServerClient from "~/core/lib/supa-client.server";
+import { requireMethod } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
+import makeServerClient from "~/core/lib/supa-client.server";
 import { requireSuperAdmin } from "~/features/admin/guards.server";
+
 import { getAllSuperTemplates } from "../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -55,6 +57,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   const [client] = makeServerClient(request);
   await requireSuperAdmin(client);
 
@@ -67,7 +70,9 @@ export async function action({ request }: Route.ActionArgs) {
     const kakaoTemplateCode = formData.get("kakaoTemplateCode") as string;
     const content = formData.get("content") as string;
     const variablesRaw = formData.get("variables") as string;
-    const defaultTiming = formData.get("defaultTiming") as "IMMEDIATE" | "SCHEDULED";
+    const defaultTiming = formData.get("defaultTiming") as
+      | "IMMEDIATE"
+      | "SCHEDULED";
     const defaultHoursBefore = formData.get("defaultHoursBefore")
       ? parseInt(formData.get("defaultHoursBefore") as string)
       : null;
@@ -132,11 +137,17 @@ export default function SuperAdminTemplatesScreen({
   loaderData,
 }: Route.ComponentProps) {
   const { templates } = loaderData;
-  const updateFetcher = useFetcher<{ success: boolean; templateId?: number; error?: string }>();
-  const [selectedTemplate, setSelectedTemplate] = useState<typeof templates[0] | null>(null);
+  const updateFetcher = useFetcher<{
+    success: boolean;
+    templateId?: number;
+    error?: string;
+  }>();
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    (typeof templates)[0] | null
+  >(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleEditClick = (template: typeof templates[0]) => {
+  const handleEditClick = (template: (typeof templates)[0]) => {
     setSelectedTemplate(template);
     setDialogOpen(true);
   };
@@ -144,12 +155,13 @@ export default function SuperAdminTemplatesScreen({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-2xl font-bold">
           <FileTextIcon className="h-6 w-6" />
           알림 템플릿 관리
         </h1>
         <p className="text-muted-foreground">
-          마스터 템플릿을 관리합니다. 여기서 변경한 내용은 모든 조직에 적용됩니다.
+          마스터 템플릿을 관리합니다. 여기서 변경한 내용은 모든 조직에
+          적용됩니다.
         </p>
       </div>
 
@@ -157,7 +169,8 @@ export default function SuperAdminTemplatesScreen({
         <CardHeader>
           <CardTitle>마스터 템플릿 목록</CardTitle>
           <CardDescription>
-            등록된 알림톡 템플릿입니다. 수정 버튼을 클릭하여 템플릿 내용을 변경할 수 있습니다.
+            등록된 알림톡 템플릿입니다. 수정 버튼을 클릭하여 템플릿 내용을
+            변경할 수 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,7 +194,7 @@ export default function SuperAdminTemplatesScreen({
                     {template.super_template_id}
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {template.type}
                     </span>
                   </TableCell>
@@ -203,7 +216,9 @@ export default function SuperAdminTemplatesScreen({
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={template.status === "ACTIVE" ? "default" : "destructive"}
+                      variant={
+                        template.status === "ACTIVE" ? "default" : "destructive"
+                      }
                     >
                       {statusLabels[template.status]}
                     </Badge>
@@ -221,7 +236,10 @@ export default function SuperAdminTemplatesScreen({
               ))}
               {templates.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell
+                    colSpan={8}
+                    className="text-muted-foreground py-8 text-center"
+                  >
                     등록된 템플릿이 없습니다.
                   </TableCell>
                 </TableRow>
@@ -232,12 +250,13 @@ export default function SuperAdminTemplatesScreen({
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>템플릿 수정</DialogTitle>
             <DialogDescription>
               {selectedTemplate &&
-                (templateTypeLabels[selectedTemplate.type] || selectedTemplate.name)}{" "}
+                (templateTypeLabels[selectedTemplate.type] ||
+                  selectedTemplate.name)}{" "}
               템플릿을 수정합니다.
             </DialogDescription>
           </DialogHeader>
@@ -279,7 +298,7 @@ export default function SuperAdminTemplatesScreen({
                   defaultValue={selectedTemplate.content}
                   className="font-mono text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   변수는 {"{{변수명}}"} 형식으로 사용합니다.
                 </p>
               </div>
@@ -292,7 +311,7 @@ export default function SuperAdminTemplatesScreen({
                   defaultValue={JSON.stringify(selectedTemplate.variables)}
                   className="font-mono text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   예: ["studentName", "programName", "scheduledAt"]
                 </p>
               </div>
@@ -315,7 +334,9 @@ export default function SuperAdminTemplatesScreen({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="defaultHoursBefore">기본 시간 (시간 전)</Label>
+                  <Label htmlFor="defaultHoursBefore">
+                    기본 시간 (시간 전)
+                  </Label>
                   <Input
                     id="defaultHoursBefore"
                     name="defaultHoursBefore"
@@ -345,9 +366,12 @@ export default function SuperAdminTemplatesScreen({
                 <p className="text-sm text-green-600">저장되었습니다.</p>
               )}
 
-              {updateFetcher.data?.success === false && updateFetcher.data.error && (
-                <p className="text-sm text-destructive">{updateFetcher.data.error}</p>
-              )}
+              {updateFetcher.data?.success === false &&
+                updateFetcher.data.error && (
+                  <p className="text-destructive text-sm">
+                    {updateFetcher.data.error}
+                  </p>
+                )}
 
               <DialogFooter>
                 <Button

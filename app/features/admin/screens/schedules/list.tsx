@@ -7,7 +7,7 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, data, useSearchParams } from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -21,20 +21,18 @@ import {
 } from "~/core/components/ui/table";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getMonthlySchedules } from "~/features/schedules/queries";
+import { parseCalendarMonth } from "~/features/schedules/utils/calendar-month";
 import { nowKST, toKSTDateString } from "~/features/schedules/utils/kst";
 
 import { requireAdminRole } from "../../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
   const url = new URL(request.url);
   const now = nowKST();
-  const year = parseInt(url.searchParams.get("year") || String(now.year));
-  const month = parseInt(
-    url.searchParams.get("month") || String(now.month + 1),
-  );
+  const { year, month } = parseCalendarMonth(url.searchParams);
 
   const schedules = await getMonthlySchedules(client, {
     organizationId,
@@ -70,7 +68,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
   });
 
-  return { allDays, year, month };
+  return data({ allDays, year, month }, { headers });
 }
 
 const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];

@@ -1,8 +1,6 @@
 /**
  * Instructor Update API
  */
-import type { Json } from "database.types";
-
 import type { Route } from "./+types/update";
 
 import { data, redirect } from "react-router";
@@ -12,56 +10,78 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import { updateInstructor } from "~/features/instructors/queries";
 
 import { requireAdminRole } from "../../guards.server";
+import {
+  getCatalogFormError,
+  parseCatalogId,
+  parseInstructorForm,
+  validateCatalogImage,
+} from "../../lib/catalog-form.server";
 
 const BUCKET_NAME = "instructors";
 
 export async function action({ request, params }: Route.ActionArgs) {
   requireMethod("POST")(request);
 
-  const [client] = makeServerClient(request);
-  await requireAdminRole(client);
+  const [client, headers] = makeServerClient(request);
+  const { organizationId } = await requireAdminRole(client);
 
-  const instructorId = parseInt(params.instructorId);
+  const instructorId = parseCatalogId(params.instructorId);
+  if (instructorId === null) {
+    return data(
+      { error: "올바른 항목을 선택해 주세요." },
+      { status: 400, headers },
+    );
+  }
   const formData = await request.formData();
 
-  const name = String(formData.get("name") || "").trim();
-  const info = formData.get("info") as string | null;
-
-  if (!name) {
-    return data({ error: "강사명을 입력해 주세요." }, { status: 400 });
+  const parsed = parseInstructorForm(formData);
+  if (!parsed.success) {
+    return data(
+      { error: getCatalogFormError(parsed.error) },
+      { status: 400, headers },
+    );
   }
-
-  // JSONB 필드
-  const careerStr = formData.get("career") as string | null;
-  let career: Json[] = [];
-  if (careerStr) {
-    try {
-      career = JSON.parse(careerStr);
-    } catch {
-      return data({ error: "잘못된 경력 데이터 형식입니다." }, { status: 400 });
-    }
+  const {
+    name,
+    info,
+    career,
+    sns_instagram: snsInstagram,
+    sns_youtube: snsYoutube,
+  } = parsed.data;
+  const image = await validateCatalogImage(formData.get("photo"));
+  if (!image.success) {
+    return data({ error: image.error }, { status: 400, headers });
   }
-
-  // SNS
-  const snsInstagram = formData.get("sns_instagram") as string | null;
-  const snsYoutube = formData.get("sns_youtube") as string | null;
+  const photoFile = image.file;
   const sns: Record<string, string> = {};
   if (snsInstagram) sns.instagram = snsInstagram;
   if (snsYoutube) sns.youtube = snsYoutube;
+  // Check the selected tenant before touching its public storage path.
+  const { data: currentRecord, error: targetError } = await client
+    .from("instructors")
+    .select("instructor_id")
+    .eq("instructor_id", instructorId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (targetError || !currentRecord) {
+    return data(
+      { error: "수정할 항목을 찾을 수 없습니다." },
+      { status: 404, headers },
+    );
+  }
 
   // 프로필 사진 처리
   let photoUrl: string | null = null;
-  const photoFile = formData.get("photo") as File | null;
-  const existingPhotoUrl = formData.get("existing_photo_url") as string | null;
+  const existingPhotoUrl = parsed.data.existing_photo_url;
 
   if (photoFile && photoFile.size > 0) {
     // 새 이미지 업로드
-    const ext = photoFile.name.split(".").pop() || "jpg";
+    const ext = image.extension;
     const path = `${instructorId}/photo.${ext}`;
 
     const { error: uploadError } = await client.storage
       .from(BUCKET_NAME)
-      .upload(path, photoFile, { upsert: true });
+      .upload(path, photoFile, { upsert: true, contentType: photoFile.type });
 
     if (!uploadError) {
       const { data: urlData } = client.storage
@@ -91,9 +111,9 @@ export async function action({ request, params }: Route.ActionArgs) {
       {
         error: "강사 정보를 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       },
-      { status: 500 },
+      { status: 500, headers },
     );
   }
 
-  return redirect("/admin/instructors");
+  return redirect("/admin/instructors", { headers });
 }

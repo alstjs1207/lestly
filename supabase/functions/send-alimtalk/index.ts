@@ -10,6 +10,8 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { isWorkerAuthorized } from "../_shared/worker-auth.ts";
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SOLAPI_API_KEY = Deno.env.get("SOLAPI_API_KEY")!;
@@ -28,10 +30,14 @@ const IN_APP_NOTIFICATION_TYPES = [
 ];
 
 // In-app notification message templates
-const IN_APP_MESSAGE_TEMPLATES: Record<string, (vars: Record<string, string>) => string> = {
+const IN_APP_MESSAGE_TEMPLATES: Record<
+  string,
+  (vars: Record<string, string>) => string
+> = {
   STD_BOOK_ADMIN: (vars) => `${vars.student_name}님이 예약 하였습니다.`,
   STD_CANCEL_ADMIN: (vars) => `${vars.student_name}님이 취소 하였습니다.`,
-  SYS_CONSULT_ADMIN: (vars) => `${vars.requester_name}님이 상담신청을 요청하였습니다.`,
+  SYS_CONSULT_ADMIN: (vars) =>
+    `${vars.requester_name}님이 상담신청을 요청하였습니다.`,
 };
 
 interface AlimtalkPayload {
@@ -49,11 +55,13 @@ interface AlimtalkPayload {
  * @param variables Object containing variable values
  * @returns Message with variables replaced
  */
-function replaceVariables(content: string, variables: Record<string, string>): string {
+function replaceVariables(
+  content: string,
+  variables: Record<string, string>,
+): string {
   let message = content;
   for (const [key, value] of Object.entries(variables)) {
-    const pattern = new RegExp(`#\\{${key}\\}`, "g");
-    message = message.replace(pattern, value || "");
+    message = message.split(`#{${key}}`).join(String(value ?? ""));
   }
   return message;
 }
@@ -62,7 +70,9 @@ function replaceVariables(content: string, variables: Record<string, string>): s
  * Convert variables to Solapi format
  * Solapi expects keys in #{variable_name} format
  */
-function convertToSolapiVariables(variables: Record<string, string>): Record<string, string> {
+function convertToSolapiVariables(
+  variables: Record<string, string>,
+): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(variables)) {
     result[`#{${key}}`] = value || "";
@@ -87,7 +97,7 @@ async function generateSolapiSignature(): Promise<{
     encoder.encode(SOLAPI_API_SECRET),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
   const data = encoder.encode(timestamp + salt);
   const signature = await crypto.subtle.sign("HMAC", key, data);
@@ -99,16 +109,32 @@ async function generateSolapiSignature(): Promise<{
 }
 
 Deno.serve(async (req) => {
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json", Allow: "POST" },
+    });
+  }
+  if (!isWorkerAuthorized(req, SUPABASE_SERVICE_ROLE_KEY, true)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   try {
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const payload: AlimtalkPayload = await req.json();
+    const payload: AlimtalkPayload | null = await req.json().catch(() => null);
 
-    const { notification_id } = payload;
+    const notification_id = payload?.notification_id;
 
-    if (!notification_id) {
+    if (
+      !Number.isSafeInteger(notification_id) ||
+      !notification_id ||
+      notification_id < 1
+    ) {
       return new Response(
         JSON.stringify({ error: "notification_id is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -118,18 +144,24 @@ Deno.serve(async (req) => {
       .from("notifications")
       .update({ alimtalk_status: "SENDING" })
       .eq("notification_id", notification_id)
+      .eq("type", "ALIMTALK")
       .eq("alimtalk_status", "PENDING")
-      .select(`
+      .select(
+        `
         *,
         organization:organizations(name)
-      `)
+      `,
+      )
       .single();
 
     if (updateError || !notification) {
       // Already processed or not found
       return new Response(
-        JSON.stringify({ skipped: true, reason: "Already processed or not found" }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({
+          skipped: true,
+          reason: "Already processed or not found",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -159,7 +191,10 @@ Deno.serve(async (req) => {
       } else {
         // SMS mode (default, for pre-approval period)
         if (!template?.content) {
-          throw { code: "TEMPLATE_NOT_FOUND", message: "Template content not found for SMS" };
+          throw {
+            code: "TEMPLATE_NOT_FOUND",
+            message: "Template content not found for SMS",
+          };
         }
         const smsText = replaceVariables(template.content, variables);
         result = await sendSolapiSms({
@@ -199,7 +234,7 @@ Deno.serve(async (req) => {
           message_id: result.messageId,
           channel: MESSAGE_CHANNEL,
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json" } },
       );
     } catch (sendError: unknown) {
       // 7. Update notification status to FAILED
@@ -220,16 +255,16 @@ Deno.serve(async (req) => {
           error: error.message,
           channel: MESSAGE_CHANNEL,
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json" } },
       );
     }
   } catch (error: unknown) {
     const err = error as Error;
     console.error("Edge function error:", err);
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 });
 
@@ -265,6 +300,7 @@ async function sendSolapiSms(params: {
       Authorization: `HMAC-SHA256 apiKey=${SOLAPI_API_KEY}, date=${timestamp}, salt=${salt}, signature=${signatureHex}`,
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {
@@ -312,6 +348,7 @@ async function sendSolapiAlimtalk(params: {
       Authorization: `HMAC-SHA256 apiKey=${SOLAPI_API_KEY}, date=${timestamp}, salt=${salt}, signature=${signatureHex}`,
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {

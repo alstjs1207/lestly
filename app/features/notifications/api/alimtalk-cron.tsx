@@ -11,11 +11,11 @@ import * as Sentry from "@sentry/node";
 import { data } from "react-router";
 
 import adminClient from "~/core/lib/supa-admin-client.server";
+import { isWorkerAuthorized } from "~/core/lib/worker-auth.server";
 
-const SUPABASE_FUNCTIONS_URL = process.env.SUPABASE_URL?.replace(
-  ".supabase.co",
-  ".supabase.co/functions/v1",
-);
+const SUPABASE_FUNCTIONS_URL = process.env.SUPABASE_URL
+  ? `${process.env.SUPABASE_URL.replace(/\/+$/, "")}/functions/v1`
+  : undefined;
 
 /**
  * API endpoint action handler for processing AlimTalk queue
@@ -24,7 +24,7 @@ export async function action({ request }: Route.ActionArgs) {
   // Security check: Verify this is a POST request with the correct secret
   if (
     request.method !== "POST" ||
-    request.headers.get("Authorization") !== process.env.CRON_SECRET
+    !isWorkerAuthorized(request, process.env.CRON_SECRET)
   ) {
     return data(null, { status: 401 });
   }
@@ -137,7 +137,7 @@ export async function action({ request }: Route.ActionArgs) {
             program_id,
             student_id,
             start_time,
-            programs(title),
+            programs:programs!schedules_program_id_programs_program_id_fk(title),
             organizations(name)
           `,
           )
@@ -258,7 +258,7 @@ export async function action({ request }: Route.ActionArgs) {
           program_id,
           student_id,
           start_time,
-          programs(title),
+          programs:programs!schedules_program_id_programs_program_id_fk(title),
           organizations(name)
         `,
         )
@@ -372,6 +372,7 @@ async function invokeSendAlimtalk(notificationId: number): Promise<void> {
         Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
       },
       body: JSON.stringify({ notification_id: notificationId }),
+      signal: AbortSignal.timeout(15_000),
     });
   } catch (error) {
     Sentry.captureException(

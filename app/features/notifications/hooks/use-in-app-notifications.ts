@@ -26,7 +26,7 @@ interface UseInAppNotificationsReturn {
 }
 
 export function useInAppNotifications(
-  organizationId: string
+  organizationId: string,
 ): UseInAppNotificationsReturn {
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -83,13 +83,13 @@ export function useInAppNotifications(
 
               const newNotification = payload.new as InAppNotification;
               setNotifications((prev) =>
-                [newNotification, ...prev].slice(0, 9)
+                [newNotification, ...prev].slice(0, 9),
               );
               setUnreadCount((prev) => prev + 1);
 
               // Optional: Browser notification
               showBrowserNotification(newNotification.message);
-            }
+            },
           )
           .on(
             "postgres_changes",
@@ -108,17 +108,14 @@ export function useInAppNotifications(
                   n.in_app_notification_id ===
                   updatedNotification.in_app_notification_id
                     ? { ...n, ...updatedNotification }
-                    : n
-                )
+                    : n,
+                ),
               );
 
-              // Recalculate unread count
-              setNotifications((prev) => {
-                const newUnreadCount = prev.filter((n) => !n.is_read).length;
-                setUnreadCount(newUnreadCount);
-                return prev;
-              });
-            }
+              // The displayed list is capped at 9; the total must come from
+              // the server, including unread rows outside that window.
+              loadNotifications();
+            },
           )
           .subscribe();
 
@@ -139,28 +136,25 @@ export function useInAppNotifications(
   }, [organizationId]);
 
   // Mark single notification as read
-  const markAsRead = useCallback(
-    async (id: number) => {
-      // Optimistic update
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.in_app_notification_id === id ? { ...n, is_read: true } : n
-        )
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+  const markAsRead = useCallback(async (id: number) => {
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.in_app_notification_id === id ? { ...n, is_read: true } : n,
+      ),
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
 
-      // API call
-      fetcher.submit(
-        { in_app_notification_id: id },
-        {
-          method: "PATCH",
-          action: "/api/notifications",
-          encType: "application/json",
-        }
-      );
-    },
-    []
-  );
+    // API call
+    fetcher.submit(
+      { in_app_notification_id: id },
+      {
+        method: "PATCH",
+        action: "/api/notifications",
+        encType: "application/json",
+      },
+    );
+  }, []);
 
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
@@ -175,7 +169,7 @@ export function useInAppNotifications(
         method: "POST",
         action: "/api/notifications",
         encType: "application/json",
-      }
+      },
     );
   }, []);
 

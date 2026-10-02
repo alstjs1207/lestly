@@ -9,14 +9,14 @@ import type { Route } from "./+types/test-send";
 
 import { data } from "react-router";
 
+import { requireMethod } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { requireNotificationsEnabled } from "~/features/admin/guards.server";
 
-const SUPABASE_FUNCTIONS_URL = process.env.SUPABASE_URL?.replace(
-  ".supabase.co",
-  ".supabase.co/functions/v1"
-);
+const SUPABASE_FUNCTIONS_URL = process.env.SUPABASE_URL
+  ? `${process.env.SUPABASE_URL.replace(/\/+$/, "")}/functions/v1`
+  : undefined;
 
 const DAILY_TEST_LIMIT = 5;
 
@@ -27,6 +27,7 @@ interface TestSendRequest {
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   const [client, headers] = makeServerClient(request);
 
   // Get current user
@@ -36,6 +37,15 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (!user) {
     return data({ error: "Unauthorized" }, { status: 401, headers });
+  }
+
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("profile_id, phone")
+    .eq("auth_user_id", user.id)
+    .single();
+  if (!profile) {
+    return data({ error: "Profile not found" }, { status: 400, headers });
   }
 
   const formData = await request.formData();
@@ -60,7 +70,10 @@ export async function action({ request }: Route.ActionArgs) {
       .single();
 
     if (fetchError || !existingNotification) {
-      return data({ error: "Notification not found" }, { status: 404, headers });
+      return data(
+        { error: "Notification not found" },
+        { status: 404, headers },
+      );
     }
 
     // 2. Check authorization (super admin or same org)
@@ -68,7 +81,7 @@ export async function action({ request }: Route.ActionArgs) {
       const { data: membership } = await adminClient
         .from("organization_members")
         .select("organization_id")
-        .eq("profile_id", user.id)
+        .eq("profile_id", profile.profile_id)
         .eq("organization_id", existingNotification.organization_id)
         .eq("role", "ADMIN")
         .eq("state", "NORMAL")
@@ -95,7 +108,10 @@ export async function action({ request }: Route.ActionArgs) {
       .eq("notification_id", notificationId);
 
     if (updateError) {
-      return data({ error: "Failed to reset notification" }, { status: 500, headers });
+      return data(
+        { error: "Failed to reset notification" },
+        { status: 500, headers },
+      );
     }
 
     // 4. Invoke Edge Function
@@ -107,17 +123,24 @@ export async function action({ request }: Route.ActionArgs) {
           Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({ notification_id: notificationId }),
+        signal: AbortSignal.timeout(15_000),
       });
 
       const result = await response.json();
 
-      return data({ success: true, notification_id: notificationId, result }, { headers });
+      return data(
+        { success: true, notification_id: notificationId, result },
+        { headers },
+      );
     } catch (error) {
-      return data({
-        success: false,
-        notification_id: notificationId,
-        error: error instanceof Error ? error.message : "Unknown error",
-      }, { headers });
+      return data(
+        {
+          success: false,
+          notification_id: notificationId,
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+        { headers },
+      );
     }
   }
 
@@ -127,16 +150,13 @@ export async function action({ request }: Route.ActionArgs) {
     ? parseInt(formData.get("orgTemplateId") as string)
     : undefined;
   const inputPhone = formData.get("recipientPhone") as string | undefined;
-
-  // Get user profile
-  const { data: profile } = await adminClient
-    .from("profiles")
-    .select("profile_id, phone")
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!profile) {
-    return data({ error: "Profile not found" }, { status: 400, headers });
+  if (
+    !Number.isSafeInteger(super_template_id) ||
+    super_template_id < 1 ||
+    (org_template_id !== undefined &&
+      (!Number.isSafeInteger(org_template_id) || org_template_id < 1))
+  ) {
+    return data({ error: "Invalid template ID" }, { status: 400, headers });
   }
 
   // Get template info
@@ -159,7 +179,7 @@ export async function action({ request }: Route.ActionArgs) {
     if (!phone) {
       return data(
         { error: "Recipient phone is required" },
-        { status: 400, headers }
+        { status: 400, headers },
       );
     }
     recipientPhone = phone;
@@ -170,7 +190,7 @@ export async function action({ request }: Route.ActionArgs) {
     const { data: membership } = await adminClient
       .from("organization_members")
       .select("organization_id")
-      .eq("profile_id", user.id)
+      .eq("profile_id", profile.profile_id)
       .eq("role", "ADMIN")
       .eq("state", "NORMAL")
       .single();
@@ -178,7 +198,7 @@ export async function action({ request }: Route.ActionArgs) {
     if (!membership) {
       return data(
         { error: "Not authorized as admin" },
-        { status: 403, headers }
+        { status: 403, headers },
       );
     }
 
@@ -191,7 +211,7 @@ export async function action({ request }: Route.ActionArgs) {
     if (!profile.phone) {
       return data(
         { error: "프로필에 전화번호가 등록되어 있지 않습니다." },
-        { status: 400, headers }
+        { status: 400, headers },
       );
     }
     recipientPhone = profile.phone;
@@ -202,18 +222,24 @@ export async function action({ request }: Route.ActionArgs) {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const { count } = await adminClient
+    const { count, error: quotaError } = await adminClient
       .from("test_send_logs")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", organizationId)
-      .eq("profile_id", user.id)
+      .eq("profile_id", profile.profile_id)
       .gte("sent_at", todayStart.toISOString())
       .lte("sent_at", todayEnd.toISOString());
+    if (quotaError) {
+      return data(
+        { error: "발송 한도를 확인하지 못했습니다." },
+        { status: 503, headers },
+      );
+    }
 
     if ((count || 0) >= DAILY_TEST_LIMIT) {
       return data(
         { error: "일일 테스트 발송 한도(5회)를 초과했습니다." },
-        { status: 429, headers }
+        { status: 429, headers },
       );
     }
   }
@@ -262,14 +288,14 @@ export async function action({ request }: Route.ActionArgs) {
   if (insertError || !notification) {
     return data(
       { error: "Failed to create test notification" },
-      { status: 500, headers }
+      { status: 500, headers },
     );
   }
 
   // Log test send
   await adminClient.from("test_send_logs").insert({
     organization_id: organizationId,
-    profile_id: user.id,
+    profile_id: profile.profile_id,
     super_template_id,
     org_template_id,
     recipient_phone: recipientPhone,
@@ -284,6 +310,7 @@ export async function action({ request }: Route.ActionArgs) {
         Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
       },
       body: JSON.stringify({ notification_id: notification.notification_id }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     const result = await response.json();
@@ -294,7 +321,7 @@ export async function action({ request }: Route.ActionArgs) {
         notification_id: notification.notification_id,
         result,
       },
-      { headers }
+      { headers },
     );
   } catch (error) {
     return data(
@@ -303,7 +330,7 @@ export async function action({ request }: Route.ActionArgs) {
         notification_id: notification.notification_id,
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { headers }
+      { headers },
     );
   }
 }

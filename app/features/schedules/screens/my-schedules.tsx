@@ -2,7 +2,7 @@ import type { Route } from "./+types/my-schedules";
 
 import { CalendarIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link, data, useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -40,7 +40,7 @@ import {
 import { getUserProfile } from "~/features/users/queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const user = await getSessionUser(client);
   if (!user) {
     throw new Response(null, { status: 401 });
@@ -56,11 +56,14 @@ export async function loader({ request }: Route.LoaderArgs) {
     endDate,
   });
 
-  return {
-    schedules,
-    allowedStartDate: startDate.toISOString(),
-    allowedEndDate: endDate.toISOString(),
-  };
+  return data(
+    {
+      schedules,
+      allowedStartDate: startDate.toISOString(),
+      allowedEndDate: endDate.toISOString(),
+    },
+    { headers },
+  );
 }
 
 const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];

@@ -27,6 +27,8 @@ import {
 import { Checkbox } from "~/core/components/ui/checkbox";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
+import { getAuthenticatedProfile } from "~/core/lib/authenticated-profile.server";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -44,31 +46,34 @@ export const meta: Route.MetaFunction = () => {
  * Loader to check if user is authenticated
  */
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
 
   // User must be authenticated (from OTP verification)
   if (!user) {
-    return redirect("/admin/signup");
+    return redirect("/admin/signup", { headers });
   }
+
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return redirect("/admin/signup", { headers });
 
   // Check if user already has a password set (has completed profile setup)
   // and has an organization
   const { data: memberships } = await client
     .from("organization_members")
     .select("organization_id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.profile_id)
     .eq("role", "ADMIN")
     .eq("state", "NORMAL")
     .limit(1);
 
   if (memberships && memberships.length > 0) {
-    return redirect("/admin");
+    return redirect("/admin", { headers });
   }
 
-  return { email: user.email };
+  return data({ email: user.email }, { headers });
 }
 
 /**
@@ -93,14 +98,18 @@ const profileSchema = z
  * Server action for profile setup
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   const [client, headers] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
 
   if (!user) {
-    return redirect("/admin/signup");
+    return redirect("/admin/signup", { headers });
   }
+
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return redirect("/admin/signup", { headers });
 
   const formData = await request.formData();
   const {
@@ -110,7 +119,10 @@ export async function action({ request }: Route.ActionArgs) {
   } = profileSchema.safeParse(Object.fromEntries(formData));
 
   if (!success) {
-    return data({ fieldErrors: error.flatten().fieldErrors }, { status: 400 });
+    return data(
+      { fieldErrors: error.flatten().fieldErrors },
+      { status: 400, headers },
+    );
   }
 
   // Update user password and metadata
@@ -124,7 +136,7 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (updateError) {
-    return data({ error: updateError.message }, { status: 400 });
+    return data({ error: updateError.message }, { status: 400, headers });
   }
 
   // Update profile table
@@ -134,10 +146,10 @@ export async function action({ request }: Route.ActionArgs) {
       name: validData.name,
       marketing_consent: validData.marketing === "on",
     })
-    .eq("profile_id", user.id);
+    .eq("profile_id", profile.profile_id);
 
   if (profileError) {
-    return data({ error: profileError.message }, { status: 400 });
+    return data({ error: profileError.message }, { status: 400, headers });
   }
 
   // Redirect to organization setup
@@ -157,7 +169,7 @@ export default function AdminSignupProfile({
   return (
     <div className="flex min-h-screen">
       {/* 왼쪽 패널 - 서비스 소개 (데스크톱만 표시) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary text-primary-foreground flex-col items-center justify-center p-12">
+      <div className="bg-primary text-primary-foreground hidden flex-col items-center justify-center p-12 lg:flex lg:w-1/2">
         <div className="max-w-md space-y-8 text-center">
           {/* 로고 */}
           <div className="flex items-center justify-center">
@@ -170,9 +182,9 @@ export default function AdminSignupProfile({
 
           {/* 안내 메시지 */}
           <div className="space-y-4">
-            <UserIcon className="size-16 mx-auto text-primary-foreground/80" />
+            <UserIcon className="text-primary-foreground/80 mx-auto size-16" />
             <h1 className="text-3xl font-bold">프로필을 설정해주세요</h1>
-            <p className="text-lg text-primary-foreground/80">
+            <p className="text-primary-foreground/80 text-lg">
               관리자 계정의 기본 정보를 입력해주세요.
               <br />
               입력한 정보는 언제든 변경할 수 있습니다.
@@ -182,10 +194,10 @@ export default function AdminSignupProfile({
       </div>
 
       {/* 오른쪽 패널 - 프로필 폼 */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 overflow-y-auto">
+      <div className="flex w-full flex-col items-center justify-center overflow-y-auto p-6 lg:w-1/2">
         <div className="w-full max-w-md space-y-6">
           {/* 모바일용 로고 */}
-          <div className="flex lg:hidden items-center justify-center mb-8">
+          <div className="mb-8 flex items-center justify-center lg:hidden">
             <img
               src="/logo/09_dark_transparent.png"
               alt="Lestly"
@@ -198,7 +210,7 @@ export default function AdminSignupProfile({
               <CardTitle className="text-2xl font-semibold" role="heading">
                 프로필 설정
               </CardTitle>
-              <CardDescription className="text-base text-center">
+              <CardDescription className="text-center text-base">
                 관리자 계정 정보를 입력해주세요
               </CardDescription>
             </CardHeader>
@@ -269,7 +281,7 @@ export default function AdminSignupProfile({
                     onChange={(e) => setPasswordConfirm(e.target.value)}
                   />
                   {passwordConfirm && password !== passwordConfirm && (
-                    <p className="text-sm text-red-500 flex items-center gap-2">
+                    <p className="flex items-center gap-2 text-sm text-red-500">
                       <XCircleIcon className="size-4" />
                       비밀번호가 일치하지 않습니다
                     </p>
@@ -288,12 +300,12 @@ export default function AdminSignupProfile({
                     <Checkbox id="terms" name="terms" required defaultChecked />
                     <Label
                       htmlFor="terms"
-                      className="text-xs sm:text-sm leading-relaxed cursor-pointer"
+                      className="cursor-pointer text-xs leading-relaxed sm:text-sm"
                     >
                       <Link
                         to="/legal/terms"
                         target="_blank"
-                        className="text-primary hover:underline font-semibold whitespace-nowrap"
+                        className="text-primary font-semibold whitespace-nowrap hover:underline"
                       >
                         서비스 이용약관
                       </Link>
@@ -301,7 +313,7 @@ export default function AdminSignupProfile({
                       <Link
                         to="/legal/privacy"
                         target="_blank"
-                        className="text-primary hover:underline font-semibold whitespace-nowrap"
+                        className="text-primary font-semibold whitespace-nowrap hover:underline"
                       >
                         개인정보 처리방침
                       </Link>
@@ -318,14 +330,14 @@ export default function AdminSignupProfile({
                     <Checkbox id="marketing" name="marketing" />
                     <Label
                       htmlFor="marketing"
-                      className="text-sm leading-relaxed cursor-pointer text-muted-foreground"
+                      className="text-muted-foreground cursor-pointer text-sm leading-relaxed"
                     >
                       마케팅 정보 수신에 동의합니다 (선택)
                     </Label>
                   </div>
                 </div>
 
-                <FormButton label="다음" className="w-full mt-2" />
+                <FormButton label="다음" className="mt-2 w-full" />
 
                 {actionData && "error" in actionData && actionData.error ? (
                   <FormErrors errors={[actionData.error]} />
@@ -335,11 +347,11 @@ export default function AdminSignupProfile({
           </Card>
 
           {/* 진행 상황 표시 */}
-          <div className="flex justify-center items-center gap-2">
-            <div className="size-2 rounded-full bg-primary" />
-            <div className="size-2 rounded-full bg-primary" />
-            <div className="size-2 rounded-full bg-primary" />
-            <div className="size-2 rounded-full bg-muted" />
+          <div className="flex items-center justify-center gap-2">
+            <div className="bg-primary size-2 rounded-full" />
+            <div className="bg-primary size-2 rounded-full" />
+            <div className="bg-primary size-2 rounded-full" />
+            <div className="bg-muted size-2 rounded-full" />
           </div>
         </div>
       </div>

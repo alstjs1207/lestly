@@ -6,6 +6,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
+import { normalizePagination } from "../../core/lib/query-utils.ts";
+
 type NotificationType = "ALIMTALK" | "CONSULT_REQUEST";
 type AlimtalkStatus = "PENDING" | "SENT" | "FAILED";
 type ConsultStatus = "WAITING" | "COMPLETED";
@@ -29,8 +31,8 @@ export async function getNotificationsPaginated(
     statusFilter?: AlimtalkStatus | ConsultStatus;
   },
 ) {
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const pagination = normalizePagination(page, pageSize);
+  const { from, to } = pagination;
 
   let query = client
     .from("notifications")
@@ -86,8 +88,8 @@ export async function getNotificationsPaginated(
   return {
     notifications: notificationsWithTemplateName,
     totalCount: count ?? 0,
-    totalPages: Math.ceil((count ?? 0) / pageSize),
-    currentPage: page,
+    totalPages: Math.ceil((count ?? 0) / pagination.pageSize),
+    currentPage: pagination.page,
   };
 }
 

@@ -11,9 +11,10 @@ import {
   pgPolicy,
   pgTable,
   text,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
 import { organizations } from "~/features/organizations/schema";
@@ -27,7 +28,9 @@ import { organizations } from "~/features/organizations/schema";
 export const instructors = pgTable(
   "instructors",
   {
-    instructor_id: bigint("instructor_id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    instructor_id: bigint("instructor_id", { mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
     organization_id: uuid("organization_id")
       .notNull()
       .references(() => organizations.organization_id, { onDelete: "cascade" }),
@@ -39,6 +42,20 @@ export const instructors = pgTable(
     ...timestamps,
   },
   (table) => [
+    unique("instructors_id_org_unique").on(
+      table.instructor_id,
+      table.organization_id,
+    ),
+    pgPolicy("public-program-instructor-select-policy", {
+      for: "select",
+      to: [anonRole, authenticatedRole],
+      as: "permissive",
+      using: sql`EXISTS (
+        SELECT 1 FROM public.programs
+        WHERE programs.instructor_id = ${table.instructor_id}
+          AND programs.is_public = true AND programs.status = 'ACTIVE'
+      )`,
+    }),
     // RLS Policy: Admin can view all instructors in their organization
     pgPolicy("admin-select-org-instructors-policy", {
       for: "select",
@@ -69,4 +86,4 @@ export const instructors = pgTable(
       using: sql`is_org_admin(${table.organization_id})`,
     }),
   ],
-);
+).enableRLS();

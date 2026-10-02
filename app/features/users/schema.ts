@@ -10,15 +10,23 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
+  foreignKey,
+  index,
   pgPolicy,
   pgTable,
   text,
+  timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
 import { authUid, authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
+import {
+  organizationMembers,
+  organizations,
+} from "~/features/organizations/schema";
 
 /**
  * Profiles Table
@@ -60,6 +68,16 @@ export const profiles = pgTable(
     ...timestamps,
   },
   (table) => [
+    index("profiles_contact_email_idx")
+      .on(sql`lower(${table.contact_email})`)
+      .where(sql`${table.contact_email} IS NOT NULL`),
+    pgPolicy("super-admin-all-profiles-policy", {
+      for: "all",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_super_admin()`,
+      withCheck: sql`public.is_super_admin()`,
+    }),
     // RLS Policy: Users can only update their own profile
     pgPolicy("edit-profile-policy", {
       for: "update",
@@ -111,4 +129,52 @@ export const profiles = pgTable(
       )`,
     }),
   ],
-);
+).enableRLS();
+
+// Auth linking and claim/revocation are performed by the SQL claim RPC and
+// authorized server routes. Browser clients only read their tenant's invites.
+export const studentInvites = pgTable(
+  "student_invites",
+  {
+    invite_id: uuid("invite_id").primaryKey().defaultRandom(),
+    organization_id: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.organization_id, { onDelete: "cascade" }),
+    profile_id: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    token_hash: text("token_hash").notNull().unique(),
+    expires_at: timestamp("expires_at", { withTimezone: true }).notNull(),
+    used_at: timestamp("used_at", { withTimezone: true }),
+    revoked_at: timestamp("revoked_at", { withTimezone: true }),
+    created_by_profile_id: uuid("created_by_profile_id")
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "restrict" }),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "student_invites_expiry_after_creation",
+      sql`${table.expires_at} > ${table.created_at}`,
+    ),
+    foreignKey({
+      name: "student_invites_member_tenant_fk",
+      columns: [table.organization_id, table.profile_id],
+      foreignColumns: [
+        organizationMembers.organization_id,
+        organizationMembers.profile_id,
+      ],
+    }).onDelete("cascade"),
+    index("student_invites_active_profile_idx")
+      .on(table.profile_id, table.expires_at.desc())
+      .where(sql`${table.used_at} IS NULL AND ${table.revoked_at} IS NULL`),
+    pgPolicy("admin-select-student-invites-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_org_admin(${table.organization_id})`,
+    }),
+  ],
+).enableRLS();

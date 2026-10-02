@@ -16,14 +16,15 @@ import {
   text,
   time,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
 import { organizations } from "~/features/organizations/schema";
-import { profiles } from "~/features/users/schema";
 import { programs } from "~/features/programs/schema";
+import { profiles } from "~/features/users/schema";
 
 // =============================================
 // Enum Types
@@ -47,6 +48,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
  */
 export const alimtalkStatusEnum = pgEnum("alimtalk_status", [
   "PENDING",
+  "SENDING",
   "SENT",
   "FAILED",
 ]);
@@ -143,13 +145,13 @@ export const notifications = pgTable(
     recipient_email: text("recipient_email"),
     recipient_profile_id: uuid("recipient_profile_id").references(
       () => profiles.profile_id,
-      { onDelete: "set null" }
+      { onDelete: "set null" },
     ),
 
     // Sender/trigger info
     sender_profile_id: uuid("sender_profile_id").references(
       () => profiles.profile_id,
-      { onDelete: "set null" }
+      { onDelete: "set null" },
     ),
 
     // AlimTalk fields
@@ -175,18 +177,20 @@ export const notifications = pgTable(
     consult_completed_at: timestamp("consult_completed_at"),
     consult_completed_by: uuid("consult_completed_by").references(
       () => profiles.profile_id,
-      { onDelete: "set null" }
+      { onDelete: "set null" },
     ),
 
     // Retry/resend
-    parent_notification_id: bigint("parent_notification_id", { mode: "number" }),
+    parent_notification_id: bigint("parent_notification_id", {
+      mode: "number",
+    }),
     retry_count: integer("retry_count").default(0),
 
     // Related entities (FK defined in migration SQL)
     schedule_id: bigint("schedule_id", { mode: "number" }),
     program_id: bigint("program_id", { mode: "number" }).references(
       () => programs.program_id,
-      { onDelete: "set null" }
+      { onDelete: "set null" },
     ),
 
     // Scheduled send (STEP 6)
@@ -196,6 +200,11 @@ export const notifications = pgTable(
     ...timestamps,
   },
   (table) => [
+    // DEFERRABLE tenant FKs for program/schedule/parent are maintained in SQL.
+    unique("notifications_id_org_unique").on(
+      table.notification_id,
+      table.organization_id,
+    ),
     // Org admin can view all notifications
     pgPolicy("org_admin_select_notifications", {
       for: "select",
@@ -211,13 +220,6 @@ export const notifications = pgTable(
       using: sql`is_org_admin(${table.organization_id}) AND ${table.type} = 'CONSULT_REQUEST'`,
       withCheck: sql`is_org_admin(${table.organization_id}) AND ${table.type} = 'CONSULT_REQUEST'`,
     }),
-    // Anonymous can insert consultation requests
-    pgPolicy("anon_insert_consult_notifications", {
-      for: "insert",
-      to: anonRole,
-      as: "permissive",
-      withCheck: sql`${table.type} = 'CONSULT_REQUEST'`,
-    }),
     // Super admin has full access
     pgPolicy("super_admin_all_notifications", {
       for: "all",
@@ -225,8 +227,8 @@ export const notifications = pgTable(
       as: "permissive",
       using: sql`is_super_admin()`,
     }),
-  ]
-);
+  ],
+).enableRLS();
 
 /**
  * Super Templates Table
@@ -276,8 +278,8 @@ export const superTemplates = pgTable(
       as: "permissive",
       using: sql`is_super_admin()`,
     }),
-  ]
-);
+  ],
+).enableRLS();
 
 /**
  * Organization Templates Table
@@ -353,8 +355,8 @@ export const organizationTemplates = pgTable(
       as: "permissive",
       using: sql`is_super_admin()`,
     }),
-  ]
-);
+  ],
+).enableRLS();
 
 /**
  * Test Send Logs Table
@@ -369,7 +371,7 @@ export const testSendLogs = pgTable(
       .generatedByDefaultAsIdentity(),
     organization_id: uuid("organization_id").references(
       () => organizations.organization_id,
-      { onDelete: "cascade" }
+      { onDelete: "cascade" },
     ), // NULL for super admin
     profile_id: uuid("profile_id")
       .notNull()
@@ -381,7 +383,7 @@ export const testSendLogs = pgTable(
       }),
     org_template_id: bigint("org_template_id", { mode: "number" }).references(
       () => organizationTemplates.org_template_id,
-      { onDelete: "set null" }
+      { onDelete: "set null" },
     ),
     recipient_phone: text("recipient_phone").notNull(),
     sent_at: timestamp("sent_at").defaultNow().notNull(),
@@ -401,8 +403,8 @@ export const testSendLogs = pgTable(
       as: "permissive",
       using: sql`is_super_admin()`,
     }),
-  ]
-);
+  ],
+).enableRLS();
 
 /**
  * In-App Notifications Table
@@ -422,7 +424,7 @@ export const inAppNotifications = pgTable(
       .references(() => organizations.organization_id, { onDelete: "cascade" }),
     notification_id: bigint("notification_id", { mode: "number" }).references(
       () => notifications.notification_id,
-      { onDelete: "cascade" }
+      { onDelete: "cascade" },
     ),
 
     // Content
@@ -461,5 +463,5 @@ export const inAppNotifications = pgTable(
       as: "permissive",
       using: sql`is_super_admin()`,
     }),
-  ]
-);
+  ],
+).enableRLS();

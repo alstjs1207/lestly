@@ -29,6 +29,7 @@ import FormErrors from "~/core/components/form-error";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import { Textarea } from "~/core/components/ui/textarea";
+import { requireMethod } from "~/core/lib/guards.server";
 import resendClient from "~/core/lib/resend-client.server";
 
 /**
@@ -75,6 +76,7 @@ async function isTurnstileTokenValid(token: string) {
         response: token,
       }),
       method: "POST",
+      signal: AbortSignal.timeout(10_000),
       headers: {
         "Content-Type": "application/json",
       },
@@ -119,6 +121,7 @@ async function isHcaptchaTokenValid(token: string) {
         response: token,
       }),
       method: "POST",
+      signal: AbortSignal.timeout(10_000),
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -148,11 +151,11 @@ async function isHcaptchaTokenValid(token: string) {
  * before processing them further.
  */
 const schema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  message: z.string().min(1),
-  hcaptcha: z.string().min(1),
-  turnstile: z.string().min(1),
+  name: z.string().trim().min(1).max(100),
+  email: z.string().email().max(254),
+  message: z.string().trim().min(1).max(5000),
+  hcaptcha: z.string().min(1).max(4096),
+  turnstile: z.string().min(1).max(4096),
 });
 
 /**
@@ -174,6 +177,7 @@ const schema = z.object({
  * @returns JSON response indicating success or error with appropriate details
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   // Extract form data from the request
   const formData = await request.formData();
 
@@ -217,16 +221,15 @@ export async function action({ request }: Route.ActionArgs) {
     from: "Lestly <hello@lestly.io>",
     to: [process.env.ADMIN_EMAIL!],
     subject: "New contact from Lestly",
-    html: `
-      <p><b>Name:</b> ${name}</p>
-      <p><b>Email:</b> ${email}</p>
-      <p><b>Message:</b> ${message}</p>
-    `,
+    text: `Name: ${name}\nEmail: ${email}\nMessage:\n${message}`,
   });
 
   // Handle email sending errors
   if (error) {
-    return data({ error, success: false }, { status: 500 });
+    return data(
+      { error: "메시지 전송에 실패했습니다.", success: false },
+      { status: 500 },
+    );
   }
 
   // Return success response
@@ -290,7 +293,7 @@ export default function ContactUs({ actionData }: Route.ComponentProps) {
     }
     // Handle error in submission
     else if ("error" in actionData && actionData.error) {
-      toast.error(actionData.error.message);
+      toast.error(actionData.error);
     }
   }, [actionData]);
 

@@ -7,6 +7,7 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  index,
   pgEnum,
   pgPolicy,
   pgTable,
@@ -65,6 +66,13 @@ export const organizations = pgTable(
     ...timestamps,
   },
   (table) => [
+    pgPolicy("super-admin-all-organizations-policy", {
+      for: "all",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_super_admin()`,
+      withCheck: sql`public.is_super_admin()`,
+    }),
     // RLS Policy: Admin can view their own organization
     pgPolicy("admin-select-own-organization-policy", {
       for: "select",
@@ -88,7 +96,7 @@ export const organizations = pgTable(
       using: sql`is_org_member(${table.organization_id})`,
     }),
   ],
-);
+).enableRLS();
 
 /**
  * Organization Members Table
@@ -113,6 +121,17 @@ export const organizationMembers = pgTable(
   },
   (table) => [
     // Composite primary key
+    index("organization_members_profile_org_idx").on(
+      table.profile_id,
+      table.organization_id,
+    ),
+    pgPolicy("super-admin-all-org-members-policy", {
+      for: "all",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_super_admin()`,
+      withCheck: sql`public.is_super_admin()`,
+    }),
     primaryKey({ columns: [table.organization_id, table.profile_id] }),
     // RLS Policy: Users can view their own memberships
     pgPolicy("select-own-membership-policy", {
@@ -132,13 +151,6 @@ export const organizationMembers = pgTable(
       as: "permissive",
       using: sql`is_org_admin(${table.organization_id})`,
     }),
-    // RLS Policy: Admin can insert memberships in their organization
-    pgPolicy("admin-insert-org-memberships-policy", {
-      for: "insert",
-      to: authenticatedRole,
-      as: "permissive",
-      withCheck: sql`is_org_admin(${table.organization_id})`,
-    }),
     // RLS Policy: Admin can update memberships in their organization
     pgPolicy("admin-update-org-memberships-policy", {
       for: "update",
@@ -155,4 +167,4 @@ export const organizationMembers = pgTable(
       using: sql`is_org_admin(${table.organization_id})`,
     }),
   ],
-);
+).enableRLS();

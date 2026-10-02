@@ -15,7 +15,13 @@ import {
   UserPlusIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useFetcher, useNavigate, useSearchParams } from "react-router";
+import {
+  Link,
+  data,
+  useFetcher,
+  useNavigate,
+  useSearchParams,
+} from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -57,22 +63,22 @@ import { requireAdminRole } from "../../guards.server";
 import { getStudentsPaginated, getStudentsTotalHours } from "../../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
   const url = new URL(request.url);
-  const page = parseInt(url.searchParams.get("page") || "1");
+  const page = Number(url.searchParams.get("page") || "1");
   const search = url.searchParams.get("search") || undefined;
-  const stateFilter = url.searchParams.get("state") as
-    | "NORMAL"
-    | "GRADUATE"
-    | "DELETED"
-    | undefined;
-  const typeFilter = url.searchParams.get("type") as
-    | "EXAMINEE"
-    | "DROPPER"
-    | "ADULT"
-    | undefined;
+  const state = url.searchParams.get("state");
+  const stateFilter =
+    state === "NORMAL" || state === "GRADUATE" || state === "DELETED"
+      ? state
+      : undefined;
+  const type = url.searchParams.get("type");
+  const typeFilter =
+    type === "EXAMINEE" || type === "DROPPER" || type === "ADULT"
+      ? type
+      : undefined;
 
   const result = await getStudentsPaginated(client, {
     organizationId,
@@ -90,10 +96,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     studentIds,
   });
 
-  return {
-    ...result,
-    totalHours,
-  };
+  return data(
+    {
+      ...result,
+      totalHours,
+    },
+    { headers },
+  );
 }
 
 const stateLabels: Record<
