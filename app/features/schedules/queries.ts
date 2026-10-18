@@ -17,6 +17,7 @@ import {
   type ScheduleCandidate,
   validateScheduleCandidatesAgainstExisting,
 } from "~/features/schedules/utils/schedule-validation";
+import { getStudentHoursTotals } from "~/features/schedules/utils/student-hours";
 
 type Schedule = Database["public"]["Tables"]["schedules"]["Row"];
 type ScheduleInsert = Database["public"]["Tables"]["schedules"]["Insert"];
@@ -515,27 +516,8 @@ export async function calculateStudentTotalHours(
   client: SupabaseClient<Database>,
   { studentId }: { studentId: string },
 ): Promise<number> {
-  // Fetch only start_time and end_time to minimize data transfer
-  const { data, error } = await client
-    .from("schedules")
-    .select("start_time, end_time")
-    .eq("student_id", studentId)
-    .lte("start_time", new Date().toISOString());
-
-  if (error) {
-    throw error;
-  }
-
-  // Calculate total hours from the minimal data
-  let totalHours = 0;
-  for (const schedule of data) {
-    const start = new Date(schedule.start_time);
-    const end = new Date(schedule.end_time);
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    totalHours += hours;
-  }
-
-  return totalHours;
+  const totals = await getStudentHoursTotals(client, { studentIds: [studentId] });
+  return totals[studentId] ?? 0;
 }
 
 /**

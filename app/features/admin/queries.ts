@@ -8,6 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
 import { fromKST, nowKST } from "~/features/schedules/utils/kst";
+import { getStudentHoursTotals } from "~/features/schedules/utils/student-hours";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -289,33 +290,7 @@ export async function getStudentsTotalHours(
     studentIds,
   }: { organizationId: string; studentIds: string[] },
 ): Promise<Record<string, number>> {
-  if (studentIds.length === 0) return {};
-
-  const { data, error } = await client
-    .from("schedules")
-    .select("student_id, start_time, end_time")
-    .eq("organization_id", organizationId)
-    .in("student_id", studentIds)
-    .lte("start_time", new Date().toISOString());
-
-  if (error) {
-    throw error;
-  }
-
-  const hoursByStudent: Record<string, number> = {};
-
-  for (const schedule of data || []) {
-    const start = new Date(schedule.start_time);
-    const end = new Date(schedule.end_time);
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-    if (!hoursByStudent[schedule.student_id]) {
-      hoursByStudent[schedule.student_id] = 0;
-    }
-    hoursByStudent[schedule.student_id] += hours;
-  }
-
-  return hoursByStudent;
+  return getStudentHoursTotals(client, { organizationId, studentIds });
 }
 
 /**
