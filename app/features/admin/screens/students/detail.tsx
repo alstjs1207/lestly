@@ -40,62 +40,35 @@ import {
   TableRow,
 } from "~/core/components/ui/table";
 import makeServerClient from "~/core/lib/supa-client.server";
-import {
-  calculateStudentTotalHours,
-  getStudentNextWeekSchedules,
-  getStudentSchedules,
-  getStudentWeeklySchedules,
-} from "~/features/schedules/queries";
-import { nowKST } from "~/features/schedules/utils/kst";
 
+import { StudentTotalHours } from "../../components/student-total-hours";
 import { requireAdminRole } from "../../guards.server";
-import { getStudentById } from "../../queries";
+import { getStudentById, getStudentsTotalHours } from "../../queries";
+import { getStudentScheduleOverview } from "../../utils/student-schedule-overview";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
-  const now = nowKST();
-  const currentYear = now.year;
-  const currentMonth = now.month + 1; // nowKST returns 0-indexed month
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-  const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+  const totalHours = getStudentsTotalHours(client, {
+    organizationId,
+    studentIds: [params.studentId],
+  });
+  // Keep early rejection handled until React Router attaches its stream reader.
+  void totalHours.catch(() => {});
 
-  const [
-    student,
-    weeklySchedules,
-    nextWeekSchedules,
-    monthlySchedules,
-    nextMonthSchedules,
-    totalHours,
-  ] = await Promise.all([
+  const [student, overview] = await Promise.all([
     getStudentById(client, { organizationId, studentId: params.studentId }),
-    getStudentWeeklySchedules(client, { studentId: params.studentId }),
-    getStudentNextWeekSchedules(client, { studentId: params.studentId }),
-    getStudentSchedules(client, {
+    getStudentScheduleOverview(client, {
+      organizationId,
       studentId: params.studentId,
-      year: currentYear,
-      month: currentMonth,
     }),
-    getStudentSchedules(client, {
-      studentId: params.studentId,
-      year: nextMonthYear,
-      month: nextMonth,
-    }),
-    calculateStudentTotalHours(client, { studentId: params.studentId }),
   ]);
 
   return {
     student,
-    weeklySchedules,
-    nextWeekSchedules,
-    monthlySchedules,
-    nextMonthSchedules,
-    currentYear,
-    currentMonth,
-    nextMonthYear,
-    nextMonth,
-    totalHours: Math.round(totalHours * 10) / 10,
+    ...overview,
+    totalHours,
   };
 }
 
@@ -456,7 +429,12 @@ export default function StudentDetailScreen({
               </div>
               <div>
                 <p className="text-muted-foreground text-sm">총 수강시간</p>
-                <p className="font-medium">{totalHours}시간</p>
+                <p className="font-medium">
+                  <StudentTotalHours
+                    totals={totalHours}
+                    studentId={student.profile_id}
+                  />
+                </p>
               </div>
             </div>
             <div>

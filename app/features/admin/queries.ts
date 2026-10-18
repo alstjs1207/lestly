@@ -120,30 +120,18 @@ export async function getStudentById(
   client: SupabaseClient<Database>,
   { organizationId, studentId }: { organizationId: string; studentId: string },
 ) {
-  const { data: member, error: memberError } = await client
+  const { data: member, error } = await client
     .from("organization_members")
-    .select("profile_id, role, state, type")
+    .select("role, state, type, profiles!inner(*)")
     .eq("organization_id", organizationId)
     .eq("profile_id", studentId)
     .eq("role", "STUDENT")
     .single();
 
-  if (memberError) {
-    throw memberError;
-  }
-
-  const { data: profile, error: profileError } = await client
-    .from("profiles")
-    .select("*")
-    .eq("profile_id", studentId)
-    .single();
-
-  if (profileError) {
-    throw profileError;
-  }
+  if (error) throw error;
 
   return {
-    ...profile,
+    ...member.profiles,
     role: member.role,
     state: member.state,
     type: member.type,

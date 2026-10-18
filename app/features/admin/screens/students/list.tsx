@@ -41,6 +41,7 @@ import {
 } from "~/core/components/ui/table";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { StudentTotalHours } from "../../components/student-total-hours";
 import { requireAdminRole } from "../../guards.server";
 import { getStudentsPaginated, getStudentsTotalHours } from "../../queries";
 
@@ -71,12 +72,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     typeFilter: typeFilter || undefined,
   });
 
-  // 각 학생의 총 수강시간과 이메일 조회
+  // Stream totals separately so the student list can render immediately.
   const studentIds = result.students.map((s) => s.profile_id);
-  const totalHours = await getStudentsTotalHours(client, {
+  const totalHours = getStudentsTotalHours(client, {
     organizationId,
     studentIds,
   });
+  // Other route loaders may still be pending when this promise rejects.
+  // Observe early failures while preserving the rejection for <Await>.
+  void totalHours.catch(() => {});
 
   return {
     ...result,
@@ -350,10 +354,10 @@ export default function StudentListScreen({
                       <Clock3Icon className="size-3.5" aria-hidden="true" />
                       <span>
                         누적{" "}
-                        {Math.round(
-                          (totalHours[student.profile_id] || 0) * 10,
-                        ) / 10}
-                        시간
+                        <StudentTotalHours
+                          totals={totalHours}
+                          studentId={student.profile_id}
+                        />
                       </span>
                       {student.contact_email && (
                         <span className="truncate">
@@ -456,9 +460,10 @@ export default function StudentListScreen({
                     {student.contact_email || "-"}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {Math.round((totalHours[student.profile_id] || 0) * 10) /
-                      10}
-                    시간
+                    <StudentTotalHours
+                      totals={totalHours}
+                      studentId={student.profile_id}
+                    />
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     {new Date(student.created_at).toLocaleDateString("ko-KR")}
