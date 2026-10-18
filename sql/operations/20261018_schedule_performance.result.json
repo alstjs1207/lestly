@@ -1,0 +1,66 @@
+{
+  "applied_at": "2026-10-18",
+  "scope": "Production schema 0015; performance subset only, migration 0016 remains pending",
+  "database_version": "PostgreSQL 17.6",
+  "schedule_count": 1451,
+  "verification": {
+    "schedule_data_unchanged": true,
+    "totals_match": true,
+    "other_tenant_blocked": true,
+    "anonymous_execute": false,
+    "all_indexes_valid": true
+  },
+  "measurement": "Authenticated administrator, busiest calendar month and first student page; warm-up excluded, median of 5 DB executions; excludes network and UI time",
+  "queries": {
+    "students": {
+      "before_ms": 2.623,
+      "after_ms": 2.937
+    },
+    "calendar": {
+      "before_ms": 6.56,
+      "after_ms": 6.675
+    },
+    "studentHistory": {
+      "before_ms": 2.415,
+      "after_ms": 2.365
+    },
+    "rawTotals": {
+      "before_ms": 21.003,
+      "after_ms": 22.935
+    }
+  },
+  "aggregation": {
+    "old_rows": 686,
+    "new_rows": 20,
+    "old_json_bytes": 90553,
+    "new_json_bytes": 1433,
+    "rpc_ms": 23.664
+  },
+  "indexes": [
+    {
+      "name": "organization_members_profile_org_idx",
+      "valid": true,
+      "ready": true
+    },
+    {
+      "name": "programs_instructor_idx",
+      "valid": true,
+      "ready": true
+    },
+    {
+      "name": "schedules_org_start_idx",
+      "valid": true,
+      "ready": true
+    },
+    {
+      "name": "schedules_parent_idx",
+      "valid": true,
+      "ready": true
+    },
+    {
+      "name": "schedules_student_start_idx",
+      "valid": true,
+      "ready": true
+    }
+  ]
+}
