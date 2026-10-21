@@ -880,7 +880,7 @@ export type Database = {
       }
       get_current_profile_id: { Args: never; Returns: string }
       get_student_total_hours: {
-        Args: { p_student_ids: string[]; p_organization_id?: string }
+        Args: { p_student_ids: string[]; p_organization_id?: string | null }
         Returns: { student_id: string; total_hours: number }[]
       }
       get_user_organization_id: { Args: never; Returns: string }

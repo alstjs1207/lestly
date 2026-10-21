@@ -1,6 +1,7 @@
 import type { DatesSetArg } from "@fullcalendar/core";
 
-import { lazy, Suspense } from "react";
+import { Suspense, lazy } from "react";
+
 import { CalendarSkeleton } from "~/core/components/calendar-skeleton";
 
 // Lazy load the calendar implementation
@@ -27,6 +28,7 @@ interface CalendarEvent {
 interface AdminCalendarProps {
   events: CalendarEvent[];
   initialView?: "dayGridMonth" | "timeGridWeek" | "timeGridDay";
+  initialDate?: string;
   onDateClick?: (date: Date) => void;
   onEventClick?: (scheduleId: number) => void;
   onDatesSet?: (dateInfo: DatesSetArg) => void;

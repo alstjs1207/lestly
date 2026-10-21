@@ -4,29 +4,24 @@ import type { Route } from "./+types/calendar";
 
 import { ListIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, data, useNavigate, useSearchParams } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import { useIsMobile } from "~/core/hooks/use-mobile";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getMonthlySchedules } from "~/features/schedules/queries";
+import { parseCalendarMonth } from "~/features/schedules/utils/calendar-month";
 
 import AdminCalendar from "../../components/admin-calendar";
 import { AdminMobileCalendar } from "../../components/admin-mobile-calendar";
 import { requireAdminRole } from "../../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
   const url = new URL(request.url);
-  const now = new Date();
-  const year = parseInt(
-    url.searchParams.get("year") || String(now.getFullYear()),
-  );
-  const month = parseInt(
-    url.searchParams.get("month") || String(now.getMonth() + 1),
-  );
+  const { year, month } = parseCalendarMonth(url.searchParams);
 
   const schedules = await getMonthlySchedules(client, {
     organizationId,
@@ -61,7 +56,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
   });
 
-  return { events, year, month };
+  return data({ events, year, month }, { headers });
 }
 
 function DaySchedulePanel({
@@ -266,6 +261,7 @@ export default function ScheduleCalendarScreen({
         <div className="bg-card rounded-xl border p-6 shadow-sm">
           <AdminCalendar
             events={events}
+            initialDate={`${year}-${String(month).padStart(2, "0")}-01`}
             onDatesSet={handleDatesSet}
             onDaySelect={setSelectedDate}
             selectedDate={selectedDate}

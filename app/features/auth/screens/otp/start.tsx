@@ -26,6 +26,7 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -68,6 +69,7 @@ const otpStartSchema = z.object({
  * @returns Validation errors, auth errors, or redirect to OTP complete page
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   // Parse and validate form data
   const formData = await request.formData();
   const { success, data: validData } = otpStartSchema.safeParse(
@@ -97,7 +99,9 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   // Redirect to OTP complete page with email in query parameter
-  return redirect(`/auth/otp/complete?email=${validData.email}`);
+  return redirect(
+    `/auth/otp/complete?email=${encodeURIComponent(validData.email)}`,
+  );
 }
 
 /**

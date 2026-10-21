@@ -18,11 +18,12 @@ import {
 export default [
   route("/robots.txt", "core/screens/robots.ts"),
   route("/sitemap.xml", "core/screens/sitemap.ts"),
-  ...prefix("/debug", [
-    // You should delete this in production.
-    route("/sentry", "debug/sentry.tsx"),
-    route("/analytics", "debug/analytics.tsx"),
-  ]),
+  ...(process.env.NODE_ENV !== "production"
+    ? prefix("/debug", [
+        route("/sentry", "debug/sentry.tsx"),
+        route("/analytics", "debug/analytics.tsx"),
+      ])
+    : []),
   // API Routes. Routes that export actions and loaders but no UI.
   ...prefix("/api", [
     route("/consult-request", "features/class/api/consult-request.tsx"),

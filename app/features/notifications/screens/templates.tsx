@@ -1,8 +1,8 @@
 import type { Route } from "./+types/templates";
 
+import { ChevronLeftIcon, SendIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useFetcher } from "react-router";
-import { ChevronLeftIcon, SendIcon } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
+import { Checkbox } from "~/core/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -32,11 +33,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/core/components/ui/select";
-import { Checkbox } from "~/core/components/ui/checkbox";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-import { requireAdminRole, requireNotificationsEnabled } from "~/features/admin/guards.server";
+import {
+  requireAdminRole,
+  requireNotificationsEnabled,
+} from "~/features/admin/guards.server";
 
-import { getTemplatesWithOrgSettings, getTodayTestSendCount, upsertOrgTemplate } from "../queries";
+import {
+  getTemplatesWithOrgSettings,
+  getTodayTestSendCount,
+  upsertOrgTemplate,
+} from "../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
@@ -57,6 +65,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
   await requireNotificationsEnabled(organizationId);
@@ -67,9 +76,15 @@ export async function action({ request }: Route.ActionArgs) {
   if (intent === "updateTemplate") {
     const superTemplateId = parseInt(formData.get("superTemplateId") as string);
     const sendTiming = formData.get("sendTiming") as "IMMEDIATE" | "SCHEDULED";
-    const hoursBefore = formData.get("hoursBefore") ? parseInt(formData.get("hoursBefore") as string) : undefined;
-    const scheduledSendTime = formData.get("scheduledSendTime") as string | undefined;
-    const batchStartHour = formData.get("batchStartHour") ? parseInt(formData.get("batchStartHour") as string) : undefined;
+    const hoursBefore = formData.get("hoursBefore")
+      ? parseInt(formData.get("hoursBefore") as string)
+      : undefined;
+    const scheduledSendTime = formData.get("scheduledSendTime") as
+      | string
+      | undefined;
+    const batchStartHour = formData.get("batchStartHour")
+      ? parseInt(formData.get("batchStartHour") as string)
+      : undefined;
     const status = formData.get("status") === "on" ? "ACTIVE" : "INACTIVE";
     const alimtalkEnabled = formData.get("alimtalkEnabled") === "on";
     const emailEnabled = formData.get("emailEnabled") === "on";
@@ -106,13 +121,13 @@ const sendTimingLabels: Record<string, string> = {
   SCHEDULED: "예약 발송",
 };
 
-export default function TemplatesScreen({
-  loaderData,
-}: Route.ComponentProps) {
+export default function TemplatesScreen({ loaderData }: Route.ComponentProps) {
   const { templates, testSendCount, maxTestSendPerDay } = loaderData;
   const updateFetcher = useFetcher<{ success: boolean; templateId?: number }>();
   const testSendFetcher = useFetcher<{ success: boolean; error?: string }>();
-  const [selectedTemplate, setSelectedTemplate] = useState<typeof templates[0] | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    (typeof templates)[0] | null
+  >(null);
   const [openSettingsId, setOpenSettingsId] = useState<number | null>(null);
 
   const canTestSend = testSendCount < maxTestSendPerDay;
@@ -140,8 +155,10 @@ export default function TemplatesScreen({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>오늘 테스트 발송: {testSendCount} / {maxTestSendPerDay}회</span>
+      <div className="text-muted-foreground flex items-center gap-2 text-sm">
+        <span>
+          오늘 테스트 발송: {testSendCount} / {maxTestSendPerDay}회
+        </span>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -176,21 +193,29 @@ export default function TemplatesScreen({
               <div className="text-sm">
                 <p className="text-muted-foreground">발송 타이밍</p>
                 <p className="font-medium">
-                  {sendTimingLabels[template.orgSettings?.send_timing || template.default_timing] || "-"}
+                  {sendTimingLabels[
+                    template.orgSettings?.send_timing || template.default_timing
+                  ] || "-"}
                 </p>
               </div>
 
-              {(template.orgSettings?.send_timing || template.default_timing) === "SCHEDULED" && (
+              {(template.orgSettings?.send_timing ||
+                template.default_timing) === "SCHEDULED" && (
                 <>
                   {template.type === "SYS_REMIND_STUDENT" && (
                     <div className="text-sm">
                       <p className="text-muted-foreground">발송 시간</p>
                       <p className="font-medium">
-                        수업 {template.orgSettings?.hours_before ?? template.default_hours_before ?? 24}시간 전
+                        수업{" "}
+                        {template.orgSettings?.hours_before ??
+                          template.default_hours_before ??
+                          24}
+                        시간 전
                       </p>
                     </div>
                   )}
-                  {(template.type === "ADM_BOOK_STUDENT" || template.type === "ADM_CANCEL_STUDENT") && (
+                  {(template.type === "ADM_BOOK_STUDENT" ||
+                    template.type === "ADM_CANCEL_STUDENT") && (
                     <div className="text-sm">
                       <p className="text-muted-foreground">배치 발송 시간</p>
                       <p className="font-medium">
@@ -203,26 +228,25 @@ export default function TemplatesScreen({
 
               <div className="text-sm">
                 <p className="text-muted-foreground">사용 변수</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {Array.isArray(template.variables) && (template.variables as string[]).map((v) => (
-                    <Badge key={v} variant="secondary" className="text-xs">
-                      {`{{${v}}}`}
-                    </Badge>
-                  ))}
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {Array.isArray(template.variables) &&
+                    (template.variables as string[]).map((v) => (
+                      <Badge key={v} variant="secondary" className="text-xs">
+                        {`{{${v}}}`}
+                      </Badge>
+                    ))}
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <Dialog
                   open={openSettingsId === template.super_template_id}
-                  onOpenChange={(open) => setOpenSettingsId(open ? template.super_template_id : null)}
+                  onOpenChange={(open) =>
+                    setOpenSettingsId(open ? template.super_template_id : null)
+                  }
                 >
                   <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                    >
+                    <Button variant="outline" size="sm" className="flex-1">
                       설정
                     </Button>
                   </DialogTrigger>
@@ -230,71 +254,120 @@ export default function TemplatesScreen({
                     <DialogHeader>
                       <DialogTitle>템플릿 설정</DialogTitle>
                       <DialogDescription>
-                        {templateTypeLabels[template.type] || template.name} 템플릿의 발송 설정을 변경합니다.
+                        {templateTypeLabels[template.type] || template.name}{" "}
+                        템플릿의 발송 설정을 변경합니다.
                       </DialogDescription>
                     </DialogHeader>
                     <updateFetcher.Form method="post" className="space-y-4">
-                      <input type="hidden" name="intent" value="updateTemplate" />
-                      <input type="hidden" name="superTemplateId" value={template.super_template_id} />
+                      <input
+                        type="hidden"
+                        name="intent"
+                        value="updateTemplate"
+                      />
+                      <input
+                        type="hidden"
+                        name="superTemplateId"
+                        value={template.super_template_id}
+                      />
 
                       <div className="flex items-center gap-2">
                         <Checkbox
                           id={`status-${template.super_template_id}`}
                           name="status"
-                          defaultChecked={template.orgSettings?.status !== "INACTIVE"}
+                          defaultChecked={
+                            template.orgSettings?.status !== "INACTIVE"
+                          }
                         />
-                        <Label htmlFor={`status-${template.super_template_id}`}>알림 사용</Label>
+                        <Label htmlFor={`status-${template.super_template_id}`}>
+                          알림 사용
+                        </Label>
                       </div>
 
                       <div className="space-y-3 pt-2">
-                        <Label className="text-muted-foreground">발송 채널</Label>
+                        <Label className="text-muted-foreground">
+                          발송 채널
+                        </Label>
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id={`alimtalk-${template.super_template_id}`}
                             name="alimtalkEnabled"
-                            defaultChecked={(template.orgSettings as { alimtalk_enabled?: boolean } | null)?.alimtalk_enabled ?? true}
+                            defaultChecked={
+                              (
+                                template.orgSettings as {
+                                  alimtalk_enabled?: boolean;
+                                } | null
+                              )?.alimtalk_enabled ?? true
+                            }
                           />
-                          <Label htmlFor={`alimtalk-${template.super_template_id}`}>알림톡 발송</Label>
+                          <Label
+                            htmlFor={`alimtalk-${template.super_template_id}`}
+                          >
+                            알림톡 발송
+                          </Label>
                         </div>
                         {template.type !== "SYS_CONSULT_ADMIN" && (
                           <div className="flex items-center gap-2">
                             <Checkbox
                               id={`email-${template.super_template_id}`}
                               name="emailEnabled"
-                              defaultChecked={(template.orgSettings as { email_enabled?: boolean } | null)?.email_enabled ?? true}
+                              defaultChecked={
+                                (
+                                  template.orgSettings as {
+                                    email_enabled?: boolean;
+                                  } | null
+                                )?.email_enabled ?? true
+                              }
                             />
-                            <Label htmlFor={`email-${template.super_template_id}`}>이메일 발송</Label>
+                            <Label
+                              htmlFor={`email-${template.super_template_id}`}
+                            >
+                              이메일 발송
+                            </Label>
                           </div>
                         )}
-                        {(template.type === "ADM_BOOK_STUDENT" || template.type === "ADM_CANCEL_STUDENT") && (
-                          <p className="text-xs text-muted-foreground">
+                        {(template.type === "ADM_BOOK_STUDENT" ||
+                          template.type === "ADM_CANCEL_STUDENT") && (
+                          <p className="text-muted-foreground text-xs">
                             ※ 이메일은 배치 설정과 관계없이 즉시 발송됩니다.
                           </p>
                         )}
                       </div>
 
                       {/* 발송 타이밍: 리마인더에만 표시 (관리자 예약/취소는 시간대 기반 자동 결정) */}
-                      {template.type !== "ADM_BOOK_STUDENT" && template.type !== "ADM_CANCEL_STUDENT" && (
-                        <div className="space-y-2">
-                          <Label>발송 타이밍</Label>
-                          <Select
-                            name="sendTiming"
-                            defaultValue={template.orgSettings?.send_timing || template.default_timing}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="IMMEDIATE">즉시 발송</SelectItem>
-                              <SelectItem value="SCHEDULED">예약 발송</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
+                      {template.type !== "ADM_BOOK_STUDENT" &&
+                        template.type !== "ADM_CANCEL_STUDENT" && (
+                          <div className="space-y-2">
+                            <Label>발송 타이밍</Label>
+                            <Select
+                              name="sendTiming"
+                              defaultValue={
+                                template.orgSettings?.send_timing ||
+                                template.default_timing
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="IMMEDIATE">
+                                  즉시 발송
+                                </SelectItem>
+                                <SelectItem value="SCHEDULED">
+                                  예약 발송
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
 
                       {/* 관리자 예약/취소: 시간대 기반 자동 발송 안내 */}
-                      {(template.type === "ADM_BOOK_STUDENT" || template.type === "ADM_CANCEL_STUDENT") && (
-                        <input type="hidden" name="sendTiming" value="SCHEDULED" />
+                      {(template.type === "ADM_BOOK_STUDENT" ||
+                        template.type === "ADM_CANCEL_STUDENT") && (
+                        <input
+                          type="hidden"
+                          name="sendTiming"
+                          value="SCHEDULED"
+                        />
                       )}
 
                       {template.type === "SYS_REMIND_STUDENT" && (
@@ -303,34 +376,45 @@ export default function TemplatesScreen({
                           <Input
                             type="number"
                             name="hoursBefore"
-                            defaultValue={template.orgSettings?.hours_before ?? template.default_hours_before ?? 24}
+                            defaultValue={
+                              template.orgSettings?.hours_before ??
+                              template.default_hours_before ??
+                              24
+                            }
                             min={1}
                             max={72}
                           />
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-muted-foreground text-xs">
                             1~72 시간 사이의 값을 입력하세요.
                           </p>
                         </div>
                       )}
 
-                      {(template.type === "ADM_BOOK_STUDENT" || template.type === "ADM_CANCEL_STUDENT") && (
+                      {(template.type === "ADM_BOOK_STUDENT" ||
+                        template.type === "ADM_CANCEL_STUDENT") && (
                         <>
                           <div className="space-y-2">
                             <Label>배치 발송 시간</Label>
                             <Input
                               type="time"
                               name="scheduledSendTime"
-                              defaultValue={template.orgSettings?.scheduled_send_time || "09:00"}
+                              defaultValue={
+                                template.orgSettings?.scheduled_send_time ||
+                                "09:00"
+                              }
                             />
-                            <p className="text-xs text-muted-foreground">
-                              야간(해당 시간 이후)에 생성된 알림은 다음날 이 시간에 일괄 발송됩니다.
+                            <p className="text-muted-foreground text-xs">
+                              야간(해당 시간 이후)에 생성된 알림은 다음날 이
+                              시간에 일괄 발송됩니다.
                             </p>
                           </div>
                           <div className="space-y-2">
                             <Label>야간 시작 시간</Label>
                             <Select
                               name="batchStartHour"
-                              defaultValue={String(template.orgSettings?.batch_start_hour ?? 23)}
+                              defaultValue={String(
+                                template.orgSettings?.batch_start_hour ?? 23,
+                              )}
                             >
                               <SelectTrigger>
                                 <SelectValue />
@@ -343,23 +427,29 @@ export default function TemplatesScreen({
                                 ))}
                               </SelectContent>
                             </Select>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-muted-foreground text-xs">
                               이 시간 이후에 생성된 알림은 예약 발송됩니다.
                             </p>
                           </div>
                         </>
                       )}
 
-                      {updateFetcher.data?.success && updateFetcher.data.templateId === template.super_template_id && (
-                        <p className="text-sm text-green-600">저장되었습니다.</p>
-                      )}
+                      {updateFetcher.data?.success &&
+                        updateFetcher.data.templateId ===
+                          template.super_template_id && (
+                          <p className="text-sm text-green-600">
+                            저장되었습니다.
+                          </p>
+                        )}
 
                       <DialogFooter>
                         <Button
                           type="submit"
                           disabled={updateFetcher.state !== "idle"}
                         >
-                          {updateFetcher.state !== "idle" ? "저장 중..." : "저장"}
+                          {updateFetcher.state !== "idle"
+                            ? "저장 중..."
+                            : "저장"}
                         </Button>
                       </DialogFooter>
                     </updateFetcher.Form>
@@ -368,11 +458,7 @@ export default function TemplatesScreen({
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={!canTestSend}
-                    >
+                    <Button variant="outline" size="sm" disabled={!canTestSend}>
                       <SendIcon className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
@@ -380,20 +466,31 @@ export default function TemplatesScreen({
                     <DialogHeader>
                       <DialogTitle>테스트 발송</DialogTitle>
                       <DialogDescription>
-                        {templateTypeLabels[template.type] || template.name} 템플릿을 테스트 발송합니다.
-                        테스트 알림은 로그인한 관리자의 전화번호로 발송됩니다.
+                        {templateTypeLabels[template.type] || template.name}{" "}
+                        템플릿을 테스트 발송합니다. 테스트 알림은 로그인한
+                        관리자의 전화번호로 발송됩니다.
                       </DialogDescription>
                     </DialogHeader>
-                    <testSendFetcher.Form method="post" action="/api/notifications/test-send" className="space-y-4">
-                      <input type="hidden" name="superTemplateId" value={template.super_template_id} />
+                    <testSendFetcher.Form
+                      method="post"
+                      action="/api/notifications/test-send"
+                      className="space-y-4"
+                    >
+                      <input
+                        type="hidden"
+                        name="superTemplateId"
+                        value={template.super_template_id}
+                      />
 
-                      <div className="rounded-md bg-muted p-4">
-                        <p className="text-sm font-medium mb-2">템플릿 내용</p>
-                        <p className="text-sm whitespace-pre-wrap">{template.content}</p>
+                      <div className="bg-muted rounded-md p-4">
+                        <p className="mb-2 text-sm font-medium">템플릿 내용</p>
+                        <p className="text-sm whitespace-pre-wrap">
+                          {template.content}
+                        </p>
                       </div>
 
                       {testSendFetcher.data?.success === false && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-destructive text-sm">
                           {testSendFetcher.data.error || "발송에 실패했습니다."}
                         </p>
                       )}
@@ -407,9 +504,13 @@ export default function TemplatesScreen({
                       <DialogFooter>
                         <Button
                           type="submit"
-                          disabled={testSendFetcher.state !== "idle" || !canTestSend}
+                          disabled={
+                            testSendFetcher.state !== "idle" || !canTestSend
+                          }
                         >
-                          {testSendFetcher.state !== "idle" ? "발송 중..." : "테스트 발송"}
+                          {testSendFetcher.state !== "idle"
+                            ? "발송 중..."
+                            : "테스트 발송"}
                         </Button>
                       </DialogFooter>
                     </testSendFetcher.Form>
@@ -422,7 +523,7 @@ export default function TemplatesScreen({
       </div>
 
       {templates.length === 0 && (
-        <div className="text-center py-12">
+        <div className="py-12 text-center">
           <p className="text-muted-foreground">등록된 템플릿이 없습니다.</p>
         </div>
       )}

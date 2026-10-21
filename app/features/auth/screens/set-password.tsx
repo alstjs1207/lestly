@@ -24,6 +24,7 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 export const meta: Route.MetaFunction = () => {
@@ -37,7 +38,9 @@ export const meta: Route.MetaFunction = () => {
 const setPasswordSchema = z
   .object({
     password: z.string().min(8, "비밀번호는 최소 8자 이상이어야 합니다."),
-    confirmPassword: z.string().min(8, "비밀번호는 최소 8자 이상이어야 합니다."),
+    confirmPassword: z
+      .string()
+      .min(8, "비밀번호는 최소 8자 이상이어야 합니다."),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "비밀번호가 일치하지 않습니다.",
@@ -45,7 +48,7 @@ const setPasswordSchema = z
   });
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
@@ -55,11 +58,12 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/login");
   }
 
-  return { email: user.email };
+  return data({ email: user.email }, { headers });
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const [client] = makeServerClient(request);
+  requireMethod("POST")(request);
+  const [client, headers] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
@@ -77,7 +81,10 @@ export async function action({ request }: Route.ActionArgs) {
   } = setPasswordSchema.safeParse(Object.fromEntries(formData));
 
   if (!success) {
-    return data({ fieldErrors: error.flatten().fieldErrors }, { status: 400 });
+    return data(
+      { fieldErrors: error.flatten().fieldErrors },
+      { status: 400, headers },
+    );
   }
 
   const { error: updateError } = await client.auth.updateUser({
@@ -85,10 +92,10 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (updateError) {
-    return data({ error: updateError.message }, { status: 400 });
+    return data({ error: updateError.message }, { status: 400, headers });
   }
 
-  return { success: true };
+  return data({ success: true }, { headers });
 }
 
 export default function SetPassword({
@@ -132,7 +139,10 @@ export default function SetPassword({
             ref={formRef}
           >
             <div className="flex flex-col items-start space-y-2">
-              <Label htmlFor="password" className="flex flex-col items-start gap-1">
+              <Label
+                htmlFor="password"
+                className="flex flex-col items-start gap-1"
+              >
                 비밀번호
               </Label>
               <Input
@@ -149,7 +159,10 @@ export default function SetPassword({
               ) : null}
             </div>
             <div className="flex flex-col items-start space-y-2">
-              <Label htmlFor="confirmPassword" className="flex flex-col items-start gap-1">
+              <Label
+                htmlFor="confirmPassword"
+                className="flex flex-col items-start gap-1"
+              >
                 비밀번호 확인
               </Label>
               <Input
@@ -175,7 +188,9 @@ export default function SetPassword({
                   <CheckCircle2Icon className="size-4" />
                   <p>비밀번호가 설정되었습니다.</p>
                 </div>
-                <p className="text-muted-foreground">잠시 후 메인 페이지로 이동합니다...</p>
+                <p className="text-muted-foreground">
+                  잠시 후 메인 페이지로 이동합니다...
+                </p>
               </div>
             ) : null}
           </Form>

@@ -7,8 +7,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
-import { fromKST, nowKST } from "~/features/schedules/utils/kst";
-import { getStudentHoursTotals } from "~/features/schedules/utils/student-hours";
+import {
+  buildStudentSearchFilter,
+  normalizePagination,
+} from "../../core/lib/query-utils.ts";
+import { fromKST, nowKST } from "../schedules/utils/kst.ts";
+import { getStudentHoursTotals } from "../schedules/utils/student-hours.ts";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -36,8 +40,7 @@ export async function getStudentsPaginated(
     search?: string;
   },
 ) {
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const pagination = normalizePagination(page, pageSize);
 
   let query = client
     .from("organization_members")
@@ -72,7 +75,8 @@ export async function getStudentsPaginated(
     .eq("role", "STUDENT")
     .order("state", { ascending: true }) // NORMAL first
     .order("created_at", { ascending: false })
-    .range(from, to);
+    .order("profile_id", { ascending: true })
+    .range(pagination.from, pagination.to);
 
   if (stateFilter) {
     query = query.eq("state", stateFilter);
@@ -83,10 +87,8 @@ export async function getStudentsPaginated(
   }
 
   if (search) {
-    // Filter on the joined profiles table using proper syntax
-    query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`, {
-      referencedTable: "profiles",
-    });
+    const filter = buildStudentSearchFilter(search);
+    if (filter) query = query.or(filter, { referencedTable: "profiles" });
   }
 
   const { data, error, count } = await query;
@@ -108,8 +110,8 @@ export async function getStudentsPaginated(
   return {
     students: students ?? [],
     totalCount: count ?? 0,
-    totalPages: Math.ceil((count ?? 0) / pageSize),
-    currentPage: page,
+    totalPages: Math.ceil((count ?? 0) / pagination.pageSize),
+    currentPage: pagination.page,
   };
 }
 
@@ -294,19 +296,33 @@ export async function getDashboardStats(
   const tomorrow = fromKST(now.year, now.month, now.day + 1);
 
   const monthStart = fromKST(now.year, now.month, 1);
-  const monthEnd = fromKST(now.year, now.month + 1, 0, 23, 59, 59);
+  const monthEnd = fromKST(now.year, now.month + 1, 1);
 
-  // Run all 3 queries in parallel
+  // Run dashboard queries in parallel so the initial setup checklist does not
+  // add extra round trips for new organizations.
   const [
-    { data: memberStats, error: memberError },
+    { count: totalStudents, error: memberError },
+    { count: activeStudents, error: activeMemberError },
+    { count: graduatedStudents, error: graduatedMemberError },
+    { count: deletedStudents, error: deletedMemberError },
     { count: todayScheduleCount, error: scheduleError },
     { count: monthlyScheduleCount, error: monthlyError },
+    { count: totalScheduleCount, error: totalScheduleError },
+    { count: activeProgramCount, error: programError },
   ] = await Promise.all([
     client
       .from("organization_members")
-      .select("state")
+      .select("profile_id", { count: "exact", head: true })
       .eq("organization_id", organizationId)
       .eq("role", "STUDENT"),
+    ...(["NORMAL", "GRADUATE", "DELETED"] as const).map((state) =>
+      client
+        .from("organization_members")
+        .select("profile_id", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("role", "STUDENT")
+        .eq("state", state),
+    ),
     client
       .from("schedules")
       .select("*", { count: "exact", head: true })
@@ -318,28 +334,45 @@ export async function getDashboardStats(
       .select("*", { count: "exact", head: true })
       .eq("organization_id", organizationId)
       .gte("start_time", monthStart.toISOString())
-      .lte("start_time", monthEnd.toISOString()),
+      .lt("start_time", monthEnd.toISOString()),
+    client
+      .from("schedules")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId),
+    client
+      .from("programs")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("status", "ACTIVE"),
   ]);
 
   if (memberError) {
     throw memberError;
   }
+  if (activeMemberError) throw activeMemberError;
+  if (graduatedMemberError) throw graduatedMemberError;
+  if (deletedMemberError) throw deletedMemberError;
   if (scheduleError) {
     throw scheduleError;
   }
   if (monthlyError) {
     throw monthlyError;
   }
+  if (totalScheduleError) {
+    throw totalScheduleError;
+  }
+  if (programError) {
+    throw programError;
+  }
 
   return {
-    totalStudents: memberStats?.length ?? 0,
-    activeStudents:
-      memberStats?.filter((s) => s.state === "NORMAL").length ?? 0,
-    graduatedStudents:
-      memberStats?.filter((s) => s.state === "GRADUATE").length ?? 0,
-    deletedStudents:
-      memberStats?.filter((s) => s.state === "DELETED").length ?? 0,
+    totalStudents: totalStudents ?? 0,
+    activeStudents: activeStudents ?? 0,
+    graduatedStudents: graduatedStudents ?? 0,
+    deletedStudents: deletedStudents ?? 0,
     todayScheduleCount: todayScheduleCount ?? 0,
     monthlyScheduleCount: monthlyScheduleCount ?? 0,
+    totalScheduleCount: totalScheduleCount ?? 0,
+    activeProgramCount: activeProgramCount ?? 0,
   };
 }

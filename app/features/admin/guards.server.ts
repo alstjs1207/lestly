@@ -12,12 +12,15 @@ import type { Database } from "database.types";
 
 import { data, redirect } from "react-router";
 
+import { getAuthenticatedProfile } from "~/core/lib/authenticated-profile.server";
+import { getCurrentPrivilegedUser } from "~/core/lib/privileged-auth.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import { getAuthUser } from "~/core/lib/supa-client.server";
 import { getNotificationsEnabled } from "~/features/app-settings/queries";
 
 export interface AdminUser {
   user: User;
+  profileId: string;
   organizationId: string;
 }
 
@@ -79,23 +82,8 @@ async function loadAdminRole(
     throw redirect("/login");
   }
 
-  // Run profile and membership checks in parallel
-  const [{ data: profile, error: profileError }, { data: memberships, error }] =
-    await Promise.all([
-      adminClient
-        .from("profiles")
-        .select("is_signup_complete")
-        .eq("profile_id", user.id)
-        .single(),
-      adminClient
-        .from("organization_members")
-        .select("organization_id, role, state")
-        .eq("profile_id", user.id)
-        .eq("role", "ADMIN")
-        .eq("state", "NORMAL"),
-    ]);
-
-  if (profileError || !profile) {
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) {
     // Profile doesn't exist, redirect to signup
     throw redirect("/admin/signup");
   }
@@ -104,6 +92,13 @@ async function loadAdminRole(
     // Signup not complete, redirect to profile setup
     throw redirect("/admin/signup/profile");
   }
+
+  const { data: memberships, error } = await client
+    .from("organization_members")
+    .select("organization_id, role, state")
+    .eq("profile_id", profile.profile_id)
+    .eq("role", "ADMIN")
+    .eq("state", "NORMAL");
 
   if (error) {
     throw data({ error: "Failed to check admin status" }, { status: 500 });
@@ -125,11 +120,15 @@ async function loadAdminRole(
         { status: 403 },
       );
     }
-    return { user, organizationId };
+    return { user, profileId: profile.profile_id, organizationId };
   }
 
   // Default to first organization
-  return { user, organizationId: memberships[0].organization_id };
+  return {
+    user,
+    profileId: profile.profile_id,
+    organizationId: memberships[0].organization_id,
+  };
 }
 
 /**
@@ -147,10 +146,13 @@ export async function isAdmin(
     return false;
   }
 
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return false;
+
   const { data: memberships, error } = await client
     .from("organization_members")
     .select("organization_id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.profile_id)
     .eq("role", "ADMIN")
     .eq("state", "NORMAL")
     .limit(1);
@@ -187,17 +189,7 @@ export async function getCurrentUserProfile(client: SupabaseClient<Database>) {
     return null;
   }
 
-  const { data: profile, error } = await client
-    .from("profiles")
-    .select("*")
-    .eq("profile_id", user.id)
-    .single();
-
-  if (error || !profile) {
-    return null;
-  }
-
-  return profile;
+  return getAuthenticatedProfile(client, user.id);
 }
 
 /**
@@ -215,10 +207,13 @@ export async function getCurrentOrganizationId(
     return null;
   }
 
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return null;
+
   const { data: memberships, error } = await client
     .from("organization_members")
     .select("organization_id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.profile_id)
     .eq("state", "NORMAL")
     .limit(1);
 
@@ -244,10 +239,13 @@ export async function getAdminOrganizations(
     return [];
   }
 
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return [];
+
   const { data: memberships, error } = await client
     .from("organization_members")
     .select("organization_id, role, state")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.profile_id)
     .eq("role", "ADMIN")
     .eq("state", "NORMAL");
 
@@ -275,10 +273,13 @@ export async function isAdminOfOrganization(
     return false;
   }
 
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile) return false;
+
   const { data: membership, error } = await client
     .from("organization_members")
     .select("organization_id")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.profile_id)
     .eq("organization_id", organizationId)
     .eq("role", "ADMIN")
     .eq("state", "NORMAL")
@@ -303,7 +304,7 @@ export async function isAdminOfOrganization(
 export async function isSuperAdmin(
   client: SupabaseClient<Database>,
 ): Promise<boolean> {
-  const user = await getAuthUser(client);
+  const user = await getCurrentPrivilegedUser(client);
 
   if (!user) {
     return false;
@@ -329,7 +330,7 @@ export async function isSuperAdmin(
 export async function requireSuperAdmin(
   client: SupabaseClient<Database>,
 ): Promise<SuperAdminUser> {
-  const user = await getAuthUser(client);
+  const user = await getCurrentPrivilegedUser(client);
 
   if (!user) {
     throw redirect("/login");

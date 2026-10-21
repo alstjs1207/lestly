@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router";
 
+import LogoutMenuItem from "~/core/components/logout-menu-item";
 import {
   Avatar,
   AvatarFallback,
@@ -348,9 +349,7 @@ export default function DashboardSidebar({
                   <Link to="/account">계정 설정</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/logout">로그아웃</Link>
-                </DropdownMenuItem>
+                <LogoutMenuItem>로그아웃</LogoutMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

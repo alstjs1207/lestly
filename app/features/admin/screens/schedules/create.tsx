@@ -1,6 +1,6 @@
 import type { Route } from "./+types/create";
 
-import { ChevronLeftIcon } from "lucide-react";
+import { ChevronLeftIcon, UsersIcon } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
@@ -11,8 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
+import { EmptyState } from "~/core/components/ui/empty-state";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getActivePrograms } from "~/features/programs/queries";
+import { toKSTDateString } from "~/features/schedules/utils/kst";
 
 import ScheduleForm from "../../components/schedule-form";
 import { requireAdminRole } from "../../guards.server";
@@ -35,7 +37,8 @@ export default function ScheduleCreateScreen({
 }: Route.ComponentProps) {
   const { students, programs } = loaderData;
   const [searchParams] = useSearchParams();
-  const defaultDate = searchParams.get("date") || undefined;
+  const defaultDate = searchParams.get("date") || toKSTDateString(new Date());
+  const defaultStudentId = searchParams.get("studentId") || undefined;
 
   return (
     <div className="space-y-6">
@@ -63,14 +66,16 @@ export default function ScheduleCreateScreen({
         </CardHeader>
         <CardContent>
           {students.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground mb-4">
-                등록 가능한 수강생이 없습니다.
-              </p>
-              <Button asChild>
-                <Link to="/admin/students/new">수강생 등록하기</Link>
-              </Button>
-            </div>
+            <EmptyState
+              icon={UsersIcon}
+              title="등록 가능한 수강생이 없습니다."
+              description="수강생을 먼저 등록하면 바로 일정을 만들 수 있습니다."
+              action={
+                <Button asChild>
+                  <Link to="/admin/students/new">수강생 등록하기</Link>
+                </Button>
+              }
+            />
           ) : (
             <ScheduleForm
               mode="create"
@@ -78,6 +83,7 @@ export default function ScheduleCreateScreen({
               programs={programs}
               defaultValues={{
                 date: defaultDate,
+                student_id: defaultStudentId,
               }}
             />
           )}

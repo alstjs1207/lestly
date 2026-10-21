@@ -21,6 +21,7 @@ import WelcomeEmail from "transactional-emails/emails/welcome";
 
 import resendClient from "~/core/lib/resend-client.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
+import { isWorkerAuthorized } from "~/core/lib/worker-auth.server";
 
 /**
  * Interface representing an email message in the queue
@@ -58,7 +59,7 @@ export async function action({ request }: Route.LoaderArgs) {
   // Security check: Verify this is a POST request with the correct secret
   if (
     request.method !== "POST" ||
-    request.headers.get("Authorization") !== process.env.CRON_SECRET
+    !isWorkerAuthorized(request, process.env.CRON_SECRET)
   ) {
     return data(null, { status: 401 });
   }

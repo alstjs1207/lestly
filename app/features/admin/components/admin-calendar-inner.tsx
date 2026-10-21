@@ -1,11 +1,17 @@
+import type {
+  DatesSetArg,
+  EventClickArg,
+  EventContentArg,
+  EventMountArg,
+} from "@fullcalendar/core";
 import type { DateClickArg } from "@fullcalendar/interaction";
-import type { DatesSetArg, EventClickArg, EventContentArg, EventMountArg } from "@fullcalendar/core";
 
-import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
 import { useNavigate } from "react-router";
+
 import { useIsMobile } from "~/core/hooks/use-mobile";
 
 interface CalendarEvent {
@@ -29,6 +35,7 @@ interface CalendarEvent {
 interface AdminCalendarInnerProps {
   events: CalendarEvent[];
   initialView?: "dayGridMonth" | "timeGridWeek" | "timeGridDay";
+  initialDate?: string;
   onDateClick?: (date: Date) => void;
   onEventClick?: (scheduleId: number) => void;
   onDatesSet?: (dateInfo: DatesSetArg) => void;
@@ -39,6 +46,7 @@ interface AdminCalendarInnerProps {
 export default function AdminCalendarInner({
   events,
   initialView = "dayGridMonth",
+  initialDate,
   onDateClick,
   onEventClick,
   onDatesSet,
@@ -64,7 +72,6 @@ export default function AdminCalendarInner({
     }
   };
 
-
   const handleEventClick = (arg: EventClickArg) => {
     const scheduleId = arg.event.extendedProps.scheduleId as number;
     if (onEventClick) {
@@ -75,7 +82,8 @@ export default function AdminCalendarInner({
   };
 
   const renderEventContent = (eventInfo: EventContentArg) => {
-    const { studentName, programName, studentColor } = eventInfo.event.extendedProps;
+    const { studentName, programName, studentColor } =
+      eventInfo.event.extendedProps;
     const isMonthView = eventInfo.view.type === "dayGridMonth";
     const timeText = eventInfo.timeText;
     const dotColor = studentColor || "#3B82F6";
@@ -83,19 +91,21 @@ export default function AdminCalendarInner({
     if (isMonthView) {
       if (isMobile) {
         return (
-          <div className="fc-event-main-frame overflow-hidden flex items-center gap-1 px-0.5">
+          <div className="fc-event-main-frame flex items-center gap-1 overflow-hidden px-0.5">
             <span
-              className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+              className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
               style={{ backgroundColor: dotColor }}
             />
-            <span className="fc-event-time text-xs whitespace-nowrap">{timeText}</span>
+            <span className="fc-event-time text-xs whitespace-nowrap">
+              {timeText}
+            </span>
           </div>
         );
       }
       return (
-        <div className="fc-event-main-frame overflow-hidden flex items-center gap-1 px-1">
+        <div className="fc-event-main-frame flex items-center gap-1 overflow-hidden px-1">
           <span
-            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+            className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
             style={{ backgroundColor: dotColor }}
           />
           <span className="fc-event-time text-xs">{timeText}</span>
@@ -110,7 +120,7 @@ export default function AdminCalendarInner({
       <div className="fc-event-main-frame p-1">
         <div className="flex items-center gap-1">
           <span
-            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+            className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
             style={{ backgroundColor: dotColor }}
           />
           <span className="fc-event-time text-xs">{timeText}</span>
@@ -119,7 +129,9 @@ export default function AdminCalendarInner({
           <div className="fc-event-title fc-sticky text-sm font-medium">
             {studentName || eventInfo.event.title}
             {programName && (
-              <span className="opacity-70 font-normal ml-1">({programName})</span>
+              <span className="ml-1 font-normal opacity-70">
+                ({programName})
+              </span>
             )}
           </div>
         </div>
@@ -132,9 +144,10 @@ export default function AdminCalendarInner({
     const start = info.event.start;
     const end = info.event.end;
 
-    const timeStr = start && end
-      ? `${start.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} - ${end.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`
-      : "";
+    const timeStr =
+      start && end
+        ? `${start.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} - ${end.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`
+        : "";
 
     const tooltipText = programName
       ? `${studentName} (${programName})\n${timeStr}`
@@ -148,10 +161,19 @@ export default function AdminCalendarInner({
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView={isMobile ? "dayGridMonth" : initialView}
+        initialDate={initialDate}
         headerToolbar={
           isMobile
-            ? { left: "prev,next,today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }
-            : { left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }
+            ? {
+                left: "prev,next,today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }
+            : {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }
         }
         events={events}
         dateClick={handleDateClick}

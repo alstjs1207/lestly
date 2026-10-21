@@ -4,18 +4,50 @@
  * This file contains functions for super admin specific queries.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-
 import type { Database } from "database.types";
+
+import { fetchAllRows } from "../../core/lib/query-utils.ts";
 
 type SendTiming = Database["public"]["Enums"]["send_timing"];
 type TemplateStatus = Database["public"]["Enums"]["template_status"];
 
+/** Get organization summaries in one query instead of three requests per org. */
+export async function getOrganizationsWithStats(
+  client: SupabaseClient<Database>,
+) {
+  const organizations = await fetchAllRows((from, to) =>
+    client
+      .from("organizations")
+      .select(
+        `
+      *,
+      members:organization_members(count),
+      lessons:schedules(count),
+      settings(setting_value)
+    `,
+      )
+      .eq("settings.setting_key", "notifications_enabled")
+      .order("created_at", { ascending: false })
+      .order("organization_id", { ascending: true })
+      .range(from, to),
+  );
+
+  return organizations.map(
+    ({ members, lessons, settings, ...organization }) => ({
+      ...organization,
+      memberCount: members[0]?.count ?? 0,
+      scheduleCount: lessons[0]?.count ?? 0,
+      notificationsEnabled:
+        (settings[0]?.setting_value as { value?: boolean } | null)?.value ===
+        true,
+    }),
+  );
+}
+
 /**
  * Get all super templates (master templates)
  */
-export async function getAllSuperTemplates(
-  client: SupabaseClient<Database>,
-) {
+export async function getAllSuperTemplates(client: SupabaseClient<Database>) {
   const { data, error } = await client
     .from("super_templates")
     .select("*")

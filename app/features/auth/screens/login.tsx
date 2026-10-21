@@ -36,7 +36,8 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
-import adminClient from "~/core/lib/supa-admin-client.server";
+import { requireMethod } from "~/core/lib/guards.server";
+import { getSafeRedirectPath } from "~/core/lib/request-security";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import FormErrors from "../../../core/components/form-error";
@@ -87,6 +88,7 @@ const loginSchema = z.object({
  * @returns Validation errors, auth errors, or redirect on success
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   // Parse form data from the request
   const formData = await request.formData();
   const {
@@ -110,48 +112,9 @@ export async function action({ request }: Route.ActionArgs) {
 
   // Return error if authentication fails
   if (signInError) {
-    // Check if this might be an incomplete admin signup user
-    if (signInError.message === "Invalid login credentials") {
-      // Get user by email using admin client
-      const { data: usersData } = await adminClient.auth.admin.listUsers();
-      const existingUser = usersData?.users.find(
-        (u) => u.email === validData.email,
-      );
-
-      if (existingUser) {
-        // Check if user has incomplete profile (no name)
-        const { data: profile } = await adminClient
-          .from("profiles")
-          .select("profile_id, name")
-          .eq("profile_id", existingUser.id)
-          .single();
-
-        // If user exists but has no name (incomplete profile)
-        if (profile && (!profile.name || profile.name === "")) {
-          // Check if user has no organization (incomplete signup)
-          const { data: memberships } = await adminClient
-            .from("organization_members")
-            .select("organization_id")
-            .eq("profile_id", profile.profile_id)
-            .eq("role", "ADMIN")
-            .limit(1);
-
-          if (!memberships || memberships.length === 0) {
-            // Send OTP via signInWithOtp for the user to receive
-            await client.auth.signInWithOtp({
-              email: validData.email,
-              options: { shouldCreateUser: false },
-            });
-
-            // Redirect to verify page with incomplete flag
-            return redirect(
-              `/admin/signup/verify?email=${encodeURIComponent(validData.email)}&incomplete=true`,
-            );
-          }
-        }
-      }
-    }
-    return data({ error: signInError.message }, { status: 400 });
+    // Signup recovery is available through the email verification signup flow.
+    // Failed passwords must not reveal account state or trigger unsolicited OTPs.
+    return data({ error: signInError.message }, { status: 400, headers });
   }
 
   // Check if user is admin and redirect accordingly
@@ -159,14 +122,13 @@ export async function action({ request }: Route.ActionArgs) {
 
   // redirect 파라미터 확인
   const url = new URL(request.url);
-  const redirectParam = url.searchParams.get("redirect");
+  const redirectParam = getSafeRedirectPath(url.searchParams.get("redirect"));
 
   // 관리자이고 redirect 파라미터가 /admin 또는 /super-admin으로 시작하면 해당 경로로
   if (
     redirectParam &&
     adminUser &&
-    (redirectParam.startsWith("/admin") ||
-      redirectParam.startsWith("/super-admin"))
+    /^\/(?:admin|super-admin)(?:\/|\?|#|$)/.test(redirectParam)
   ) {
     return redirect(redirectParam, { headers });
   }

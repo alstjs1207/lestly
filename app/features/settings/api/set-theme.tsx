@@ -15,9 +15,11 @@
  * handles the request processing, theme validation, and session storage.
  * This provides a consistent theming experience across the application.
  */
+import type { ActionFunctionArgs } from "react-router";
 
 import { createThemeAction } from "remix-themes";
 
+import { requireMethod } from "~/core/lib/guards.server";
 import { themeSessionResolver } from "~/core/lib/theme-session.server";
 
 /**
@@ -33,4 +35,8 @@ import { themeSessionResolver } from "~/core/lib/theme-session.server";
  * The themeSessionResolver provides the session handling mechanism,
  * ensuring that the theme preference persists across requests.
  */
-export const action = createThemeAction(themeSessionResolver);
+const themeAction = createThemeAction(themeSessionResolver);
+export function action(args: ActionFunctionArgs) {
+  requireMethod("POST")(args.request);
+  return themeAction(args);
+}

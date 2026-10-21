@@ -6,17 +6,16 @@
  * 2. Send emails using Resend
  * 3. Update notification status
  *
- * NOTE: After running the 0014_email_notifications.sql migration,
- * regenerate types with: npx supabase gen types typescript
  */
 import type { Route } from "./+types/email-cron";
 
 import * as Sentry from "@sentry/node";
 import { data } from "react-router";
+import { Resend } from "resend";
 import NotificationEmail from "transactional-emails/emails/notification";
 
-import resendClient from "~/core/lib/resend-client.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
+import { isWorkerAuthorized } from "~/core/lib/worker-auth.server";
 
 /**
  * Email subject templates by notification type
@@ -49,28 +48,18 @@ interface PendingEmailNotification {
 }
 
 /**
- * Helper to update notification email status
- * Uses type assertion to work around missing columns in generated types
+ * Persist delivery outcomes and surface storage failures to the worker.
  */
 async function updateEmailStatus(
   notificationId: number,
   status: "PENDING" | "SENT" | "FAILED" | "SKIPPED",
   extra?: { email_sent_at?: string; email_error_message?: string },
 ) {
-  const updateData = {
-    email_status: status,
-    ...extra,
-  };
-
-  await (
-    adminClient.from("notifications") as unknown as {
-      update: (data: typeof updateData) => {
-        eq: (col: string, val: number) => Promise<unknown>;
-      };
-    }
-  )
-    .update(updateData)
+  const { error } = await adminClient
+    .from("notifications")
+    .update({ email_status: status, ...extra })
     .eq("notification_id", notificationId);
+  if (error) throw error;
 }
 
 /**
@@ -80,7 +69,7 @@ export async function action({ request }: Route.ActionArgs) {
   // Security check: Verify this is a POST request with the correct secret
   if (
     request.method !== "POST" ||
-    request.headers.get("Authorization") !== process.env.CRON_SECRET
+    !isWorkerAuthorized(request, process.env.CRON_SECRET)
   ) {
     return data(null, { status: 401 });
   }
@@ -106,12 +95,11 @@ export async function action({ request }: Route.ActionArgs) {
         alimtalk_template_code,
         alimtalk_variables,
         scheduled_send_at,
-        organization_id,
-        organizations(name)
+        organization_id
       `,
       )
       .eq("type", "ALIMTALK")
-      .eq("email_status" as never, "PENDING")
+      .eq("email_status", "PENDING")
       .limit(50)) as unknown as {
       data: PendingEmailNotification[] | null;
       error: Error | null;
@@ -193,10 +181,9 @@ export async function action({ request }: Route.ActionArgs) {
 
         // Replace #{variable_name} with actual values
         for (const [key, value] of Object.entries(variables)) {
-          emailContent = emailContent.replace(
-            new RegExp(`#\\{${key}\\}`, "g"),
-            value || "",
-          );
+          emailContent = emailContent
+            .split(`#{${key}}`)
+            .join(String(value ?? ""));
         }
 
         // Generate email subject
@@ -206,15 +193,24 @@ export async function action({ request }: Route.ActionArgs) {
           : `[${template.name}] 알림`;
 
         // Send email
-        const { error: sendError } = await resendClient.emails.send({
-          from: "Lestly <hello@mail.lestly.io>",
-          to: [notification.recipient_email],
-          subject: emailSubject,
-          react: NotificationEmail({
-            title: emailSubject,
-            content: emailContent,
-          }),
-        });
+        // This SDK version stores idempotency headers on its client instance.
+        // Isolate each keyed send from other transactional email requests.
+        const { error: sendError } = await new Resend(
+          process.env.RESEND_API_KEY,
+        ).emails.send(
+          {
+            from: "Lestly <hello@mail.lestly.io>",
+            to: [notification.recipient_email],
+            subject: emailSubject,
+            react: NotificationEmail({
+              title: emailSubject,
+              content: emailContent,
+            }),
+          },
+          {
+            idempotencyKey: `notification-email/${notification.notification_id}`,
+          },
+        );
 
         if (sendError) {
           await updateEmailStatus(notification.notification_id, "FAILED", {

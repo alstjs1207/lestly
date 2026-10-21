@@ -9,12 +9,14 @@ import {
   bigint,
   boolean,
   doublePrecision,
+  index,
   integer,
   jsonb,
   pgEnum,
   pgPolicy,
   pgTable,
   text,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
@@ -56,12 +58,16 @@ export const programLevelEnum = pgEnum("program_level", [
 export const programs = pgTable(
   "programs",
   {
-    program_id: bigint("program_id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    program_id: bigint("program_id", { mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
     organization_id: uuid("organization_id")
       .notNull()
       .references(() => organizations.organization_id, { onDelete: "cascade" }),
-    instructor_id: bigint("instructor_id", { mode: "number" })
-      .references(() => instructors.instructor_id, { onDelete: "set null" }),
+    instructor_id: bigint("instructor_id", { mode: "number" }).references(
+      () => instructors.instructor_id,
+      { onDelete: "set null" },
+    ),
     title: text().notNull(),
     subtitle: text(),
     description: text(),
@@ -82,12 +88,27 @@ export const programs = pgTable(
     ...timestamps,
   },
   (table) => [
+    // DEFERRABLE tenant FK programs_instructor_tenant_fk is maintained in SQL.
+    unique("programs_id_org_unique").on(
+      table.program_id,
+      table.organization_id,
+    ),
+    index("programs_instructor_idx")
+      .on(table.instructor_id)
+      .where(sql`${table.instructor_id} IS NOT NULL`),
+    pgPolicy("super-admin-all-programs-policy", {
+      for: "all",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_super_admin()`,
+      withCheck: sql`public.is_super_admin()`,
+    }),
     // RLS Policy: Students can view active programs in their organization
     pgPolicy("student-select-active-programs-policy", {
       for: "select",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`get_user_organization_id() = ${table.organization_id} AND ${table.status} = 'ACTIVE'`,
+      using: sql`public.is_org_member(${table.organization_id}) AND ${table.status} = 'ACTIVE'`,
     }),
     // RLS Policy: Admin can view all programs in their organization
     pgPolicy("admin-select-org-programs-policy", {
@@ -126,4 +147,4 @@ export const programs = pgTable(
       using: sql`${table.is_public} = true AND ${table.status} = 'ACTIVE'`,
     }),
   ],
-);
+).enableRLS();

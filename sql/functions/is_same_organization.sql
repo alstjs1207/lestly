@@ -1,25 +1,25 @@
--- Organization Member Check Function
--- Checks if the current user belongs to the specified organization
--- Uses organization_members junction table for N:N relationship
-
 CREATE OR REPLACE FUNCTION public.is_org_member(org_id uuid)
 RETURNS boolean
 LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.organization_members
-    WHERE profile_id = auth.uid()
-    AND organization_id = org_id
-    AND state = 'NORMAL'
+    SELECT 1
+    FROM public.organization_members om
+    JOIN public.profiles p ON p.profile_id = om.profile_id
+    WHERE p.auth_user_id = auth.uid()
+      AND om.organization_id = org_id
+      AND om.state = 'NORMAL'
   );
 $$;
 
--- Alias for backwards compatibility
+-- Alias retained for existing RLS definitions.
 CREATE OR REPLACE FUNCTION public.is_same_organization(target_org_id uuid)
 RETURNS boolean
 LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$

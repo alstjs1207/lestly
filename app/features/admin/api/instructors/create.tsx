@@ -1,8 +1,6 @@
 /**
  * Instructor Creation API
  */
-import type { Json } from "database.types";
-
 import type { Route } from "./+types/create";
 
 import { data, redirect } from "react-router";
@@ -12,38 +10,41 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import { createInstructor } from "~/features/instructors/queries";
 
 import { requireAdminRole } from "../../guards.server";
+import {
+  getCatalogFormError,
+  parseInstructorForm,
+  validateCatalogImage,
+} from "../../lib/catalog-form.server";
 
 const BUCKET_NAME = "instructors";
 
 export async function action({ request }: Route.ActionArgs) {
   requireMethod("POST")(request);
 
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
   const formData = await request.formData();
 
-  const name = String(formData.get("name") || "").trim();
-  const info = formData.get("info") as string | null;
-
-  if (!name) {
-    return data({ error: "강사명을 입력해 주세요." }, { status: 400 });
+  const parsed = parseInstructorForm(formData);
+  if (!parsed.success) {
+    return data(
+      { error: getCatalogFormError(parsed.error) },
+      { status: 400, headers },
+    );
   }
-
-  // JSONB 필드
-  const careerStr = formData.get("career") as string | null;
-  let career: Json[] = [];
-  if (careerStr) {
-    try {
-      career = JSON.parse(careerStr);
-    } catch {
-      return data({ error: "잘못된 경력 데이터 형식입니다." }, { status: 400 });
-    }
+  const {
+    name,
+    info,
+    career,
+    sns_instagram: snsInstagram,
+    sns_youtube: snsYoutube,
+  } = parsed.data;
+  const image = await validateCatalogImage(formData.get("photo"));
+  if (!image.success) {
+    return data({ error: image.error }, { status: 400, headers });
   }
-
-  // SNS
-  const snsInstagram = formData.get("sns_instagram") as string | null;
-  const snsYoutube = formData.get("sns_youtube") as string | null;
+  const photoFile = image.file;
   const sns: Record<string, string> = {};
   if (snsInstagram) sns.instagram = snsInstagram;
   if (snsYoutube) sns.youtube = snsYoutube;
@@ -65,19 +66,18 @@ export async function action({ request }: Route.ActionArgs) {
       {
         error: "강사 정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       },
-      { status: 500 },
+      { status: 500, headers },
     );
   }
 
   // 프로필 사진 업로드
-  const photoFile = formData.get("photo") as File | null;
   if (photoFile && photoFile.size > 0) {
-    const ext = photoFile.name.split(".").pop() || "jpg";
+    const ext = image.extension;
     const path = `${instructor.instructor_id}/photo.${ext}`;
 
     const { error: uploadError } = await client.storage
       .from(BUCKET_NAME)
-      .upload(path, photoFile, { upsert: true });
+      .upload(path, photoFile, { upsert: true, contentType: photoFile.type });
 
     if (!uploadError) {
       const { data: urlData } = client.storage
@@ -92,5 +92,5 @@ export async function action({ request }: Route.ActionArgs) {
     }
   }
 
-  return redirect("/admin/instructors");
+  return redirect("/admin/instructors", { headers });
 }

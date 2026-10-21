@@ -8,6 +8,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router";
 
+import LogoutMenuItem from "~/core/components/logout-menu-item";
 import {
   Avatar,
   AvatarFallback,
@@ -83,7 +84,7 @@ export default function SuperAdminSidebar({
                 />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Lestly</span>
-                  <span className="truncate text-xs text-muted-foreground">
+                  <span className="text-muted-foreground truncate text-xs">
                     Super Admin
                   </span>
                 </div>
@@ -194,18 +195,18 @@ export default function SuperAdminSidebar({
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{user.name}</span>
+                      <span className="truncate font-semibold">
+                        {user.name}
+                      </span>
                       <span className="truncate text-xs">{user.email}</span>
                     </div>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/logout">
-                    <LogOutIcon className="mr-2 size-4" />
-                    {t("superAdmin.user.logout")}
-                  </Link>
-                </DropdownMenuItem>
+                <LogoutMenuItem>
+                  <LogOutIcon className="mr-2 size-4" />
+                  {t("superAdmin.user.logout")}
+                </LogoutMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

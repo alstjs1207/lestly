@@ -19,11 +19,13 @@ import type { Route } from "./+types/resend";
 import { data } from "react-router";
 import { z } from "zod";
 
+import { requireMethod } from "~/core/lib/guards.server";
+import { getSafeEmailRedirect } from "~/core/lib/request-security";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
  * Validation schema for email resend requests
- * 
+ *
  * This schema ensures that the submitted email address is valid before
  * attempting to resend the verification email. It uses Zod's email validator
  * with a custom error message for better user feedback.
@@ -35,7 +37,7 @@ const resendSchema = z.object({
 
 /**
  * Action handler for resending verification emails
- * 
+ *
  * This function processes requests to resend verification emails to users
  * during the signup process. It follows these steps:
  * 1. Extracts and validates the email from the form data
@@ -43,16 +45,17 @@ const resendSchema = z.object({
  * 3. Calls Supabase's resend API with the signup type
  * 4. Sets the redirect URL to the verification page
  * 5. Returns appropriate success or error responses
- * 
+ *
  * Security considerations:
  * - Validates email format to prevent malformed requests
  * - Uses server-side validation to prevent client-side bypass
  * - Returns generic error messages to prevent email enumeration
- * 
+ *
  * @param request - The incoming HTTP request with form data
  * @returns JSON response indicating success or error
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   // Extract form data from the request
   const formData = await request.formData();
 
@@ -66,24 +69,28 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   // Create a server-side Supabase client with proper cookie handling
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
 
   // Call Supabase's resend API to send a new verification email
   const { error } = await client.auth.resend({
     type: "signup", // Specify that this is for signup verification
     email: validData.email,
     options: {
-      // Set the redirect URL for the verification link
-      // Use custom redirectTo if provided, otherwise default to auth/callback
-      emailRedirectTo: validData.redirectTo || `${process.env.SITE_URL}/auth/callback?next=/`,
+      emailRedirectTo: getSafeEmailRedirect(
+        validData.redirectTo,
+        process.env.SITE_URL ||
+          process.env.APP_URL ||
+          new URL(request.url).origin,
+        "/auth/confirm?next=/",
+      ),
     },
   });
 
   // Handle any errors from the Supabase API
   if (error) {
-    return data({ error: error.message }, { status: 400 });
+    return data({ error: error.message }, { status: 400, headers });
   }
 
   // Return success response if the email was sent successfully
-  return data({ success: true }, { status: 200 });
+  return data({ success: true }, { status: 200, headers });
 }

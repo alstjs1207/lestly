@@ -11,10 +11,10 @@
  * - Integration with i18next internationalization system
  * - Type-safe implementation with Zod schema
  */
-
 import { type LoaderFunctionArgs, data } from "react-router";
 import { z } from "zod";
 
+import { requireMethod } from "~/core/lib/guards.server";
 import { localeCookie } from "~/core/lib/i18next.server";
 import i18n from "~/i18n";
 
@@ -44,13 +44,14 @@ const localeSchema = z.enum(i18n.supportedLngs);
  * @returns Response with Set-Cookie header for the new locale
  */
 export async function action({ request }: LoaderFunctionArgs) {
+  requireMethod("POST")(request);
   // Extract locale from URL parameters
   const url = new URL(request.url);
-  
+
   // Validate locale against supported languages
   // This will throw an error if the locale is not supported
   const locale = localeSchema.parse(url.searchParams.get("locale"));
-  
+
   // Return response with cookie header to set the new locale
   return data(null, {
     headers: {

@@ -1,17 +1,27 @@
 import type { Route } from "./+types/list";
 
 import {
+  CalendarPlusIcon,
   CheckIcon,
   ChevronRightIcon,
   ClipboardIcon,
   Clock3Icon,
   LinkIcon,
+  ListFilterIcon,
+  MoreHorizontalIcon,
   PhoneIcon,
+  RotateCcwIcon,
   SearchIcon,
   UserPlusIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useFetcher, useNavigate, useSearchParams } from "react-router";
+import {
+  Link,
+  data,
+  useFetcher,
+  useNavigate,
+  useSearchParams,
+} from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -23,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/core/components/ui/dialog";
+import { EmptyState } from "~/core/components/ui/empty-state";
 import { Input } from "~/core/components/ui/input";
 import {
   Select,
@@ -31,6 +42,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/core/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "~/core/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -46,22 +64,22 @@ import { requireAdminRole } from "../../guards.server";
 import { getStudentsPaginated, getStudentsTotalHours } from "../../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
   const url = new URL(request.url);
-  const page = parseInt(url.searchParams.get("page") || "1");
+  const page = Number(url.searchParams.get("page") || "1");
   const search = url.searchParams.get("search") || undefined;
-  const stateFilter = url.searchParams.get("state") as
-    | "NORMAL"
-    | "GRADUATE"
-    | "DELETED"
-    | undefined;
-  const typeFilter = url.searchParams.get("type") as
-    | "EXAMINEE"
-    | "DROPPER"
-    | "ADULT"
-    | undefined;
+  const state = url.searchParams.get("state");
+  const stateFilter =
+    state === "NORMAL" || state === "GRADUATE" || state === "DELETED"
+      ? state
+      : undefined;
+  const type = url.searchParams.get("type");
+  const typeFilter =
+    type === "EXAMINEE" || type === "DROPPER" || type === "ADULT"
+      ? type
+      : undefined;
 
   const result = await getStudentsPaginated(client, {
     organizationId,
@@ -82,10 +100,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Observe early failures while preserving the rejection for <Await>.
   void totalHours.catch(() => {});
 
-  return {
-    ...result,
-    totalHours,
-  };
+  return data(
+    {
+      ...result,
+      totalHours,
+    },
+    { headers },
+  );
 }
 
 const stateLabels: Record<
@@ -102,6 +123,19 @@ const typeLabels: Record<string, string> = {
   DROPPER: "재수생",
   ADULT: "성인",
 };
+
+const mobileStateFilters = [
+  { value: "all", label: "전체" },
+  { value: "NORMAL", label: "정상" },
+  { value: "GRADUATE", label: "졸업" },
+  { value: "DELETED", label: "탈퇴" },
+];
+
+const mobileTypeFilters = [
+  { value: "EXAMINEE", label: "입시생" },
+  { value: "DROPPER", label: "재수생" },
+  { value: "ADULT", label: "성인" },
+];
 
 function formatPhoneNumber(value: string | null) {
   if (!value) return "연락처 없음";
@@ -199,7 +233,20 @@ export default function StudentListScreen({
     name: string;
     email?: string;
   } | null>(null);
+  const [quickStudent, setQuickStudent] = useState<{
+    id: string;
+    name: string;
+    phone: string | null;
+    canInvite: boolean;
+  } | null>(null);
   const navigate = useNavigate();
+  const activeFilterCount = [
+    searchParams.get("state"),
+    searchParams.get("type"),
+  ].filter(Boolean).length;
+  const hasSearchOrFilters = Boolean(
+    searchParams.get("search") || activeFilterCount,
+  );
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -237,6 +284,10 @@ export default function StudentListScreen({
     setSearchParams(newParams);
   };
 
+  const clearSearchAndFilters = () => {
+    setSearchParams(new URLSearchParams());
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -257,11 +308,12 @@ export default function StudentListScreen({
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+      <div className="bg-background/95 sticky top-0 z-20 -mx-4 space-y-3 border-y px-4 py-3 backdrop-blur md:static md:mx-0 md:flex md:items-center md:gap-3 md:space-y-0 md:border-0 md:bg-transparent md:p-0">
         <form onSubmit={handleSearch} className="flex gap-2 md:flex-1">
           <div className="relative min-w-0 flex-1 md:max-w-72">
             <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
+              key={searchParams.get("search") || "empty-search"}
               name="search"
               placeholder="이름 또는 전화번호 검색"
               defaultValue={searchParams.get("search") || ""}
@@ -277,7 +329,7 @@ export default function StudentListScreen({
           </Button>
         </form>
 
-        <div className="grid grid-cols-2 gap-2 md:flex">
+        <div className="hidden gap-2 md:flex">
           <Select
             value={searchParams.get("state") || "all"}
             onValueChange={handleStateFilter}
@@ -308,22 +360,117 @@ export default function StudentListScreen({
             </SelectContent>
           </Select>
         </div>
+
+        <div className="space-y-2 md:hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-sm font-medium">
+              <ListFilterIcon className="size-4" aria-hidden="true" />
+              필터
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="rounded-full px-1.5">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </div>
+            {hasSearchOrFilters && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground min-h-9"
+                onClick={clearSearchAndFilters}
+              >
+                <RotateCcwIcon className="size-3.5" aria-hidden="true" />
+                초기화
+              </Button>
+            )}
+          </div>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {mobileStateFilters.map((filter) => {
+              const active =
+                (searchParams.get("state") || "all") === filter.value;
+              return (
+                <Button
+                  key={filter.value}
+                  type="button"
+                  variant={active ? "default" : "outline"}
+                  size="sm"
+                  className="min-h-10 shrink-0 rounded-full"
+                  onClick={() => handleStateFilter(filter.value)}
+                >
+                  {filter.label}
+                </Button>
+              );
+            })}
+            <span className="bg-border my-1 w-px shrink-0" aria-hidden="true" />
+            {mobileTypeFilters.map((filter) => {
+              const active = searchParams.get("type") === filter.value;
+              return (
+                <Button
+                  key={filter.value}
+                  type="button"
+                  variant={active ? "secondary" : "outline"}
+                  size="sm"
+                  className="min-h-10 shrink-0 rounded-full"
+                  onClick={() =>
+                    handleTypeFilter(active ? "all" : filter.value)
+                  }
+                >
+                  {filter.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3 md:hidden">
         {students.length === 0 ? (
-          <div className="bg-card text-muted-foreground rounded-xl border py-12 text-center text-sm">
-            등록된 수강생이 없습니다.
+          <div className="bg-card rounded-xl border">
+            <EmptyState
+              icon={hasSearchOrFilters ? SearchIcon : UserPlusIcon}
+              title={
+                hasSearchOrFilters
+                  ? "조건에 맞는 수강생이 없습니다."
+                  : "아직 등록된 수강생이 없습니다."
+              }
+              description={
+                hasSearchOrFilters
+                  ? "검색어나 필터를 바꾸거나 초기화해 보세요."
+                  : "이름과 전화번호만 입력하면 바로 등록할 수 있습니다."
+              }
+              action={
+                hasSearchOrFilters ? (
+                  <Button variant="outline" onClick={clearSearchAndFilters}>
+                    필터 초기화
+                  </Button>
+                ) : (
+                  <Button asChild>
+                    <Link to="/admin/students/new">수강생 등록</Link>
+                  </Button>
+                )
+              }
+            />
           </div>
         ) : (
           students.map((student) => (
             <article
               key={student.profile_id}
-              className="bg-card rounded-xl border p-4 shadow-sm"
+              className="bg-card overflow-hidden rounded-xl border shadow-sm"
             >
-              <Link
-                to={`/admin/students/${student.profile_id}`}
-                className="group block"
+              <button
+                type="button"
+                className="group block w-full p-4 text-left"
+                onClick={() =>
+                  setQuickStudent({
+                    id: student.profile_id,
+                    name: student.name,
+                    phone: student.phone,
+                    canInvite:
+                      student.state === "NORMAL" && !student.auth_user_id,
+                  })
+                }
+                aria-label={`${student.name} 빠른 작업 열기`}
               >
                 <div className="flex items-start gap-3">
                   <span
@@ -366,27 +513,12 @@ export default function StudentListScreen({
                       )}
                     </div>
                   </div>
-                  <ChevronRightIcon className="text-muted-foreground mt-2 size-5 shrink-0 transition-transform group-active:translate-x-0.5" />
+                  <MoreHorizontalIcon className="text-muted-foreground mt-2 size-5 shrink-0" />
                 </div>
-              </Link>
-              {student.state === "NORMAL" && !student.auth_user_id && (
-                <div className="mt-3 flex justify-end border-t pt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground min-h-10"
-                    onClick={() =>
-                      setInviteStudent({
-                        id: student.profile_id,
-                        name: student.name,
-                      })
-                    }
-                  >
-                    <LinkIcon className="mr-1.5 size-4" />
-                    초대 링크
-                  </Button>
-                </div>
-              )}
+                <span className="text-muted-foreground mt-3 block border-t pt-2 text-right text-xs">
+                  눌러서 빠른 작업
+                </span>
+              </button>
             </article>
           ))
         )}
@@ -414,8 +546,21 @@ export default function StudentListScreen({
           <TableBody>
             {students.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center">
-                  등록된 수강생이 없습니다.
+                <TableCell colSpan={9} className="p-0">
+                  <EmptyState
+                    icon={hasSearchOrFilters ? SearchIcon : UserPlusIcon}
+                    title={
+                      hasSearchOrFilters
+                        ? "조건에 맞는 수강생이 없습니다."
+                        : "아직 등록된 수강생이 없습니다."
+                    }
+                    description={
+                      hasSearchOrFilters
+                        ? "검색어나 필터를 바꾸거나 초기화해 보세요."
+                        : "수강생을 등록하면 이곳에서 관리할 수 있습니다."
+                    }
+                    compact
+                  />
                 </TableCell>
               </TableRow>
             ) : (
@@ -546,6 +691,78 @@ export default function StudentListScreen({
           onClose={() => setInviteStudent(null)}
         />
       )}
+
+      <Sheet
+        open={!!quickStudent}
+        onOpenChange={(open) => !open && setQuickStudent(null)}
+      >
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
+        >
+          <SheetHeader className="text-left">
+            <SheetTitle>{quickStudent?.name}</SheetTitle>
+            <SheetDescription>
+              필요한 작업을 바로 선택할 수 있습니다.
+            </SheetDescription>
+          </SheetHeader>
+          {quickStudent && (
+            <div className="grid gap-2 px-4 pb-2">
+              {quickStudent.phone && (
+                <Button
+                  variant="outline"
+                  className="min-h-12 justify-start"
+                  asChild
+                >
+                  <a href={`tel:${quickStudent.phone.replace(/\D/g, "")}`}>
+                    <PhoneIcon className="size-4" aria-hidden="true" />
+                    {formatPhoneNumber(quickStudent.phone)} 전화하기
+                  </a>
+                </Button>
+              )}
+              <Button className="min-h-12 justify-start" asChild>
+                <Link
+                  to={`/admin/schedules/new?studentId=${quickStudent.id}`}
+                  onClick={() => setQuickStudent(null)}
+                >
+                  <CalendarPlusIcon className="size-4" aria-hidden="true" />
+                  일정 등록
+                </Link>
+              </Button>
+              {quickStudent.canInvite && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-12 justify-start"
+                  onClick={() => {
+                    setInviteStudent({
+                      id: quickStudent.id,
+                      name: quickStudent.name,
+                    });
+                    setQuickStudent(null);
+                  }}
+                >
+                  <LinkIcon className="size-4" aria-hidden="true" />
+                  초대 링크 만들기
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                className="min-h-12 justify-between"
+                asChild
+              >
+                <Link
+                  to={`/admin/students/${quickStudent.id}`}
+                  onClick={() => setQuickStudent(null)}
+                >
+                  상세 정보 보기
+                  <ChevronRightIcon className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

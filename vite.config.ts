@@ -12,6 +12,10 @@ export default defineConfig((config) => {
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
     authToken: process.env.SENTRY_AUTH_TOKEN,
+    telemetry: false,
+    sourceMapsUploadOptions: {
+      filesToDeleteAfterUpload: ["./build/client/**/*.map"],
+    },
   };
   let plugins: PluginOption[] = [tailwindcss(), reactRouter(), tsconfigPaths()];
   if (
@@ -23,7 +27,10 @@ export default defineConfig((config) => {
   }
   return {
     server: {
-      allowedHosts: true,
+      allowedHosts: (process.env.DEV_ALLOWED_HOSTS ?? "")
+        .split(",")
+        .map((host) => host.trim())
+        .filter(Boolean),
       watch: {
         ignored: [
           "**/*.spec.ts",
@@ -35,7 +42,12 @@ export default defineConfig((config) => {
       },
     },
     build: {
-      sourcemap: Boolean(process.env.SENTRY_DSN),
+      sourcemap:
+        process.env.SENTRY_AUTH_TOKEN &&
+        process.env.SENTRY_ORG &&
+        process.env.SENTRY_PROJECT
+          ? "hidden"
+          : false,
       rollupOptions: {
         output: {
           manualChunks(id) {

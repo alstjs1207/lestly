@@ -21,10 +21,12 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
+import { EmptyState } from "~/core/components/ui/empty-state";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getUpcomingSchedules } from "~/features/schedules/queries";
 import { toKSTDateString } from "~/features/schedules/utils/kst";
 
+import { AdminSetupChecklist } from "../components/admin-setup-checklist";
 import { requireAdminRole } from "../guards.server";
 import { getDashboardStats } from "../queries";
 
@@ -108,6 +110,12 @@ export default function AdminDashboardScreen({
           </Button>
         </div>
       </div>
+
+      <AdminSetupChecklist
+        hasStudent={stats.totalStudents > 0}
+        hasProgram={stats.activeProgramCount > 0}
+        hasSchedule={stats.totalScheduleCount > 0}
+      />
 
       <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
         <Card>
@@ -200,20 +208,16 @@ export default function AdminDashboardScreen({
           </CardHeader>
           <CardContent>
             {todaySchedules.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 py-10 text-center">
-                <div className="bg-muted flex size-12 items-center justify-center rounded-full">
-                  <CalendarDaysIcon className="text-muted-foreground size-6" />
-                </div>
-                <div>
-                  <p className="font-medium">오늘 예정된 수업이 없습니다.</p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    새 일정을 등록하거나 다음 일정을 확인해 보세요.
-                  </p>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link to="/admin/schedules/new">일정 등록</Link>
-                </Button>
-              </div>
+              <EmptyState
+                icon={CalendarDaysIcon}
+                title="오늘 예정된 수업이 없습니다."
+                description="새 일정을 등록하거나 다음 일정을 확인해 보세요."
+                action={
+                  <Button variant="outline" asChild>
+                    <Link to="/admin/schedules/new">일정 등록</Link>
+                  </Button>
+                }
+              />
             ) : (
               <div className="divide-y">
                 {todaySchedules.map((schedule) => (
@@ -296,9 +300,12 @@ export default function AdminDashboardScreen({
           </CardHeader>
           <CardContent>
             {upcomingSchedules.length === 0 ? (
-              <p className="text-muted-foreground py-10 text-center text-sm">
-                다가오는 일정이 없습니다.
-              </p>
+              <EmptyState
+                icon={Clock3Icon}
+                title="다가오는 일정이 없습니다."
+                description="일정을 등록하면 앞으로 14일간의 수업이 여기에 표시됩니다."
+                compact
+              />
             ) : (
               <div className="divide-y">
                 {upcomingSchedules.map((schedule) => {

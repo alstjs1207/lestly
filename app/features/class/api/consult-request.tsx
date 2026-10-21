@@ -8,46 +8,33 @@ import type { Route } from "./+types/consult-request";
 
 import { data } from "react-router";
 
+import { requireMethod } from "~/core/lib/guards.server";
+import { RequestBodyError, readBoundedJson } from "~/core/lib/request-body";
 import adminClient from "~/core/lib/supa-admin-client.server";
-
-interface ConsultRequestBody {
-  programId: number;
-  name: string;
-  phone: string;
-  message?: string;
-}
+import { consultRequestSchema } from "~/features/class/consult-validation";
 
 export async function action({ request }: Route.ActionArgs) {
-  if (request.method !== "POST") {
-    return data({ error: "Method not allowed" }, { status: 405 });
-  }
+  requireMethod("POST")(request);
 
   try {
-    const body = (await request.json()) as ConsultRequestBody;
-    const { programId, name, phone, message } = body;
-
-    // 필수 필드 검증
-    if (!programId || !name || !phone) {
+    const result = consultRequestSchema.safeParse(
+      await readBoundedJson(request),
+    );
+    if (!result.success) {
       return data(
-        { error: "필수 정보를 모두 입력해주세요." },
-        { status: 400 }
+        { error: "이름, 전화번호와 문의 내용을 확인해주세요." },
+        { status: 400 },
       );
     }
-
-    // 전화번호 형식 검증 (숫자만, 10-11자리)
-    const phoneDigits = phone.replace(/[^0-9]/g, "");
-    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
-      return data(
-        { error: "올바른 전화번호를 입력해주세요." },
-        { status: 400 }
-      );
-    }
+    const { programId, name, phone: phoneDigits, message } = result.data;
 
     // programId로 organization_id, title 서버에서 조회 (보안: 클라이언트 값 신뢰하지 않음)
     const { data: program } = await adminClient
       .from("programs")
       .select("organization_id, title")
       .eq("program_id", programId)
+      .eq("status", "ACTIVE")
+      .eq("is_public", true)
       .single();
 
     if (!program) {
@@ -74,16 +61,19 @@ export async function action({ request }: Route.ActionArgs) {
       console.error("Failed to create consult request:", error);
       return data(
         { error: "상담 신청 중 오류가 발생했습니다." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return data({ success: true });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return data({ error: error.message }, { status: error.status });
+    }
     console.error("Consult request error:", error);
     return data(
       { error: "상담 신청 중 오류가 발생했습니다." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

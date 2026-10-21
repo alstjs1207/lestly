@@ -11,7 +11,7 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link, data, useFetcher } from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -47,7 +47,7 @@ import { getStudentById, getStudentsTotalHours } from "../../queries";
 import { getStudentScheduleOverview } from "../../utils/student-schedule-overview";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
   const totalHours = getStudentsTotalHours(client, {
@@ -60,16 +60,19 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const [student, overview] = await Promise.all([
     getStudentById(client, { organizationId, studentId: params.studentId }),
     getStudentScheduleOverview(client, {
-      organizationId,
       studentId: params.studentId,
+      organizationId,
     }),
   ]);
 
-  return {
-    student,
-    ...overview,
-    totalHours,
-  };
+  return data(
+    {
+      student,
+      ...overview,
+      totalHours,
+    },
+    { headers },
+  );
 }
 
 const stateLabels: Record<

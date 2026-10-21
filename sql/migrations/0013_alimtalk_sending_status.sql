@@ -18,6 +18,17 @@ ALTER TYPE alimtalk_status ADD VALUE 'SENDING' BEFORE 'SENT';
 --         and with email notification support
 -- =============================================
 
+-- Trigger declarations below reference this enum. It must exist before the
+-- functions are created; 0014 also ensures it exists for existing deployments.
+DO $$
+BEGIN
+  CREATE TYPE public.email_status AS ENUM ('PENDING', 'SENT', 'FAILED', 'SKIPPED');
+EXCEPTION WHEN duplicate_object THEN
+  NULL;
+END;
+$$;
+--> statement-breakpoint
+
 /**
  * 수강생/관리자 예약 알림 트리거
  * - 수강생이 예약하면 관리자에게 (STD_BOOK_ADMIN) - 즉시 발송

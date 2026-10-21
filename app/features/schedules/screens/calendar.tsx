@@ -2,7 +2,7 @@ import type { Route } from "./+types/calendar";
 
 import { ListIcon, Loader2 } from "lucide-react";
 import { Suspense, lazy, useEffect, useState } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link, data, useFetcher } from "react-router";
 
 import { CalendarSkeleton } from "~/core/components/calendar-skeleton";
 import { Button } from "~/core/components/ui/button";
@@ -60,7 +60,7 @@ const StudentCalendarInner = lazy(
 );
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const user = await getSessionUser(client);
   if (!user) {
     throw new Response(null, { status: 401 });
@@ -99,12 +99,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     },
   }));
 
-  return {
-    events,
-    programs,
-    allowedStartDate: startDate.toISOString(),
-    allowedEndDate: endDate.toISOString(),
-  };
+  return data(
+    {
+      events,
+      programs,
+      allowedStartDate: startDate.toISOString(),
+      allowedEndDate: endDate.toISOString(),
+    },
+    { headers },
+  );
 }
 
 type SelectedEvent = {

@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useRouteLoaderData } from "react-router";
 
 import LangSwitcher from "./lang-switcher";
+import LogoutMenuItem from "./logout-menu-item";
 import ThemeSwitcher from "./theme-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
@@ -97,15 +98,10 @@ function UserMenu({
           </SheetClose>
         </DropdownMenuItem>
 
-        {/* Logout link */}
-        <DropdownMenuItem asChild>
-          <SheetClose asChild>
-            <Link to="/logout" viewTransition>
-              <LogOutIcon className="size-4" />
-              Log out
-            </Link>
-          </SheetClose>
-        </DropdownMenuItem>
+        <LogoutMenuItem>
+          <LogOutIcon className="size-4" />
+          Log out
+        </LogoutMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -256,7 +252,9 @@ export function NavigationBar({
 }) {
   // Get translation function for internationalization
   const { t } = useTranslation();
-  const rootData = useRouteLoaderData<{ env: { SHOW_ADMIN_SIGNUP: boolean } }>("root");
+  const rootData = useRouteLoaderData<{ env: { SHOW_ADMIN_SIGNUP: boolean } }>(
+    "root",
+  );
   const showAdminSignup = rootData?.env?.SHOW_ADMIN_SIGNUP ?? true;
 
   return (

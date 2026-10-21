@@ -28,6 +28,7 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -71,6 +72,7 @@ const magicLinkSchema = z.object({
  * @returns Validation errors, auth errors, or success confirmation
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   // Parse form data from the request
   const formData = await request.formData();
   const { success, data: validData } = magicLinkSchema.safeParse(

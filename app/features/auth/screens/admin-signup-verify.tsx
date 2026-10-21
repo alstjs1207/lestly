@@ -34,6 +34,7 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "~/core/components/ui/input-otp";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -75,6 +76,7 @@ const verifySchema = z.object({
  * Server action for OTP verification and resend
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   const formData = await request.formData();
   const {
     data: validData,
@@ -135,7 +137,7 @@ export default function AdminSignupVerify({
   return (
     <div className="flex min-h-screen">
       {/* 왼쪽 패널 - 서비스 소개 (데스크톱만 표시) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary text-primary-foreground flex-col items-center justify-center p-12">
+      <div className="bg-primary text-primary-foreground hidden flex-col items-center justify-center p-12 lg:flex lg:w-1/2">
         <div className="max-w-md space-y-8 text-center">
           {/* 로고 */}
           <div className="flex items-center justify-center">
@@ -148,9 +150,9 @@ export default function AdminSignupVerify({
 
           {/* 안내 메시지 */}
           <div className="space-y-4">
-            <MailIcon className="size-16 mx-auto text-primary-foreground/80" />
+            <MailIcon className="text-primary-foreground/80 mx-auto size-16" />
             <h1 className="text-3xl font-bold">이메일을 확인해주세요</h1>
-            <p className="text-lg text-primary-foreground/80">
+            <p className="text-primary-foreground/80 text-lg">
               입력하신 이메일로 인증 코드를 발송했습니다.
               <br />
               이메일을 확인하고 8자리 코드를 입력해주세요.
@@ -160,10 +162,10 @@ export default function AdminSignupVerify({
       </div>
 
       {/* 오른쪽 패널 - 인증 폼 */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 overflow-y-auto">
+      <div className="flex w-full flex-col items-center justify-center overflow-y-auto p-6 lg:w-1/2">
         <div className="w-full max-w-md space-y-6">
           {/* 모바일용 로고 */}
-          <div className="flex lg:hidden items-center justify-center mb-8">
+          <div className="mb-8 flex items-center justify-center lg:hidden">
             <img
               src="/logo/09_dark_transparent.png"
               alt="Lestly"
@@ -177,8 +179,8 @@ export default function AdminSignupVerify({
               <AlertCircleIcon className="h-4 w-4" />
               <AlertTitle>회원가입을 완료해주세요</AlertTitle>
               <AlertDescription>
-                이전에 회원가입을 완료하지 않으셨습니다.
-                인증 코드를 입력하여 회원가입을 계속 진행해주세요.
+                이전에 회원가입을 완료하지 않으셨습니다. 인증 코드를 입력하여
+                회원가입을 계속 진행해주세요.
               </AlertDescription>
             </Alert>
           )}
@@ -188,8 +190,8 @@ export default function AdminSignupVerify({
               <CardTitle className="text-2xl font-semibold" role="heading">
                 이메일 인증
               </CardTitle>
-              <CardDescription className="text-base text-center">
-                <span className="font-medium text-foreground">{email}</span>
+              <CardDescription className="text-center text-base">
+                <span className="text-foreground font-medium">{email}</span>
                 <br />
                 으로 발송된 인증 코드를 입력해주세요
               </CardDescription>
@@ -207,17 +209,41 @@ export default function AdminSignupVerify({
                     name="token"
                   >
                     <InputOTPGroup>
-                      <InputOTPSlot index={0} className="size-9 text-base sm:size-11 sm:text-lg" />
-                      <InputOTPSlot index={1} className="size-9 text-base sm:size-11 sm:text-lg" />
-                      <InputOTPSlot index={2} className="size-9 text-base sm:size-11 sm:text-lg" />
-                      <InputOTPSlot index={3} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot
+                        index={0}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
+                      <InputOTPSlot
+                        index={1}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
+                      <InputOTPSlot
+                        index={2}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
+                      <InputOTPSlot
+                        index={3}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
                     </InputOTPGroup>
                     <InputOTPSeparator />
                     <InputOTPGroup>
-                      <InputOTPSlot index={4} className="size-9 text-base sm:size-11 sm:text-lg" />
-                      <InputOTPSlot index={5} className="size-9 text-base sm:size-11 sm:text-lg" />
-                      <InputOTPSlot index={6} className="size-9 text-base sm:size-11 sm:text-lg" />
-                      <InputOTPSlot index={7} className="size-9 text-base sm:size-11 sm:text-lg" />
+                      <InputOTPSlot
+                        index={4}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
+                      <InputOTPSlot
+                        index={5}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
+                      <InputOTPSlot
+                        index={6}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
+                      <InputOTPSlot
+                        index={7}
+                        className="size-9 text-base sm:size-11 sm:text-lg"
+                      />
                     </InputOTPGroup>
                   </InputOTP>
 
@@ -236,8 +262,8 @@ export default function AdminSignupVerify({
               </Form>
 
               {/* 재발송 영역 */}
-              <div className="flex flex-col items-center gap-2 pt-2 border-t">
-                <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col items-center gap-2 border-t pt-2">
+                <p className="text-muted-foreground text-sm">
                   코드를 받지 못하셨나요?
                 </p>
                 <resendFetcher.Form method="post">
@@ -247,7 +273,7 @@ export default function AdminSignupVerify({
                   <button
                     type="submit"
                     disabled={isResending}
-                    className="text-sm text-primary hover:text-primary/80 font-medium underline transition-colors disabled:opacity-50"
+                    className="text-primary hover:text-primary/80 text-sm font-medium underline transition-colors disabled:opacity-50"
                   >
                     {isResending ? "발송 중..." : "인증 코드 재발송"}
                   </button>

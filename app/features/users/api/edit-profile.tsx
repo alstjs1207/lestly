@@ -16,9 +16,10 @@ import type { Route } from "./+types/edit-profile";
 import { data } from "react-router";
 import { z } from "zod";
 
+import { getAuthenticatedProfile } from "~/core/lib/authenticated-profile.server";
+import { getAvatarValidationError } from "~/core/lib/avatar-validation";
+import { requireAuthentication, requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-
-import { getUserProfile } from "../queries";
 
 /**
  * Validation schema for profile update form data
@@ -32,10 +33,13 @@ import { getUserProfile } from "../queries";
  * before processing them further.
  */
 const schema = z.object({
-  name: z.string().min(1),
+  name: z.string().trim().min(1).max(100),
   avatar: z.instanceof(File),
-  marketingConsent: z.coerce.boolean(),
-  removeAvatar: z.string().optional(),
+  marketingConsent: z
+    .enum(["on", "true", "false", "off"])
+    .optional()
+    .transform((value) => value === "on" || value === "true"),
+  removeAvatar: z.enum(["true", "false"]).optional(),
 });
 
 /**
@@ -58,23 +62,9 @@ const schema = z.object({
  * @returns Response indicating success or error with appropriate details
  */
 export async function action({ request }: Route.ActionArgs) {
-  // Create a server-side Supabase client with the user's session
-  const [client] = makeServerClient(request);
-
-  // Get the authenticated user's information
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  // Validate request method (only allow POST)
-  if (request.method !== "POST") {
-    return data(null, { status: 405 }); // Method Not Allowed
-  }
-
-  // Ensure user is authenticated
-  if (!user) {
-    return data(null, { status: 401 }); // Unauthorized
-  }
+  requireMethod("POST")(request);
+  const [client, headers] = makeServerClient(request);
+  const user = await requireAuthentication(client);
 
   // Extract and validate form data
   const formData = await request.formData();
@@ -86,26 +76,37 @@ export async function action({ request }: Route.ActionArgs) {
 
   // Return validation errors if any
   if (!success) {
-    return data({ fieldErrors: error.flatten().fieldErrors }, { status: 400 });
+    return data(
+      { fieldErrors: error.flatten().fieldErrors },
+      { status: 400, headers },
+    );
+  }
+
+  const avatarError = await getAvatarValidationError(validData.avatar);
+  if (avatarError) {
+    const fieldErrors: z.inferFlattenedErrors<typeof schema>["fieldErrors"] = {
+      avatar: [avatarError],
+    };
+    return data({ fieldErrors }, { status: 400, headers });
   }
 
   // Get current user profile to determine existing avatar URL
-  const profile = await getUserProfile(client, { userId: user.id });
+  const profile = await getAuthenticatedProfile(client, user.id);
+  if (!profile)
+    return data({ error: "Profile not found" }, { status: 404, headers });
   let avatarUrl = profile?.avatar_url || null;
 
   // Handle avatar removal if requested
   if (validData.removeAvatar === "true") {
-    await client.storage.from("avatars").remove([user.id]);
+    const { error: removeError } = await client.storage
+      .from("avatars")
+      .remove([user.id]);
+    if (removeError)
+      return data({ error: removeError.message }, { status: 400, headers });
     avatarUrl = null;
   }
   // Handle avatar image upload if a valid file was provided
-  else if (
-    validData.avatar &&
-    validData.avatar instanceof File &&
-    validData.avatar.size > 0 &&
-    validData.avatar.size < 1024 * 1024 && // 1MB size limit
-    validData.avatar.type.startsWith("image/") // Ensure it's an image file
-  ) {
+  else if (validData.avatar.size > 0) {
     // Upload avatar to Supabase Storage
     const { error: uploadError } = await client.storage
       .from("avatars")
@@ -115,7 +116,7 @@ export async function action({ request }: Route.ActionArgs) {
 
     // Handle upload errors
     if (uploadError) {
-      return data({ error: uploadError.message }, { status: 400 });
+      return data({ error: uploadError.message }, { status: 400, headers });
     }
 
     // Get public URL for the uploaded avatar
@@ -133,7 +134,17 @@ export async function action({ request }: Route.ActionArgs) {
       marketing_consent: validData.marketingConsent,
       avatar_url: avatarUrl,
     })
-    .eq("profile_id", profile!.profile_id);
+    .eq("profile_id", profile.profile_id)
+    .eq("auth_user_id", user.id)
+    .select("profile_id")
+    .single();
+
+  if (updateProfileError) {
+    return data(
+      { error: updateProfileError.message },
+      { status: 400, headers },
+    );
+  }
 
   // Update user metadata in the auth table
   const { error: updateError } = await client.auth.updateUser({
@@ -147,16 +158,9 @@ export async function action({ request }: Route.ActionArgs) {
 
   // Handle auth update errors
   if (updateError) {
-    return data({ error: updateError.message }, { status: 400 });
-  }
-
-  // Handle profile update errors
-  if (updateProfileError) {
-    return data({ error: updateProfileError.message }, { status: 400 });
+    return data({ error: updateError.message }, { status: 400, headers });
   }
 
   // Return success response
-  return {
-    success: true,
-  };
+  return data({ success: true }, { headers });
 }

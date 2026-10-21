@@ -1,6 +1,10 @@
 import { format, isSameDay } from "date-fns";
+import { CalendarPlusIcon } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router";
+
+import { Button } from "~/core/components/ui/button";
+import { EmptyState } from "~/core/components/ui/empty-state";
 
 interface AdminCalendarEvent {
   id: string;
@@ -54,10 +58,20 @@ export function AdminMobileDayEvents({
   }, [events, selectedDate]);
 
   if (timeGroups.length === 0) {
+    const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
     return (
-      <div className="text-muted-foreground flex flex-col items-center justify-center py-16">
-        <p className="text-sm">일정이 없습니다</p>
-      </div>
+      <EmptyState
+        icon={CalendarPlusIcon}
+        title="이 날짜에는 일정이 없습니다."
+        description="선택한 날짜에 첫 수업을 등록해 보세요."
+        action={
+          <Button variant="outline" asChild>
+            <Link to={`/admin/schedules/new?date=${selectedDateStr}`}>
+              일정 등록
+            </Link>
+          </Button>
+        }
+      />
     );
   }
 

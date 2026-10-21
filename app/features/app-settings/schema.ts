@@ -71,7 +71,7 @@ export const settings = pgTable(
       withCheck: sql`is_org_admin(${table.organization_id})`,
     }),
   ],
-);
+).enableRLS();
 
 /**
  * Setting Keys

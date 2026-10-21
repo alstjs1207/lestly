@@ -20,12 +20,17 @@ import {
 } from "@tosspayments/tosspayments-sdk";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { redirect } from "react-router";
+import { data } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import { requireAuthentication } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { cn } from "~/core/lib/utils";
+import {
+  DEMO_PAYMENT_AMOUNT,
+  createDemoOrder,
+  isPaymentDemoEnabled,
+} from "~/features/payments/lib/payment-demo.server";
 
 /**
  * Meta function for setting page metadata
@@ -64,18 +69,31 @@ export const meta: Route.MetaFunction = () => {
  * @returns Object with user ID, name, and email for payment processing
  */
 export async function loader({ request }: Route.LoaderArgs) {
+  if (
+    !isPaymentDemoEnabled(
+      process.env.NODE_ENV,
+      process.env.TOSS_PAYMENTS_SECRET_KEY,
+    )
+  ) {
+    throw data(null, { status: 404 });
+  }
   // Create a server-side Supabase client with the user's session
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
 
   // Verify the user is authenticated, redirects to login if not
   const user = await requireAuthentication(client);
 
   // Return only the necessary user information for payment processing
-  return {
-    userId: user.id,
-    userName: user.user_metadata.name,
-    userEmail: user.email,
-  };
+  return data(
+    {
+      userId: user.id,
+      userName: user.user_metadata.name,
+      userEmail: user.email,
+      orderId: createDemoOrder(user.id, process.env.TOSS_PAYMENTS_SECRET_KEY!),
+      amount: DEMO_PAYMENT_AMOUNT,
+    },
+    { headers },
+  );
 }
 
 /**
@@ -125,7 +143,7 @@ export default function Checkout({ loaderData }: Route.ComponentProps) {
 
       // Set the payment amount and currency
       await widgets.current.setAmount({
-        value: 10_000,
+        value: loaderData.amount,
         currency: "KRW",
       });
 
@@ -180,7 +198,7 @@ export default function Checkout({ loaderData }: Route.ComponentProps) {
         // Generate a unique order ID
         // 🚨⚠️ In a production app, this should come from your database
         // If you had a 'shopping cart' you would bring the order id from the shopping cart
-        orderId: crypto.randomUUID(),
+        orderId: loaderData.orderId,
 
         // Order details
         orderName: `Supabase Beagle NFT`,

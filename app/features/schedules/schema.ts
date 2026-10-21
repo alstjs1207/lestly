@@ -8,15 +8,18 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
+  index,
   pgPolicy,
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { authUid, authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
-import { makeIdentityColumn, timestamps } from "~/core/db/helpers";
+import { timestamps } from "~/core/db/helpers";
 import { organizations } from "~/features/organizations/schema";
 import { programs } from "~/features/programs/schema";
 import { profiles } from "~/features/users/schema";
@@ -30,7 +33,9 @@ import { profiles } from "~/features/users/schema";
 export const schedules = pgTable(
   "schedules",
   {
-    ...makeIdentityColumn("schedule_id"),
+    schedule_id: bigint("schedule_id", { mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
     // Organization reference for multi-tenancy
     organization_id: uuid("organization_id")
       .notNull()
@@ -54,38 +59,51 @@ export const schedules = pgTable(
     ...timestamps,
   },
   (table) => [
+    // DEFERRABLE schedules_program_tenant_fk and eligibility triggers are
+    // maintained in SQL; Drizzle cannot express deferred FK timing.
+    unique("schedules_id_org_unique").on(
+      table.schedule_id,
+      table.organization_id,
+    ),
+    check(
+      "schedules_valid_time_range",
+      sql`${table.end_time} > ${table.start_time}`,
+    ),
+    index("schedules_org_start_idx").on(
+      table.organization_id,
+      table.start_time,
+    ),
+    index("schedules_student_start_idx").on(table.student_id, table.start_time),
+    index("schedules_parent_idx")
+      .on(table.parent_schedule_id)
+      .where(sql`${table.parent_schedule_id} IS NOT NULL`),
+    pgPolicy("super-admin-all-schedules-policy", {
+      for: "all",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_super_admin()`,
+      withCheck: sql`public.is_super_admin()`,
+    }),
     // RLS Policy: Students can view their own schedules (within same organization)
     pgPolicy("student-select-own-schedules-policy", {
       for: "select",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.profile_id = ${table.student_id}
-        AND profiles.auth_user_id = ${authUid}
-      ) AND is_same_organization(${table.organization_id})`,
+      using: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id})`,
     }),
     // RLS Policy: Students can insert their own schedules (within same organization)
     pgPolicy("student-insert-own-schedules-policy", {
       for: "insert",
       to: authenticatedRole,
       as: "permissive",
-      withCheck: sql`EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.profile_id = ${table.student_id}
-        AND profiles.auth_user_id = ${authUid}
-      ) AND is_same_organization(${table.organization_id})`,
+      withCheck: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id})`,
     }),
     // RLS Policy: Students can delete their own schedules (not on the same day)
     pgPolicy("student-delete-own-schedules-policy", {
       for: "delete",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.profile_id = ${table.student_id}
-        AND profiles.auth_user_id = ${authUid}
-      ) AND is_same_organization(${table.organization_id}) AND ${table.start_time}::date > CURRENT_DATE`,
+      using: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id}) AND ${table.start_time}::date > CURRENT_DATE`,
     }),
     // RLS Policy: ADMIN can view schedules in their organization
     pgPolicy("admin-select-org-schedules-policy", {
@@ -117,4 +135,4 @@ export const schedules = pgTable(
       using: sql`is_org_admin(${table.organization_id}) AND ${table.start_time}::date >= CURRENT_DATE`,
     }),
   ],
-);
+).enableRLS();

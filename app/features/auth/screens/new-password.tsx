@@ -3,7 +3,7 @@
  *
  * This component handles the second step of the password reset flow:
  * allowing users to create a new password after clicking a reset link.
- * 
+ *
  * The component includes:
  * - Password and confirmation input fields with validation
  * - Form submission handling
@@ -29,6 +29,7 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
+import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -78,18 +79,19 @@ const updatePasswordSchema = z
  * @returns Validation errors, auth errors, or success confirmation
  */
 export async function action({ request }: Route.ActionArgs) {
+  requireMethod("POST")(request);
   // Create Supabase client and get the current user
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
-  
+
   // Redirect to forgot password page if user is not authenticated
   // This prevents direct access to this page without a valid reset link
   if (!user) {
     return redirect("/auth/forgot-password");
   }
-  
+
   // Parse and validate form data
   const formData = await request.formData();
   const {
@@ -97,26 +99,27 @@ export async function action({ request }: Route.ActionArgs) {
     data: validData,
     error,
   } = updatePasswordSchema.safeParse(Object.fromEntries(formData));
-  
+
   // Return validation errors if passwords are invalid
   if (!success) {
-    return data({ fieldErrors: error.flatten().fieldErrors }, { status: 400 });
+    return data(
+      { fieldErrors: error.flatten().fieldErrors },
+      { status: 400, headers },
+    );
   }
-  
+
   // Update the user's password with Supabase
   const { error: updateError } = await client.auth.updateUser({
     password: validData.password,
   });
-  
+
   // Return error if password update fails
   if (updateError) {
-    return data({ error: updateError.message }, { status: 400 });
+    return data({ error: updateError.message }, { status: 400, headers });
   }
-  
+
   // Return success response
-  return {
-    success: true,
-  };
+  return data({ success: true }, { headers });
 }
 
 /**
@@ -135,7 +138,7 @@ export async function action({ request }: Route.ActionArgs) {
 export default function ChangePassword({ actionData }: Route.ComponentProps) {
   // Reference to the form element for resetting after successful submission
   const formRef = useRef<HTMLFormElement>(null);
-  
+
   // Reset and blur the form when the password is successfully updated
   useEffect(() => {
     if (actionData && "success" in actionData && actionData.success) {

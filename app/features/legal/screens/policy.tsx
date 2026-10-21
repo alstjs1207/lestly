@@ -1,10 +1,10 @@
 /**
  * Legal Policy Page Component
- * 
+ *
  * This file implements a dynamic legal document page that renders MDX content.
  * It's designed to display various legal documents (privacy policy, terms of service, etc.)
  * from MDX files with consistent styling and navigation.
- * 
+ *
  * Key features:
  * - Dynamic MDX content loading based on URL parameters
  * - Frontmatter extraction for metadata (title, description)
@@ -12,7 +12,6 @@
  * - SEO-friendly metadata
  * - Proper error handling for missing documents
  */
-
 import type { Route } from "./+types/policy";
 
 import { bundleMDX } from "mdx-bundler";
@@ -30,12 +29,16 @@ import {
   TypographyList,
   TypographyOrderedList,
   TypographyP,
-} from "~/core/components/mdx-typography"; // Typography components for consistent MDX styling
+} from "~/core/components/mdx-typography";
+// Typography components for consistent MDX styling
 import { Button } from "~/core/components/ui/button";
+
+const policySlugs = new Set(["terms-of-service", "privacy-policy"]);
+const policyCache = new Map<string, ReturnType<typeof bundleMDX>>();
 
 /**
  * Meta function for setting page metadata
- * 
+ *
  * This function generates SEO-friendly metadata for legal policy pages.
  * It handles two scenarios:
  * 1. When data is available (valid policy page):
@@ -43,9 +46,9 @@ import { Button } from "~/core/components/ui/button";
  *    - Sets meta description using the document's frontmatter description
  * 2. When data is not available (404 error):
  *    - Sets a 404 page title
- * 
+ *
  * This approach ensures proper SEO for both valid pages and error states.
- * 
+ *
  * @param data - Data returned from the loader function containing MDX frontmatter
  * @returns Array of metadata objects for the page
  */
@@ -58,7 +61,7 @@ export const meta: Route.MetaFunction = ({ data }) => {
       },
     ];
   }
-  
+
   // For valid policy documents, use frontmatter for metadata
   return [
     {
@@ -73,21 +76,24 @@ export const meta: Route.MetaFunction = ({ data }) => {
 
 /**
  * Loader function for fetching and processing MDX content
- * 
+ *
  * This function performs several key operations:
  * 1. Constructs the file path to the requested legal document based on URL params
  * 2. Loads and bundles the MDX content using mdx-bundler
  * 3. Extracts frontmatter metadata and compiled code
  * 4. Handles errors with appropriate HTTP status codes
- * 
+ *
  * Error handling:
  * - Returns 404 for missing documents (ENOENT errors)
  * - Returns 500 for other processing errors
- * 
+ *
  * @param params - URL parameters containing the document slug
  * @returns Object with frontmatter metadata and compiled MDX code
  */
 export async function loader({ params }: Route.LoaderArgs) {
+  if (!params.slug || !policySlugs.has(params.slug)) {
+    throw data(null, { status: 404 });
+  }
   // Construct the file path to the requested legal document
   const filePath = path.join(
     process.cwd(),
@@ -97,19 +103,27 @@ export async function loader({ params }: Route.LoaderArgs) {
     "docs",
     `${params.slug}.mdx`, // Use the slug from URL params to find the correct document
   );
-  
+
   try {
     // Load and bundle the MDX content
-    const { code, frontmatter } = await bundleMDX({
-      file: filePath,
-    });
-    
+    let bundled =
+      process.env.NODE_ENV === "production"
+        ? policyCache.get(params.slug)
+        : undefined;
+    if (!bundled) {
+      bundled = bundleMDX({ file: filePath });
+      if (process.env.NODE_ENV === "production")
+        policyCache.set(params.slug, bundled);
+    }
+    const { code, frontmatter } = await bundled;
+
     // Return the compiled code and frontmatter metadata
     return {
       frontmatter,
       code,
     };
   } catch (error) {
+    policyCache.delete(params.slug);
     // Handle file not found errors with 404 status
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       throw data(null, { status: 404 });
@@ -121,17 +135,17 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 /**
  * Policy page component for rendering legal documents
- * 
+ *
  * This component renders MDX content with consistent styling for legal documents.
  * It provides:
  * 1. A navigation button to return to the home page
  * 2. The MDX content with styled typography components
  * 3. Responsive layout with appropriate spacing and width constraints
- * 
+ *
  * The component uses the getMDXComponent function to transform the compiled MDX code
  * into a React component, then applies custom typography components to ensure
  * consistent styling across all legal documents.
- * 
+ *
  * @param loaderData - Data from the loader containing frontmatter and compiled MDX code
  * @returns JSX element representing the policy page
  */
@@ -140,7 +154,7 @@ export default function Policy({
 }: Route.ComponentProps) {
   // Convert the compiled MDX code into a React component
   const MDXContent = getMDXComponent(code);
-  
+
   return (
     <div className="mx-auto w-full max-w-screen-xl space-y-10 px-5 py-10 md:px-10 md:py-20">
       {/* Navigation button to return to home page */}
@@ -149,7 +163,7 @@ export default function Policy({
           &larr; Go home
         </Link>
       </Button>
-      
+
       {/* MDX content container */}
       <div>
         <MDXContent

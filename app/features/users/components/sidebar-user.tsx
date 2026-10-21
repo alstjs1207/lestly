@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 
+import LogoutMenuItem from "~/core/components/logout-menu-item";
 import {
   Avatar,
   AvatarFallback,
@@ -111,12 +112,10 @@ export default function SidebarUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/logout">
-                <LogOut />
-                Log out
-              </Link>
-            </DropdownMenuItem>
+            <LogoutMenuItem>
+              <LogOut />
+              Log out
+            </LogoutMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

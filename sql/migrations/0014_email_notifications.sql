@@ -7,12 +7,15 @@
 -- STEP 1: Create email_status Enum
 -- =============================================
 
-CREATE TYPE email_status AS ENUM (
-  'PENDING',    -- Waiting for send
-  'SENT',       -- Successfully sent
-  'FAILED',     -- Failed to send
-  'SKIPPED'     -- Skipped (no email address or disabled)
-);
+DO $$
+BEGIN
+  CREATE TYPE public.email_status AS ENUM (
+    'PENDING', 'SENT', 'FAILED', 'SKIPPED'
+  );
+EXCEPTION WHEN duplicate_object THEN
+  NULL;
+END;
+$$;
 
 -- =============================================
 -- STEP 2: Add columns to organization_templates

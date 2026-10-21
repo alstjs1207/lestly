@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { CalendarDaysIcon, Clock3Icon, UsersIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
@@ -66,10 +67,18 @@ export default function ScheduleForm({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(
-    new Set(),
+    new Set(defaultValues?.student_id ? [defaultValues.student_id] : []),
   );
   const [selectedTime, setSelectedTime] = useState(
     defaultValues?.start_time || "",
+  );
+  const [selectedDate, setSelectedDate] = useState(defaultValues?.date || "");
+  const [selectedDuration, setSelectedDuration] = useState(
+    defaultValues?.duration || "1",
+  );
+  const [selectedProgramId, setSelectedProgramId] = useState(
+    defaultValues?.program_id?.toString() ||
+      (programs.length === 1 ? programs[0].program_id.toString() : ""),
   );
   const [studentQuery, setStudentQuery] = useState("");
   const [hasTouchedStudents, setHasTouchedStudents] = useState(false);
@@ -118,13 +127,40 @@ export default function ScheduleForm({
       : `/api/admin/schedules/${defaultValues?.schedule_id}/update`;
 
   const timeSlots = generateTimeSlots(30);
+  const quickTimeSlots = timeSlots.filter((slot) => slot.value.endsWith(":00"));
+  const selectedStudentNames = useMemo(
+    () =>
+      students
+        .filter((student) => selectedStudents.has(student.profile_id))
+        .map((student) => student.name),
+    [selectedStudents, students],
+  );
+  const selectedProgram = programs.find(
+    (program) => program.program_id.toString() === selectedProgramId,
+  );
+  const selectedDurationLabel = DURATION_OPTIONS.find(
+    (option) => option.value === selectedDuration,
+  )?.label;
+  const dateLabel = selectedDate
+    ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString("ko-KR", {
+        month: "long",
+        day: "numeric",
+        weekday: "short",
+      })
+    : "날짜 미선택";
+  const studentLabel =
+    selectedStudentNames.length === 0
+      ? "수강생 미선택"
+      : selectedStudentNames.length === 1
+        ? selectedStudentNames[0]
+        : `${selectedStudentNames[0]} 외 ${selectedStudentNames.length - 1}명`;
 
   return (
     <>
       <fetcher.Form
         method="post"
         action={actionUrl}
-        className="space-y-6 pb-16 md:pb-0"
+        className="space-y-6 pb-36 md:pb-0"
       >
         <div className="grid gap-6 md:grid-cols-2">
           {mode === "create" ? (
@@ -245,7 +281,8 @@ export default function ScheduleForm({
               <Label htmlFor="program_id">클래스 *</Label>
               <Select
                 name="program_id"
-                defaultValue={defaultValues?.program_id?.toString()}
+                value={selectedProgramId}
+                onValueChange={setSelectedProgramId}
                 required
               >
                 <SelectTrigger className="h-11 w-full md:h-9">
@@ -285,17 +322,40 @@ export default function ScheduleForm({
               name="date"
               type="date"
               required
-              defaultValue={defaultValues?.date}
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
               className="h-11"
             />
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label>시작 시간 *</Label>
-            <div className="md:hidden">
+            <div className="space-y-3 md:hidden">
+              <div>
+                <p className="text-muted-foreground mb-2 text-xs font-medium">
+                  빠른 시간 선택
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {quickTimeSlots.map((slot) => (
+                    <Button
+                      key={slot.value}
+                      type="button"
+                      variant={
+                        selectedTime === slot.value ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setSelectedTime(slot.value)}
+                      className="min-h-11 px-2 tabular-nums"
+                    >
+                      {slot.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-muted-foreground text-center text-xs">또는</p>
               <Select value={selectedTime} onValueChange={setSelectedTime}>
                 <SelectTrigger className="h-11 w-full">
-                  <SelectValue placeholder="시작 시간 선택" />
+                  <SelectValue placeholder="30분 단위 전체 시간 보기" />
                 </SelectTrigger>
                 <SelectContent>
                   {timeSlots.map((slot) => (
@@ -329,7 +389,8 @@ export default function ScheduleForm({
             <Label htmlFor="duration">수업 타임 *</Label>
             <Select
               name="duration"
-              defaultValue={defaultValues?.duration || "1"}
+              value={selectedDuration}
+              onValueChange={setSelectedDuration}
               required
             >
               <SelectTrigger className="h-11 w-full md:h-9">
@@ -409,30 +470,57 @@ export default function ScheduleForm({
           </div>
         )}
 
-        <div className="bg-card/95 fixed inset-x-0 bottom-16 z-30 flex justify-end gap-3 border-t px-4 py-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => history.back()}
-          >
-            취소
-          </Button>
-          <Button
-            type="submit"
-            className="min-h-11"
-            disabled={
-              isSubmitting ||
-              (mode === "create" && selectedStudents.size === 0) ||
-              !selectedTime
-            }
-          >
-            {isSubmitting
-              ? "저장 중..."
-              : mode === "create"
-                ? "일정 등록"
-                : "수정 완료"}
-          </Button>
+        <div className="bg-card/95 fixed inset-x-0 bottom-16 z-30 border-t px-4 py-3 backdrop-blur md:static md:flex md:justify-end md:gap-3 md:border-0 md:bg-transparent md:p-0">
+          <div className="mb-3 min-w-0 md:hidden">
+            <div className="text-muted-foreground flex items-center gap-3 text-xs">
+              <span className="flex min-w-0 items-center gap-1">
+                <UsersIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">{studentLabel}</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1">
+                <CalendarDaysIcon className="size-3.5" aria-hidden="true" />
+                {dateLabel}
+              </span>
+            </div>
+            <div className="mt-1 flex items-center gap-1 text-sm font-semibold">
+              <Clock3Icon className="text-primary size-4" aria-hidden="true" />
+              <span>{selectedTime || "시간 미선택"}</span>
+              {selectedDurationLabel && <span>· {selectedDurationLabel}</span>}
+              {selectedProgram && (
+                <span className="text-muted-foreground truncate font-normal">
+                  · {selectedProgram.title}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 md:flex md:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => history.back()}
+            >
+              취소
+            </Button>
+            <Button
+              type="submit"
+              className="min-h-11"
+              disabled={
+                isSubmitting ||
+                (mode === "create" && selectedStudents.size === 0) ||
+                !selectedTime ||
+                !selectedDate
+              }
+            >
+              {isSubmitting
+                ? "저장 중..."
+                : mode === "create"
+                  ? selectedStudents.size > 1
+                    ? `${selectedStudents.size}명 일정 등록`
+                    : "일정 등록"
+                  : "수정 완료"}
+            </Button>
+          </div>
         </div>
       </fetcher.Form>
 
