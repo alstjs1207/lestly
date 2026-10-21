@@ -111,6 +111,10 @@ export default function StudentInviteScreen({
             </Link>
           </Button>
           <p className="text-muted-foreground text-center text-xs">
+            카카오에서 인증된 이메일을 제공하면 비어 있는 연락 이메일에
+            저장합니다. 기존에 등록된 이메일은 유지됩니다.
+          </p>
+          <p className="text-muted-foreground text-center text-xs">
             이 링크는 1회만 사용할 수 있으며 연결 후 다시 사용할 수 없습니다.
           </p>
         </CardContent>

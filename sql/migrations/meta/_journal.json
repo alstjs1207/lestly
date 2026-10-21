@@ -120,6 +120,13 @@
       "when": 1790953200000,
       "tag": "0016_tenant_security_and_schedule_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792587600000,
+      "tag": "0017_student_invite_contact_email",
+      "breakpoints": true
     }
   ]
 }

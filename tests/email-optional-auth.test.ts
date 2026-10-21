@@ -179,7 +179,7 @@ test("OAuth callback completes a session and claims the managed student without 
       }),
     },
     rpc: async (name: string, args: { p_token_hash: string }) => {
-      assert.equal(name, "claim_student_invite");
+      assert.equal(name, "claim_student_invite_with_contact_email");
       claims.push(args.p_token_hash);
       return { error: null };
     },

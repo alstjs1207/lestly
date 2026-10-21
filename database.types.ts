@@ -878,6 +878,10 @@ export type Database = {
         Args: { p_token_hash: string }
         Returns: string
       }
+      claim_student_invite_with_contact_email: {
+        Args: { p_token_hash: string }
+        Returns: string
+      }
       get_current_profile_id: { Args: never; Returns: string }
       get_student_total_hours: {
         Args: { p_student_ids: string[]; p_organization_id?: string | null }
