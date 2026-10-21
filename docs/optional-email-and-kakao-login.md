@@ -22,8 +22,13 @@
 - Kakao Developers → 카카오 로그인 → 동의항목: `account_email`을 필수 항목으로 지정하지 않는다. 이메일을 수집하지 않는 운영이라면 사용하지 않도록 설정한다.
 - `profile_nickname`, `profile_image`는 앱의 동의항목에 사용할 수 있도록 설정한다.
 - Supabase Redirect URLs에 실제 서비스의 `/auth/social/complete/kakao` 콜백을 허용한다. 기존 초대의 `invite` 쿼리도 보존돼야 한다.
+- Preview 테스트용 Redirect URL은 `https://lestly-git-preview-alstjs1207s-projects.vercel.app/**`와 `https://lestly.vercel.app/**`를 허용한다. preview와 로컬 개발에서는 로그인 콜백·초대 링크가 요청한 origin을 유지하고, 운영 환경에서는 기존 `SITE_URL`을 사용한다. PKCE 검증 쿠키가 있는 도메인으로 돌아와야 한다.
 
 2026-10-21 사용자가 Supabase 설정 완료를 확인했다. 대시보드 설정값은 에이전트가 직접 조회하지 않았으며, 실제 카카오 계정의 동의·콜백 완료는 배포 후 확인한다. 로컬 브라우저에서는 최종 인가 요청의 scope가 `profile_nickname,profile_image`이고 `account_email`이 제외된 것을 확인했다.
+
+같은 날 preview 배포 검증에서 위 두 preview origin으로 요청한 인증의 취소 콜백이 운영 사이트로 돌아오는 것을 확인했다. Redirect URLs 허용 목록 추가와, 추가 후 preview 복귀·초대 쿼리 보존 검증이 필요하다. 이메일 없는 사용자 허용 설정과 Redirect URLs는 별도 설정이다.
+
+카카오 계정 연결도 기존 `/auth/social/complete/kakao`에서 PKCE 코드를 교환하도록 통일했다. OAuth 시작·완료 라우트는 비로그인 전용 레이아웃 밖에 두어, 이미 로그인한 사용자의 계정 연결이나 초대 수락을 레이아웃 리다이렉트가 가로막지 않도록 한다.
 
 ## 다른 이메일 사용처 검토
 

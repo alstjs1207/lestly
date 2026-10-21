@@ -16,6 +16,7 @@ import type { Route } from "./+types/start";
 import { data, redirect } from "react-router";
 import { z } from "zod";
 
+import { getSiteOrigin } from "~/core/lib/site-origin.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import { getSocialOAuthOptions } from "../../lib/social-oauth";
@@ -61,7 +62,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   }
   const callbackUrl = new URL(
     `/auth/social/complete/${parsedParams.provider}`,
-    process.env.SITE_URL || new URL(request.url).origin,
+    getSiteOrigin(request, process.env),
   );
   if (invite) callbackUrl.searchParams.set("invite", invite);
 

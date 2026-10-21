@@ -19,6 +19,7 @@ import { data, redirect } from "react-router";
 import { z } from "zod";
 
 import { requireAuthentication, requireMethod } from "~/core/lib/guards.server";
+import { getSiteOrigin } from "~/core/lib/site-origin.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getSocialOAuthOptions } from "~/features/auth/lib/social-oauth";
 
@@ -51,9 +52,6 @@ const schema = z.object({
  * - Validates provider type against an allowed list
  * - Handles errors gracefully with appropriate status codes
  *
- * Note: There is a known issue with the redirectTo option in Supabase Auth
- * (https://github.com/supabase/auth/issues/1927), which is commented in the code.
- *
  * @param request - The incoming HTTP request with form data
  * @returns Redirect to provider OAuth flow or error response
  */
@@ -83,9 +81,10 @@ export async function action({ request }: Route.ActionArgs) {
     await client.auth.linkIdentity({
       provider: parsedParams.provider,
       options: {
-        // Note: There is a known issue with this option
-        // See: https://github.com/supabase/auth/issues/1927
-        redirectTo: `${process.env.APP_URL}/auth/connect`,
+        redirectTo: new URL(
+          `/auth/social/complete/${parsedParams.provider}`,
+          getSiteOrigin(request, process.env),
+        ).toString(),
         ...getSocialOAuthOptions(parsedParams.provider),
       },
     });
