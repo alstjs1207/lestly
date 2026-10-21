@@ -2,9 +2,7 @@ import type { Route } from "./+types/list";
 
 import {
   CalendarPlusIcon,
-  CheckIcon,
   ChevronRightIcon,
-  ClipboardIcon,
   Clock3Icon,
   LinkIcon,
   ListFilterIcon,
@@ -59,6 +57,7 @@ import {
 } from "~/core/components/ui/table";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import StudentInviteDialog from "../../components/student-invite-dialog";
 import { StudentTotalHours } from "../../components/student-total-hours";
 import { requireAdminRole } from "../../guards.server";
 import { getStudentsPaginated, getStudentsTotalHours } from "../../queries";
@@ -149,79 +148,6 @@ function formatPhoneNumber(value: string | null) {
   return value;
 }
 
-function InviteLinkDialog({
-  student,
-  onClose,
-}: {
-  student: { id: string; name: string };
-  onClose: () => void;
-}) {
-  const inviteFetcher = useFetcher<{
-    success: boolean;
-    error?: string;
-    inviteUrl?: string;
-    expiresAt?: string;
-  }>();
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>초대 링크 만들기</DialogTitle>
-          <DialogDescription>
-            링크를 복사해 {student.name} 수강생에게 카카오톡으로 전달하세요.
-            링크는 7일 동안 유효하며 한 번만 사용할 수 있습니다.
-          </DialogDescription>
-        </DialogHeader>
-        {inviteFetcher.data?.success === false && (
-          <p className="text-destructive text-sm">{inviteFetcher.data.error}</p>
-        )}
-        {inviteFetcher.data?.success === true && (
-          <p className="text-sm text-green-600">초대 링크가 생성되었습니다.</p>
-        )}
-        {inviteFetcher.data?.inviteUrl && (
-          <div className="flex gap-2">
-            <code className="bg-muted min-w-0 flex-1 truncate rounded-md px-3 py-2 text-xs">
-              {inviteFetcher.data.inviteUrl}
-            </code>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(inviteFetcher.data!.inviteUrl!);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-            >
-              {copied ? (
-                <CheckIcon className="size-4" />
-              ) : (
-                <ClipboardIcon className="size-4" />
-              )}
-              <span className="ml-1">{copied ? "복사됨" : "복사"}</span>
-            </Button>
-          </div>
-        )}
-        <DialogFooter>
-          <inviteFetcher.Form
-            method="post"
-            action={`/api/admin/students/${student.id}/invite`}
-          >
-            <Button type="submit" disabled={inviteFetcher.state !== "idle"}>
-              {inviteFetcher.state !== "idle"
-                ? "생성 중..."
-                : inviteFetcher.data?.inviteUrl
-                  ? "새 링크 만들기"
-                  : "링크 만들기"}
-            </Button>
-          </inviteFetcher.Form>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function StudentListScreen({
   loaderData,
 }: Route.ComponentProps) {
@@ -231,7 +157,6 @@ export default function StudentListScreen({
   const [inviteStudent, setInviteStudent] = useState<{
     id: string;
     name: string;
-    email?: string;
   } | null>(null);
   const [quickStudent, setQuickStudent] = useState<{
     id: string;
@@ -685,7 +610,7 @@ export default function StudentListScreen({
       )}
 
       {inviteStudent && (
-        <InviteLinkDialog
+        <StudentInviteDialog
           key={inviteStudent.id}
           student={inviteStudent}
           onClose={() => setInviteStudent(null)}

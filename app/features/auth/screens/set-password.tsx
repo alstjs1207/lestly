@@ -58,6 +58,8 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/login");
   }
 
+  if (!user.email) return redirect("/account", { headers });
+
   return data({ email: user.email }, { headers });
 }
 
@@ -72,6 +74,8 @@ export async function action({ request }: Route.ActionArgs) {
   if (!user) {
     return redirect("/login");
   }
+
+  if (!user.email) return redirect("/account", { headers });
 
   const formData = await request.formData();
   const {

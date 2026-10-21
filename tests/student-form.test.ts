@@ -54,6 +54,16 @@ test("student form rejects an invalid phone number", () => {
   ]);
 });
 
+test("student form accepts omitted email but validates a provided address", () => {
+  const formData = validStudentForm();
+  formData.delete("email");
+  const result = parseStudentForm(formData);
+  assert.equal(result.success, true);
+  if (result.success) assert.equal(result.data.email, null);
+  formData.set("email", "invalid-address");
+  assert.equal(parseStudentForm(formData).success, false);
+});
+
 test("student form rejects an end date earlier than the start date", () => {
   const formData = validStudentForm();
   formData.set("class_end_date", "2026-08-22");

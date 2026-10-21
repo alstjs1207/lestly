@@ -496,6 +496,33 @@ try {
   );
 
   await check(
+    "email-less Kakao signup creates a profile and skips welcome mail",
+    async () => {
+      const id = "00000000-0000-0000-0000-000000000008";
+      await db.exec(`
+      CREATE TRIGGER test_welcome AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE FUNCTION public.welcome_email();
+    `);
+      await db.query(
+        `INSERT INTO auth.users (id,email,raw_user_meta_data)
+       VALUES ($1,NULL,'{"name":"Kakao student","provider_id":"12345"}')`,
+        [id],
+      );
+      const { rows } = await db.query(
+        "SELECT auth_user_id, contact_email, name FROM profiles WHERE profile_id=$1",
+        [id],
+      );
+      assert.deepEqual(rows, [
+        { auth_user_id: id, contact_email: null, name: "Kakao student" },
+      ]);
+      assert.equal(
+        (await db.query("SELECT * FROM pgmq.test_messages")).rows.length,
+        0,
+      );
+    },
+  );
+
+  await check(
     "tenant foreign keys preserve existing deletion cleanup",
     async () => {
       await asRole("service_role");

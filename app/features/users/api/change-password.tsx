@@ -72,7 +72,13 @@ export async function action({ request }: Route.ActionArgs) {
   const [client, headers] = makeServerClient(request);
 
   // Verify the user is authenticated
-  await requireAuthentication(client);
+  const user = await requireAuthentication(client);
+  if (!user.email) {
+    return data(
+      { error: "이메일 없이 가입한 계정은 카카오 로그인을 이용해 주세요." },
+      { status: 400, headers },
+    );
+  }
 
   // Extract and validate form data
   const formData = await request.formData();

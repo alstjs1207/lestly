@@ -20,6 +20,7 @@ import { z } from "zod";
 
 import { requireAuthentication, requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getSocialOAuthOptions } from "~/features/auth/lib/social-oauth";
 
 /**
  * Validation schema for provider connection form data
@@ -85,6 +86,7 @@ export async function action({ request }: Route.ActionArgs) {
         // Note: There is a known issue with this option
         // See: https://github.com/supabase/auth/issues/1927
         redirectTo: `${process.env.APP_URL}/auth/connect`,
+        ...getSocialOAuthOptions(parsedParams.provider),
       },
     });
 

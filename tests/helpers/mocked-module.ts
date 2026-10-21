@@ -17,7 +17,14 @@ export function loadMockedModule<T>(
     },
   });
   const module = { exports: {} };
-  new Script(outputText, { filename: sourceUrl.pathname }).runInNewContext({
+  // Route metadata uses Vite's import.meta.env. Keep it isolated from real
+  // environment values when exercising server handlers in a CommonJS VM.
+  const isolatedOutput = outputText.replace(
+    /\bimport\.meta\.env\b/g,
+    "__viteEnv",
+  );
+  new Script(isolatedOutput, { filename: sourceUrl.pathname }).runInNewContext({
+    __viteEnv: {},
     module,
     exports: module.exports,
     Request,

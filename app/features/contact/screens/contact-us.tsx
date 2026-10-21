@@ -142,7 +142,7 @@ async function isHcaptchaTokenValid(token: string) {
  *
  * This schema defines the required fields and validation rules for the contact form:
  * - name: Required, must be at least 1 character
- * - email: Required, must be a valid email format
+ * - email: Optional reply address; validate its format only when provided
  * - message: Required, must be at least 1 character
  * - hcaptcha: Required, must contain a valid HCaptcha token
  * - turnstile: Required, must contain a valid Turnstile token
@@ -152,7 +152,10 @@ async function isHcaptchaTokenValid(token: string) {
  */
 const schema = z.object({
   name: z.string().trim().min(1).max(100),
-  email: z.string().email().max(254),
+  email: z.preprocess(
+    (value) => (typeof value === "string" ? value.trim() || undefined : value),
+    z.string().email().max(254).optional(),
+  ),
   message: z.string().trim().min(1).max(5000),
   hcaptcha: z.string().min(1).max(4096),
   turnstile: z.string().min(1).max(4096),
@@ -221,7 +224,7 @@ export async function action({ request }: Route.ActionArgs) {
     from: "Lestly <hello@lestly.io>",
     to: [process.env.ADMIN_EMAIL!],
     subject: "New contact from Lestly",
-    text: `Name: ${name}\nEmail: ${email}\nMessage:\n${message}`,
+    text: `Name: ${name}\nEmail: ${email || "미입력"}\nMessage:\n${message}`,
   });
 
   // Handle email sending errors
@@ -358,15 +361,18 @@ export default function ContactUs({ actionData }: Route.ComponentProps) {
         {/* Email field */}
         <div className="flex flex-col items-start space-y-2">
           <Label htmlFor="email" className="flex flex-col items-start gap-1">
-            Email
+            답변 받을 이메일 (선택)
           </Label>
           <Input
             id="email"
             name="email"
-            required
             type="email"
             placeholder="Enter your email"
           />
+          <p className="text-muted-foreground text-sm">
+            이메일 없이 문의할 수 있습니다. 답변이 필요하면 연락받을 이메일을
+            입력해 주세요.
+          </p>
           {/* Display email field validation errors if any */}
           {actionData &&
           "fieldErrors" in actionData &&

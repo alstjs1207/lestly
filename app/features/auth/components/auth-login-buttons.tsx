@@ -136,11 +136,15 @@ function SocialLoginButtons() {
         label="Apple"
         href="/auth/social/start/apple"
       /> */}
-      <AuthLoginButton
-        logo={<KakaoLogo className="size-4 scale-125 dark:text-yellow-300" />}
-        label="Kakao"
-        href="/auth/social/start/kakao"
-      />
+      <Button
+        className="min-h-12 w-full bg-[#FEE500] text-[#191919] hover:bg-[#F5DC00]"
+        asChild
+      >
+        <Link to="/auth/social/start/kakao" reloadDocument>
+          <KakaoLogo className="size-4" />
+          카카오로 시작하기
+        </Link>
+      </Button>
     </>
   );
 }
@@ -159,7 +163,6 @@ function SocialLoginButtons() {
 export function SignInButtons() {
   return (
     <>
-      <Divider />
       <SocialLoginButtons />
       {/* <_SignInButtons /> */}
     </>

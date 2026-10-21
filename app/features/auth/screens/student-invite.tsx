@@ -95,8 +95,8 @@ export default function StudentInviteScreen({
           <div className="text-muted-foreground flex items-start gap-2 rounded-lg border p-3 text-sm">
             <Clock3Icon className="mt-0.5 size-4 shrink-0" />
             <p>
-              본인에게 전달된 링크라면 추가 전화번호 인증 없이 카카오 로그인으로
-              연결됩니다.
+              본인에게 전달된 링크인지 확인해 주세요. 이메일 입력이나 추가
+              전화번호 인증 없이 카카오 로그인으로 연결됩니다.
             </p>
           </div>
           <Button

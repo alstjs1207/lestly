@@ -46,7 +46,8 @@ export default function StudentCreateScreen({
         <CardHeader>
           <CardTitle>수강생 정보</CardTitle>
           <CardDescription>
-            * 표시된 항목은 필수 입력 항목입니다.
+            * 표시된 항목은 필수 입력 항목입니다. 이메일은 선택 사항이며, 등록
+            후 초대 링크를 복사해 카카오톡으로 전달할 수 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>

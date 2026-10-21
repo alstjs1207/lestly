@@ -18,6 +18,8 @@ import { z } from "zod";
 
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { getSocialOAuthOptions } from "../../lib/social-oauth";
+
 /**
  * Schema for validating URL parameters
  *
@@ -70,6 +72,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       options: {
         // Set the callback URL for when authentication is complete
         redirectTo: callbackUrl.toString(),
+        ...getSocialOAuthOptions(parsedParams.provider),
       },
     });
 

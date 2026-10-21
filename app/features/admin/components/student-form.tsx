@@ -160,8 +160,8 @@ export default function StudentForm({ mode, defaultValues }: StudentFormProps) {
           />
           <FieldError errors={fetcher.data?.fieldErrors?.email} />
           <p className="text-muted-foreground text-xs">
-            연락용 정보입니다. 로그인 계정은 초대 링크를 수락할 때 별도로
-            연결됩니다.
+            선택 연락처입니다. 이메일 없이 등록할 수 있으며, 등록 후 초대 링크를
+            복사해 카카오톡으로 전달하면 카카오 계정이 연결됩니다.
           </p>
         </div>
 

@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 
-export const STUDENT_INVITE_TTL_DAYS = 7;
+import { STUDENT_INVITE_TTL_DAYS } from "./student-invite.ts";
+
+export { STUDENT_INVITE_TTL_DAYS };
 
 export function createStudentInviteToken() {
   return randomBytes(32).toString("base64url");
