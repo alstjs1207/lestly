@@ -3,8 +3,11 @@
   "private": true,
   "type": "module",
   "version": "1.0",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
-    "prebuild": "npm run typecheck && npm run verify:worker",
+    "prebuild": "npm run verify:node && npm run typecheck && npm run verify:worker",
     "prebuild:local": "npm run typecheck:local && npm run db:typegen",
     "build": "react-router build",
     "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router dev",
@@ -19,7 +22,8 @@
     "format": "prettier --write \"app/**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
     "test:db": "node sql/checks/security-regression.mjs",
     "postinstall": "node scripts/harden-braces.mjs",
-    "verify:worker": "node scripts/verify-worker.mjs"
+    "verify:worker": "node scripts/verify-worker.mjs",
+    "verify:node": "node scripts/verify-node.mjs"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",

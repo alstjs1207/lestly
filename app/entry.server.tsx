@@ -39,6 +39,11 @@ import es from "./locales/es";
 // Spanish translations
 import ko from "./locales/ko";
 
+// Record the actual function runtime privately, independently of the build host.
+if (process.env.VERCEL) {
+  console.log(`[node-security] runtime Node.js ${process.version}`);
+}
+
 // Korean translations
 
 /**
