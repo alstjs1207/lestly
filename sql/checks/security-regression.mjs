@@ -1094,6 +1094,36 @@ try {
     },
   );
 
+  await check(
+    "student integrity migration can be replayed without changing member metadata",
+    async () => {
+      const before = (
+        await db.query(
+          "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
+        )
+      ).rows;
+      const migration = await readFile(
+        new URL("0018_student_management_integrity.sql", migrationRoot),
+        "utf8",
+      );
+      for (const statement of migration.split("--> statement-breakpoint")) {
+        if (statement.trim()) await db.exec(statement);
+      }
+      assert.deepEqual(
+        (
+          await db.query(
+            "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
+          )
+        ).rows,
+        before,
+      );
+      const indexes = await db.query(
+        "SELECT indisvalid FROM pg_index WHERE indexrelid='public.organization_student_phone_unique'::regclass",
+      );
+      assert.equal(indexes.rows[0].indisvalid, true);
+    },
+  );
+
   console.log(
     `SQL security regression: ${passed} checks passed; migrations from ${fileURLToPath(migrationRoot)}`,
   );

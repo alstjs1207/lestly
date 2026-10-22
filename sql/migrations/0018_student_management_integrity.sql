@@ -10,23 +10,24 @@ DO $$ BEGIN
 END $$;
 --> statement-breakpoint
 -- Preserve the original phone presentation, and search/compare its digits.
-ALTER TABLE public.profiles ADD COLUMN phone_normalized text
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone_normalized text
   GENERATED ALWAYS AS (nullif(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), '')) STORED;
 --> statement-breakpoint
-CREATE INDEX profiles_phone_normalized_idx ON public.profiles (phone_normalized);
+CREATE INDEX IF NOT EXISTS profiles_phone_normalized_idx ON public.profiles (phone_normalized);
 --> statement-breakpoint
-ALTER TABLE public.organization_members ADD COLUMN student_phone text;
+ALTER TABLE public.organization_members ADD COLUMN IF NOT EXISTS student_phone text;
 --> statement-breakpoint
 UPDATE public.organization_members m SET student_phone = p.phone_normalized
-FROM public.profiles p WHERE p.profile_id = m.profile_id AND m.role = 'STUDENT';
+FROM public.profiles p WHERE p.profile_id = m.profile_id AND m.role = 'STUDENT'
+  AND m.student_phone IS DISTINCT FROM p.phone_normalized;
 --> statement-breakpoint
-CREATE UNIQUE INDEX organization_student_phone_unique
+CREATE UNIQUE INDEX IF NOT EXISTS organization_student_phone_unique
 ON public.organization_members (organization_id, student_phone)
 WHERE role = 'STUDENT' AND student_phone IS NOT NULL;
 --> statement-breakpoint
 -- Lock the profile before copying its phone, so inserting a membership and
 -- changing that same profile's phone cannot race and leave a stale key.
-CREATE FUNCTION public.sync_membership_student_phone() RETURNS trigger
+CREATE OR REPLACE FUNCTION public.sync_membership_student_phone() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
   IF NEW.role = 'STUDENT' THEN
@@ -38,11 +39,12 @@ BEGIN
   RETURN NEW;
 END $$;
 --> statement-breakpoint
+DROP TRIGGER IF EXISTS sync_membership_student_phone ON public.organization_members;
 CREATE TRIGGER sync_membership_student_phone
 BEFORE INSERT OR UPDATE OF profile_id, role, student_phone ON public.organization_members
 FOR EACH ROW EXECUTE FUNCTION public.sync_membership_student_phone();
 --> statement-breakpoint
-CREATE FUNCTION public.sync_profile_student_phone() RETURNS trigger
+CREATE OR REPLACE FUNCTION public.sync_profile_student_phone() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
   UPDATE public.organization_members SET student_phone = NEW.phone_normalized
@@ -50,13 +52,14 @@ BEGIN
   RETURN NEW;
 END $$;
 --> statement-breakpoint
+DROP TRIGGER IF EXISTS sync_profile_student_phone ON public.profiles;
 CREATE TRIGGER sync_profile_student_phone AFTER UPDATE OF phone ON public.profiles
 FOR EACH ROW WHEN (OLD.phone_normalized IS DISTINCT FROM NEW.phone_normalized)
 EXECUTE FUNCTION public.sync_profile_student_phone();
 --> statement-breakpoint
 -- One call is one transaction: membership failure also rolls back the profile.
 -- Caller identity comes from the authenticated session, never from JSON fields.
-CREATE FUNCTION public.save_managed_student(p_organization_id uuid, p_values jsonb, p_student_id uuid DEFAULT NULL)
+CREATE OR REPLACE FUNCTION public.save_managed_student(p_organization_id uuid, p_values jsonb, p_student_id uuid DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE
   v_id uuid;
