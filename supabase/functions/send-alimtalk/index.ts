@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", Allow: "POST" },
     });
   }
-  if (!isWorkerAuthorized(req, SUPABASE_SERVICE_ROLE_KEY, true)) {
+  if (!isWorkerAuthorized(req, Deno.env.get("ALIMTALK_WORKER_SECRET") || SUPABASE_SERVICE_ROLE_KEY, true)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

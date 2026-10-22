@@ -32,14 +32,15 @@ export default function makeServerClient(
   if (cached) return cached;
 
   const headers = new Headers();
-  const client = createServerClient(
+  const client = createServerClient<Database>(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
     {
       cookies: {
-        // @ts-ignore - The type definitions don't match exactly but this works
         getAll() {
-          return parseCookieHeader(request.headers.get("Cookie") ?? "");
+          return parseCookieHeader(request.headers.get("Cookie") ?? "").flatMap(
+            ({ name, value }) => (value === undefined ? [] : [{ name, value }]),
+          );
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>

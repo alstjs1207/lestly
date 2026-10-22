@@ -8,6 +8,7 @@ import type { Route } from "./+types/create";
 import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
+import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { createProgram } from "~/features/programs/queries";
 
@@ -102,9 +103,9 @@ export async function action({ request }: Route.ActionArgs) {
   // 커버 이미지 업로드
   if (coverImageFile && coverImageFile.size > 0) {
     const ext = image.extension;
-    const path = `programs/${program.program_id}/cover.${ext}`;
+    const path = `${organizationId}/programs/${program.program_id}/cover.${ext}`;
 
-    const { error: uploadError } = await client.storage
+    const { error: uploadError } = await adminClient.storage
       .from(BUCKET_NAME)
       .upload(path, coverImageFile, {
         upsert: true,

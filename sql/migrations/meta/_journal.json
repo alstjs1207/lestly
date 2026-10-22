@@ -134,6 +134,20 @@
       "when": 1792666800000,
       "tag": "0018_student_management_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792676876000,
+      "tag": "0019_security_boundaries",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792676876001,
+      "tag": "0020_storage_write_boundaries",
+      "breakpoints": true
     }
   ]
 }

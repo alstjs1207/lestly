@@ -15,6 +15,7 @@ import "./app.css";
 import type { Route } from "./+types/root";
 
 import * as Sentry from "@sentry/react-router";
+import { randomBytes } from "node:crypto";
 import NProgress from "nprogress";
 import nProgressStyles from "nprogress/nprogress.css?url";
 import { useEffect } from "react";
@@ -102,6 +103,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   ]);
 
   return {
+    nonce: randomBytes(18).toString("base64"),
     theme: getTheme(),
     locale,
     env: {
@@ -173,6 +175,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
     >
       <head>
         <meta charSet="utf-8" />
+        <meta name="csp-nonce" content={data?.nonce} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="application-name" content="Lestly Admin" />
         <meta name="apple-mobile-web-app-title" content="Lestly" />
@@ -193,24 +196,29 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
         {isPreRendered ? (
-          <script src="/scripts/prerendered-theme.js" />
+          <script nonce={data?.nonce} src="/scripts/prerendered-theme.js" />
         ) : (
-          <PreventFlashOnWrongTheme ssrTheme={Boolean(data?.theme)} />
+          <PreventFlashOnWrongTheme
+            nonce={data?.nonce}
+            ssrTheme={Boolean(data?.theme)}
+          />
         )}
       </head>
       <body className="h-full">
         {children}
         <Toaster richColors position="bottom-right" />
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={data?.nonce} />
+        <Scripts nonce={data?.nonce} />
         {import.meta.env.VITE_GOOGLE_TAG_ID &&
           import.meta.env.VITE_GOOGLE_TAG_ID !== "" && (
             <>
               <script
+                nonce={data?.nonce}
                 async
                 src={`https://www.googletagmanager.com/gtag/js?id=${import.meta.env.VITE_GOOGLE_TAG_ID}`}
               ></script>
               <script
+                nonce={data?.nonce}
                 dangerouslySetInnerHTML={{
                   __html: `window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
@@ -223,6 +231,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
         {import.meta.env.VITE_CHANNEL_PLUGIN_KEY &&
           import.meta.env.VITE_CHANNEL_PLUGIN_KEY !== "" && (
             <script
+              nonce={data?.nonce}
               dangerouslySetInnerHTML={{
                 __html: `(function(){var w=window;if(w.ChannelIO){return w.console.error("ChannelIO script included twice.");}var ch=function(){ch.c(arguments);};ch.q=[];ch.c=function(args){ch.q.push(args);};w.ChannelIO=ch;function l(){if(w.ChannelIOInitialized){return;}w.ChannelIOInitialized=true;var s=document.createElement("script");s.type="text/javascript";s.async=true;s.src="https://cdn.channel.io/plugin/ch-plugin-web.js";var x=document.getElementsByTagName("script")[0];if(x.parentNode){x.parentNode.insertBefore(s,x);}}if(document.readyState==="complete"){l();}else{w.addEventListener("DOMContentLoaded",l);w.addEventListener("load",l);}})();
             ChannelIO('boot', {

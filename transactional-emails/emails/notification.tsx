@@ -10,14 +10,26 @@ import {
   Text,
 } from "@react-email/components";
 
+const previewNotification = {
+  title: "[수업 예약] 홍길동님이 예약하였습니다",
+  content: `[수업 예약 알림]
+
+홍길동님이 수업을 예약하였습니다.
+
+■ 클래스: 필라테스 기초반
+■ 일시: 2025-01-25 10:00
+
+※ 테스트 학원`,
+};
+
 interface NotificationEmailProps {
   title: string;
   content: string;
 }
 
 export default function NotificationEmail({
-  title,
-  content,
+  title = previewNotification.title,
+  content = previewNotification.content,
 }: NotificationEmailProps) {
   return (
     <Tailwind>
@@ -59,14 +71,4 @@ export default function NotificationEmail({
   );
 }
 
-NotificationEmail.PreviewProps = {
-  title: "[수업 예약] 홍길동님이 예약하였습니다",
-  content: `[수업 예약 알림]
-
-홍길동님이 수업을 예약하였습니다.
-
-■ 클래스: 필라테스 기초반
-■ 일시: 2025-01-25 10:00
-
-※ 테스트 학원`,
-};
+NotificationEmail.PreviewProps = previewNotification;

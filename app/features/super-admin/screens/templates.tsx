@@ -1,3 +1,5 @@
+import type { Database } from "database.types";
+
 import type { Route } from "./+types/templates";
 
 import { FileTextIcon, PencilIcon } from "lucide-react";
@@ -88,7 +90,7 @@ export async function action({ request }: Route.ActionArgs) {
       variables = [];
     }
 
-    const updates: Record<string, unknown> = {
+    const updates: Database["public"]["Tables"]["super_templates"]["Update"] = {
       name,
       kakao_template_code: kakaoTemplateCode,
       content,

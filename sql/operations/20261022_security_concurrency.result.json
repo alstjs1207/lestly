@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-22T14:08:08.741Z",
+  "observedAdvisoryLock": true,
+  "oneBookingAccepted": true,
+  "concurrentBookingRejected": "schedule_capacity_exceeded",
+  "notificationsCreated": 0,
+  "fixtureCleaned": true
+}

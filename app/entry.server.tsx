@@ -74,6 +74,9 @@ export default async function handleRequest(
   // If you have middleware enabled:
   // loadContext: unstable_RouterContextProvider
 ) {
+  const nonce = routerContext.staticHandlerContext?.loaderData?.root?.nonce as
+    | string
+    | undefined;
   const i18nextInstance = createInstance();
 
   const lng = await i18next.getLocale(request);
@@ -119,9 +122,10 @@ export default async function handleRequest(
 
     const { pipe, abort } = renderToPipeableStream(
       <I18nextProvider i18n={i18nextInstance}>
-        <ServerRouter context={routerContext} url={request.url} />
+        <ServerRouter context={routerContext} url={request.url} nonce={nonce} />
       </I18nextProvider>,
       {
+        nonce,
         [readyOption]() {
           shellRendered = true;
           const body = new PassThrough();
@@ -135,7 +139,7 @@ export default async function handleRequest(
           );
           responseHeaders.set(
             "Content-Security-Policy",
-            "base-uri 'self'; object-src 'none'; frame-ancestors 'none'",
+            `base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ${nonce ? `'nonce-${nonce}' 'strict-dynamic'` : ""} https://www.googletagmanager.com https://cdn.channel.io https://challenges.cloudflare.com https://*.hcaptcha.com https://js.tosspayments.com${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
           );
           responseHeaders.set("X-Content-Type-Options", "nosniff");
           responseHeaders.set(

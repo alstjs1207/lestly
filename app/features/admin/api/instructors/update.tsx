@@ -6,6 +6,7 @@ import type { Route } from "./+types/update";
 import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
+import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { updateInstructor } from "~/features/instructors/queries";
 
@@ -77,9 +78,9 @@ export async function action({ request, params }: Route.ActionArgs) {
   if (photoFile && photoFile.size > 0) {
     // 새 이미지 업로드
     const ext = image.extension;
-    const path = `${instructorId}/photo.${ext}`;
+    const path = `${organizationId}/${instructorId}/photo.${ext}`;
 
-    const { error: uploadError } = await client.storage
+    const { error: uploadError } = await adminClient.storage
       .from(BUCKET_NAME)
       .upload(path, photoFile, { upsert: true, contentType: photoFile.type });
 
