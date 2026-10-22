@@ -21,6 +21,11 @@ export function buildStudentSearchFilter(search: string) {
   if (!value) return null;
   const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   const pattern = `"%${escaped}%"`;
+  // Only phone-like input becomes a digits query; names retain literal escaping.
+  const digits = value.replace(/\D/g, "");
+  if (/^[\d\s()+.-]+$/.test(value) && digits) {
+    return `name.ilike.${pattern},phone_normalized.ilike."%${digits}%"`;
+  }
   return `name.ilike.${pattern},phone.ilike.${pattern}`;
 }
 

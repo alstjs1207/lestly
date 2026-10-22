@@ -3,7 +3,10 @@ import type { Database } from "database.types";
 
 import { z } from "zod";
 
-const studentTypeSchema = z.enum(["EXAMINEE", "DROPPER", "ADULT"]);
+import { normalizePhone, requiredStudentFields } from "./student-fields.ts";
+
+export { normalizePhone } from "./student-fields.ts";
+
 const studentStateSchema = z.enum(["NORMAL", "GRADUATE", "DELETED"]);
 
 const optionalDate = z.preprocess(
@@ -13,21 +16,11 @@ const optionalDate = z.preprocess(
 
 const studentFormSchema = z
   .object({
-    name: z.string().trim().min(1, "이름을 입력해 주세요."),
-    phone: z
-      .string()
-      .trim()
-      .min(1, "전화번호를 입력해 주세요.")
-      .refine(
-        (value) => /^\d{9,11}$/.test(normalizePhone(value)),
-        "전화번호 형식을 확인해 주세요.",
-      ),
+    ...requiredStudentFields,
     email: z.preprocess(
       (value) => (String(value || "").trim() ? value : null),
       z.string().trim().email("이메일 형식을 확인해 주세요.").nullable(),
     ),
-    type: studentTypeSchema,
-    region: z.string().trim().min(1, "지역을 입력해 주세요."),
     birth_date: optionalDate,
     class_start_date: optionalDate,
     class_end_date: optionalDate,
@@ -62,10 +55,6 @@ const studentFormSchema = z
 
 export type StudentFormValues = z.infer<typeof studentFormSchema>;
 
-export function normalizePhone(value: string) {
-  return value.replace(/\D/g, "");
-}
-
 export function parseStudentForm(formData: FormData) {
   return studentFormSchema.safeParse(Object.fromEntries(formData));
 }
@@ -86,44 +75,14 @@ export async function findDuplicateStudentPhone(
     excludeProfileId?: string;
   },
 ) {
-  let membershipQuery = client
+  let query = client
     .from("organization_members")
-    .select("profile_id, state")
+    .select("state, profiles!inner(profile_id, name, phone)")
     .eq("organization_id", organizationId)
-    .eq("role", "STUDENT");
-
-  if (excludeProfileId) {
-    membershipQuery = membershipQuery.neq("profile_id", excludeProfileId);
-  }
-
-  const { data: memberships, error: membershipError } = await membershipQuery;
-  if (membershipError) throw membershipError;
-  if (!memberships?.length) return null;
-
-  const { data: profiles, error: profileError } = await client
-    .from("profiles")
-    .select("profile_id, name, phone")
-    .in(
-      "profile_id",
-      memberships.map((membership) => membership.profile_id),
-    );
-
-  if (profileError) throw profileError;
-
-  const normalizedPhone = normalizePhone(phone);
-  const duplicate = profiles?.find(
-    (profile) =>
-      profile.phone && normalizePhone(profile.phone) === normalizedPhone,
-  );
-
-  if (!duplicate) return null;
-
-  const membership = memberships.find(
-    (item) => item.profile_id === duplicate.profile_id,
-  );
-
-  return {
-    ...duplicate,
-    state: membership?.state,
-  };
+    .eq("role", "STUDENT")
+    .eq("profiles.phone_normalized", normalizePhone(phone));
+  if (excludeProfileId) query = query.neq("profile_id", excludeProfileId);
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data ? { ...data.profiles, state: data.state } : null;
 }

@@ -13,6 +13,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { authUid, authenticatedRole } from "drizzle-orm/supabase";
@@ -117,9 +118,15 @@ export const organizationMembers = pgTable(
     role: userRoleEnum().notNull().default("STUDENT"),
     state: userStateEnum().notNull().default("NORMAL"),
     type: userTypeEnum(),
+    student_phone: text(),
     ...timestamps,
   },
   (table) => [
+    uniqueIndex("organization_student_phone_unique")
+      .on(table.organization_id, table.student_phone)
+      .where(
+        sql`${table.role} = 'STUDENT' AND ${table.student_phone} IS NOT NULL`,
+      ),
     // Composite primary key
     index("organization_members_profile_org_idx").on(
       table.profile_id,

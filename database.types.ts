@@ -284,6 +284,7 @@ export type Database = {
           organization_id: string
           profile_id: string
           role: Database["public"]["Enums"]["user_role"]
+          student_phone: string | null
           state: Database["public"]["Enums"]["user_state"]
           type: Database["public"]["Enums"]["user_type"] | null
           updated_at: string
@@ -293,6 +294,7 @@ export type Database = {
           organization_id: string
           profile_id: string
           role?: Database["public"]["Enums"]["user_role"]
+          student_phone?: string | null
           state?: Database["public"]["Enums"]["user_state"]
           type?: Database["public"]["Enums"]["user_type"] | null
           updated_at?: string
@@ -302,6 +304,7 @@ export type Database = {
           organization_id?: string
           profile_id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          student_phone?: string | null
           state?: Database["public"]["Enums"]["user_state"]
           type?: Database["public"]["Enums"]["user_type"] | null
           updated_at?: string
@@ -477,6 +480,7 @@ export type Database = {
           name: string
           parent_name: string | null
           parent_phone: string | null
+          phone_normalized: string | null
           phone: string | null
           profile_id: string
           region: string | null
@@ -497,6 +501,7 @@ export type Database = {
           name: string
           parent_name?: string | null
           parent_phone?: string | null
+          phone_normalized?: never
           phone?: string | null
           profile_id?: string
           region?: string | null
@@ -517,6 +522,7 @@ export type Database = {
           name?: string
           parent_name?: string | null
           parent_phone?: string | null
+          phone_normalized?: never
           phone?: string | null
           profile_id?: string
           region?: string | null
@@ -874,6 +880,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      save_managed_student: {
+        Args: { p_organization_id: string; p_values: Json; p_student_id?: string }
+        Returns: string
+      }
       claim_student_invite: {
         Args: { p_token_hash: string }
         Returns: string

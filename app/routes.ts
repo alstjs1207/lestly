@@ -151,6 +151,7 @@ export default [
         ...prefix("/students", [
           index("features/admin/screens/students/list.tsx"),
           route("/new", "features/admin/screens/students/create.tsx"),
+          route("/bulk", "features/admin/screens/students/bulk-create.tsx"),
           route("/:studentId", "features/admin/screens/students/detail.tsx"),
           route("/:studentId/edit", "features/admin/screens/students/edit.tsx"),
         ]),
@@ -207,6 +208,7 @@ export default [
   ...prefix("/api/admin", [
     ...prefix("/students", [
       route("/create", "features/admin/api/students/create.tsx"),
+      route("/bulk-create", "features/admin/api/students/bulk-create.tsx"),
       route("/:studentId/update", "features/admin/api/students/update.tsx"),
       route("/:studentId/graduate", "features/admin/api/students/graduate.tsx"),
       route("/:studentId/delete", "features/admin/api/students/delete.tsx"),

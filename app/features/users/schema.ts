@@ -59,6 +59,9 @@ export const profiles = pgTable(
     class_start_date: date("class_start_date"),
     class_end_date: date("class_end_date"),
     phone: text(),
+    phone_normalized: text().generatedAlwaysAs(
+      sql`nullif(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), '')`,
+    ),
     parent_name: text("parent_name"),
     parent_phone: text("parent_phone"),
     color: text().default("#3B82F6"),
@@ -68,6 +71,7 @@ export const profiles = pgTable(
     ...timestamps,
   },
   (table) => [
+    index("profiles_phone_normalized_idx").on(table.phone_normalized),
     index("profiles_contact_email_idx")
       .on(sql`lower(${table.contact_email})`)
       .where(sql`${table.contact_email} IS NOT NULL`),

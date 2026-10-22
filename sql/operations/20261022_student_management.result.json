@@ -1,0 +1,47 @@
+{
+  "project": "smbpzlzbvplhtpqggrjf",
+  "applied_at": "2026-10-22T13:14:18.626Z",
+  "migration": "0018_student_management_integrity",
+  "migration_sha256": "ea0d6009ff03cdd269f2d0f47f4ff24b3597b5ba8487559146227121a2343db6",
+  "scope": "0018 only; 0016 remains pending; Drizzle ledger intentionally unchanged",
+  "corrected_test_phone_count": 2,
+  "counts": {
+    "profiles": 36,
+    "members": 35,
+    "schedules": 1452
+  },
+  "verification": {
+    "other_profile_fields_unchanged": true,
+    "membership_business_fields_unchanged": true,
+    "schedules_unchanged": true,
+    "drizzle_ledger_unchanged": true,
+    "phone_conflict_groups": 0,
+    "phone_key_mismatches": 0,
+    "indexes": [
+      {
+        "name": "organization_student_phone_unique",
+        "valid": true,
+        "ready": true,
+        "unique": true
+      },
+      {
+        "name": "profiles_phone_normalized_idx",
+        "valid": true,
+        "ready": true,
+        "unique": false
+      }
+    ],
+    "permissions": {
+      "anonymous_execute": false,
+      "authenticated_execute": true
+    },
+    "trigger_count": 2,
+    "post_commit_counts_match": true,
+    "postgrest_profiles_column_visible": true,
+    "postgrest_membership_column_visible": true,
+    "postgrest_anonymous_rpc_denied": true,
+    "previous_invite_rpc_preserved": true
+  },
+  "verified_at": "2026-10-22T13:14:55.694Z",
+  "source_commit": "a9e2580579b71e8db51e6dfe90142990f03bd846"
+}

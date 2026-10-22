@@ -127,6 +127,13 @@
       "when": 1792587600000,
       "tag": "0017_student_invite_contact_email",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792666800000,
+      "tag": "0018_student_management_integrity",
+      "breakpoints": true
     }
   ]
 }

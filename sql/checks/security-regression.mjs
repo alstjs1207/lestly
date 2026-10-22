@@ -787,6 +787,343 @@ try {
     },
   );
 
+  const studentValues = {
+    name: "Atomic student",
+    phone: "010-5555-1234",
+    region: "서울",
+    type: "EXAMINEE",
+  };
+  const saveStudentSql =
+    "SELECT save_managed_student($1,$2::jsonb,$3) AS profile_id";
+
+  await check(
+    "managed student RPC rejects anonymous, non-admin and foreign-tenant callers",
+    async () => {
+      await asRole("anon");
+      await blocked(
+        saveStudentSql,
+        [orgA, JSON.stringify(studentValues), null],
+        /permission denied/,
+      );
+      await asRole("authenticated", studentA);
+      await blocked(
+        saveStudentSql,
+        [orgA, JSON.stringify(studentValues), null],
+        /student_access_denied/,
+      );
+      await asRole("authenticated", adminA);
+      await blocked(
+        saveStudentSql,
+        [orgB, JSON.stringify(studentValues), null],
+        /student_access_denied/,
+      );
+    },
+  );
+
+  await check(
+    "managed student RPC rejects admin and foreign-student targets without changing them",
+    async () => {
+      await asRole("authenticated", adminA);
+      const before = (
+        await db.query("SELECT name FROM profiles WHERE profile_id=$1", [
+          adminA,
+        ])
+      ).rows;
+      await blocked(
+        saveStudentSql,
+        [orgA, JSON.stringify({ ...studentValues, state: "DELETED" }), adminA],
+        /student_not_found/,
+      );
+      await blocked(
+        saveStudentSql,
+        [orgA, JSON.stringify(studentValues), studentB],
+        /student_not_found/,
+      );
+      assert.deepEqual(
+        (
+          await db.query("SELECT name FROM profiles WHERE profile_id=$1", [
+            adminA,
+          ])
+        ).rows,
+        before,
+      );
+      assert.equal(
+        (
+          await db.query(
+            "SELECT state FROM organization_members WHERE profile_id=$1",
+            [adminA],
+          )
+        ).rows[0].state,
+        "NORMAL",
+      );
+    },
+  );
+
+  await check(
+    "normalized phone unique constraint blocks duplicate creates without leaving orphan profiles",
+    async () => {
+      await asRole("authenticated", adminA);
+      const id = (
+        await db.query(saveStudentSql, [
+          orgA,
+          JSON.stringify(studentValues),
+          null,
+        ])
+      ).rows[0].profile_id;
+      const profile = (
+        await db.query(
+          "SELECT phone,phone_normalized,auth_user_id FROM profiles WHERE profile_id=$1",
+          [id],
+        )
+      ).rows[0];
+      assert.deepEqual(profile, {
+        phone: "01055551234",
+        phone_normalized: "01055551234",
+        auth_user_id: null,
+      });
+      await blocked(
+        saveStudentSql,
+        [
+          orgA,
+          JSON.stringify({
+            ...studentValues,
+            name: "Rejected duplicate",
+            phone: "01055551234",
+          }),
+          null,
+        ],
+        /organization_student_phone_unique/,
+      );
+      await asRole("postgres");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT * FROM profiles WHERE name='Rejected duplicate'",
+          )
+        ).rows.length,
+        0,
+      );
+    },
+  );
+
+  await check(
+    "membership failure rolls back all profile and state changes in managed student update",
+    async () => {
+      await db.query(
+        "UPDATE profiles SET name='Before',phone='01011110000' WHERE profile_id=$1",
+        [studentA],
+      );
+      await db.exec(`CREATE FUNCTION public.test_reject_student_type() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'test_membership_failure'; END $$;
+      CREATE TRIGGER test_reject_student_type BEFORE UPDATE OF type ON public.organization_members
+      FOR EACH ROW EXECUTE FUNCTION public.test_reject_student_type();`);
+      await asRole("authenticated", adminA);
+      await blocked(
+        saveStudentSql,
+        [
+          orgA,
+          JSON.stringify({
+            ...studentValues,
+            type: "ADULT",
+            state: "GRADUATE",
+          }),
+          studentA,
+        ],
+        /test_membership_failure/,
+      );
+      assert.deepEqual(
+        (
+          await db.query(
+            "SELECT name,phone FROM profiles WHERE profile_id=$1",
+            [studentA],
+          )
+        ).rows,
+        [{ name: "Before", phone: "01011110000" }],
+      );
+      assert.deepEqual(
+        (
+          await db.query(
+            "SELECT state,student_phone FROM organization_members WHERE profile_id=$1",
+            [studentA],
+          )
+        ).rows,
+        [{ state: "NORMAL", student_phone: "01011110000" }],
+      );
+    },
+  );
+
+  await check(
+    "duplicate updates are atomic and include graduated and deleted students",
+    async () => {
+      await asRole("authenticated", adminA);
+      const id = (
+        await db.query(saveStudentSql, [
+          orgA,
+          JSON.stringify(studentValues),
+          null,
+        ])
+      ).rows[0].profile_id;
+      await db.query(
+        "UPDATE organization_members SET state='DELETED' WHERE profile_id=$1",
+        [id],
+      );
+      const before = (
+        await db.query("SELECT name,phone FROM profiles WHERE profile_id=$1", [
+          studentA,
+        ])
+      ).rows;
+      await blocked(
+        saveStudentSql,
+        [
+          orgA,
+          JSON.stringify({ ...studentValues, phone: "01055551234" }),
+          studentA,
+        ],
+        /organization_student_phone_unique/,
+      );
+      assert.deepEqual(
+        (
+          await db.query(
+            "SELECT name,phone FROM profiles WHERE profile_id=$1",
+            [studentA],
+          )
+        ).rows,
+        before,
+      );
+    },
+  );
+
+  await check(
+    "phone key cannot be forged and follows direct profile edits and N:N memberships",
+    async () => {
+      await db.query(
+        "UPDATE profiles SET phone='010-7777-0000' WHERE profile_id=$1",
+        [studentA],
+      );
+      await db.query(
+        "INSERT INTO organization_members (organization_id,profile_id,role) VALUES ($1,$2,'STUDENT')",
+        [orgB, studentA],
+      );
+      await asRole("authenticated", adminA);
+      await db.query(
+        "UPDATE organization_members SET student_phone='fake' WHERE profile_id=$1 AND organization_id=$2",
+        [studentA, orgA],
+      );
+      assert.equal(
+        (
+          await db.query(
+            "SELECT student_phone FROM organization_members WHERE profile_id=$1 AND organization_id=$2",
+            [studentA, orgA],
+          )
+        ).rows[0].student_phone,
+        "01077770000",
+      );
+      await asRole("authenticated", studentA);
+      await db.query(
+        "UPDATE profiles SET phone='010-8888-0000' WHERE profile_id=$1",
+        [studentA],
+      );
+      await asRole("postgres");
+      assert.deepEqual(
+        (
+          await db.query(
+            "SELECT student_phone FROM organization_members WHERE profile_id=$1 ORDER BY organization_id",
+            [studentA],
+          )
+        ).rows,
+        [{ student_phone: "01088880000" }, { student_phone: "01088880000" }],
+      );
+      await asRole("authenticated", adminB);
+      await blocked(
+        saveStudentSql,
+        [
+          orgB,
+          JSON.stringify({ ...studentValues, phone: "01088880000" }),
+          null,
+        ],
+        /organization_student_phone_unique/,
+      );
+    },
+  );
+
+  await check(
+    "same phone is allowed in different organizations and RPC ignores forged identity fields",
+    async () => {
+      await asRole("authenticated", adminA);
+      const a = (
+        await db.query(saveStudentSql, [
+          orgA,
+          JSON.stringify({
+            ...studentValues,
+            auth_user_id: adminB,
+            role: "ADMIN",
+            profile_id: adminA,
+            organization_id: orgB,
+          }),
+          null,
+        ])
+      ).rows[0].profile_id;
+      await asRole("authenticated", adminB);
+      const b = (
+        await db.query(saveStudentSql, [
+          orgB,
+          JSON.stringify(studentValues),
+          null,
+        ])
+      ).rows[0].profile_id;
+      assert.notEqual(a, b);
+      await asRole("postgres");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT role FROM organization_members WHERE profile_id=$1",
+            [a],
+          )
+        ).rows[0].role,
+        "STUDENT",
+      );
+      assert.equal(
+        (
+          await db.query(
+            "SELECT auth_user_id FROM profiles WHERE profile_id=$1",
+            [a],
+          )
+        ).rows[0].auth_user_id,
+        null,
+      );
+    },
+  );
+
+  await check(
+    "student integrity migration can be replayed without changing member metadata",
+    async () => {
+      const before = (
+        await db.query(
+          "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
+        )
+      ).rows;
+      const migration = await readFile(
+        new URL("0018_student_management_integrity.sql", migrationRoot),
+        "utf8",
+      );
+      for (const statement of migration.split("--> statement-breakpoint")) {
+        if (statement.trim()) await db.exec(statement);
+      }
+      assert.deepEqual(
+        (
+          await db.query(
+            "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
+          )
+        ).rows,
+        before,
+      );
+      const indexes = await db.query(
+        "SELECT indisvalid FROM pg_index WHERE indexrelid='public.organization_student_phone_unique'::regclass",
+      );
+      assert.equal(indexes.rows[0].indisvalid, true);
+    },
+  );
+
   console.log(
     `SQL security regression: ${passed} checks passed; migrations from ${fileURLToPath(migrationRoot)}`,
   );

@@ -163,6 +163,7 @@ export default function StudentListScreen({
     name: string;
     phone: string | null;
     canInvite: boolean;
+    canSchedule: boolean;
   } | null>(null);
   const navigate = useNavigate();
   const activeFilterCount = [
@@ -215,22 +216,31 @@ export default function StudentListScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold md:text-2xl">수강생 관리</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
             총 {totalCount}명의 수강생이 등록되어 있습니다.
           </p>
         </div>
-        <Button
-          className="min-h-11 shrink-0 rounded-full px-4 shadow-sm"
-          asChild
-        >
-          <Link to="/admin/students/new">
-            <UserPlusIcon className="mr-1.5 h-4 w-4" />
-            <span>수강생 등록</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="min-h-11 shrink-0 rounded-full px-4"
+            asChild
+          >
+            <Link to="/admin/students/bulk">일괄 등록</Link>
+          </Button>
+          <Button
+            className="min-h-11 shrink-0 rounded-full px-4 shadow-sm"
+            asChild
+          >
+            <Link to="/admin/students/new">
+              <UserPlusIcon className="mr-1.5 h-4 w-4" />
+              <span>수강생 등록</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-background/95 sticky top-0 z-20 -mx-4 space-y-3 border-y px-4 py-3 backdrop-blur md:static md:mx-0 md:flex md:items-center md:gap-3 md:space-y-0 md:border-0 md:bg-transparent md:p-0">
@@ -362,7 +372,7 @@ export default function StudentListScreen({
               description={
                 hasSearchOrFilters
                   ? "검색어나 필터를 바꾸거나 초기화해 보세요."
-                  : "이름과 전화번호만 입력하면 바로 등록할 수 있습니다."
+                  : "이름·전화번호·지역·유형을 입력하면 등록할 수 있습니다."
               }
               action={
                 hasSearchOrFilters ? (
@@ -391,6 +401,7 @@ export default function StudentListScreen({
                     id: student.profile_id,
                     name: student.name,
                     phone: student.phone,
+                    canSchedule: student.state === "NORMAL",
                     canInvite:
                       student.state === "NORMAL" && !student.auth_user_id,
                   })
@@ -645,15 +656,17 @@ export default function StudentListScreen({
                   </a>
                 </Button>
               )}
-              <Button className="min-h-12 justify-start" asChild>
-                <Link
-                  to={`/admin/schedules/new?studentId=${quickStudent.id}`}
-                  onClick={() => setQuickStudent(null)}
-                >
-                  <CalendarPlusIcon className="size-4" aria-hidden="true" />
-                  일정 등록
-                </Link>
-              </Button>
+              {quickStudent.canSchedule && (
+                <Button className="min-h-12 justify-start" asChild>
+                  <Link
+                    to={`/admin/schedules/new?studentId=${quickStudent.id}`}
+                    onClick={() => setQuickStudent(null)}
+                  >
+                    <CalendarPlusIcon className="size-4" aria-hidden="true" />
+                    일정 등록
+                  </Link>
+                </Button>
+              )}
               {quickStudent.canInvite && (
                 <Button
                   type="button"
