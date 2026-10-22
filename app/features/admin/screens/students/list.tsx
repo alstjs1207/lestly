@@ -163,6 +163,7 @@ export default function StudentListScreen({
     name: string;
     phone: string | null;
     canInvite: boolean;
+    canSchedule: boolean;
   } | null>(null);
   const navigate = useNavigate();
   const activeFilterCount = [
@@ -371,7 +372,7 @@ export default function StudentListScreen({
               description={
                 hasSearchOrFilters
                   ? "검색어나 필터를 바꾸거나 초기화해 보세요."
-                  : "이름과 전화번호만 입력하면 바로 등록할 수 있습니다."
+                  : "이름·전화번호·지역·유형을 입력하면 등록할 수 있습니다."
               }
               action={
                 hasSearchOrFilters ? (
@@ -400,6 +401,7 @@ export default function StudentListScreen({
                     id: student.profile_id,
                     name: student.name,
                     phone: student.phone,
+                    canSchedule: student.state === "NORMAL",
                     canInvite:
                       student.state === "NORMAL" && !student.auth_user_id,
                   })
@@ -654,15 +656,17 @@ export default function StudentListScreen({
                   </a>
                 </Button>
               )}
-              <Button className="min-h-12 justify-start" asChild>
-                <Link
-                  to={`/admin/schedules/new?studentId=${quickStudent.id}`}
-                  onClick={() => setQuickStudent(null)}
-                >
-                  <CalendarPlusIcon className="size-4" aria-hidden="true" />
-                  일정 등록
-                </Link>
-              </Button>
+              {quickStudent.canSchedule && (
+                <Button className="min-h-12 justify-start" asChild>
+                  <Link
+                    to={`/admin/schedules/new?studentId=${quickStudent.id}`}
+                    onClick={() => setQuickStudent(null)}
+                  >
+                    <CalendarPlusIcon className="size-4" aria-hidden="true" />
+                    일정 등록
+                  </Link>
+                </Button>
+              )}
               {quickStudent.canInvite && (
                 <Button
                   type="button"

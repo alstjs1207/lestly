@@ -195,30 +195,28 @@ export async function updateStudent(
     memberUpdates?: { state?: UserState; type?: UserType };
   },
 ) {
-  // Update profile if there are profile updates
-  if (profileUpdates && Object.keys(profileUpdates).length > 0) {
-    const { error: profileError } = await client
-      .from("profiles")
-      .update(profileUpdates)
-      .eq("profile_id", studentId);
-
-    if (profileError) {
-      throw profileError;
-    }
-  }
-
-  // Update membership if there are member updates
-  if (memberUpdates && Object.keys(memberUpdates).length > 0) {
-    const { error: memberError } = await client
-      .from("organization_members")
-      .update(memberUpdates)
-      .eq("organization_id", organizationId)
-      .eq("profile_id", studentId);
-
-    if (memberError) {
-      throw memberError;
-    }
-  }
+  const current = await getStudentById(client, { organizationId, studentId });
+  const profile = { ...current, ...profileUpdates };
+  const { error } = await client.rpc("save_managed_student", {
+    p_organization_id: organizationId,
+    p_student_id: studentId,
+    p_values: {
+      name: profile.name,
+      phone: profile.phone,
+      region: profile.region,
+      email: profile.contact_email,
+      birth_date: profile.birth_date,
+      class_start_date: profile.class_start_date,
+      class_end_date: profile.class_end_date,
+      parent_name: profile.parent_name,
+      parent_phone: profile.parent_phone,
+      description: profile.description,
+      color: profile.color,
+      type: memberUpdates?.type ?? current.type ?? "EXAMINEE",
+      state: memberUpdates?.state ?? current.state,
+    },
+  });
+  if (error) throw error;
 
   // Return updated student
   return getStudentById(client, { organizationId, studentId });

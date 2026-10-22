@@ -17,6 +17,7 @@ export type BulkStudentRow = z.infer<typeof rowSchema>;
 export type BulkStudentResult = {
   id: string;
   success: boolean;
+  profileId?: string;
   error?: string;
 };
 export type BulkStudentActionData = {

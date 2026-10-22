@@ -102,88 +102,56 @@ test("spreadsheet paste handles headers, blank lines, CRLF and optional Korean/e
   );
 });
 
-function fakeClient({
-  failProfile = false,
-  failMembership = false,
-  failCleanup = false,
-} = {}) {
-  const profiles: any[] = [];
-  const memberships: any[] = [];
-  const deleted: string[] = [];
+test("bulk save calls the atomic RPC with scoped required fields and returns profile IDs", async () => {
+  const calls: any[] = [];
   const client = {
-    from(table: string) {
-      return {
-        async insert(value: any) {
-          if (table === "profiles") {
-            if (failProfile) return { error: new Error("profile") };
-            profiles.push(value);
-          } else {
-            if (failMembership && memberships.length === 0) {
-              failMembership = false;
-              return { error: new Error("membership") };
-            }
-            memberships.push(value);
-          }
-          return { error: null };
-        },
-        delete() {
-          return {
-            async eq(_key: string, id: string) {
-              if (failCleanup) return { error: new Error("cleanup") };
-              deleted.push(id);
-              return { error: null };
-            },
-          };
-        },
-      };
+    rpc: async (name: string, args: any) => {
+      calls.push({ name, args });
+      return { data: "00000000-0000-0000-0000-000000000099", error: null };
     },
   };
-  return { client: client as any, profiles, memberships, deleted };
-}
-
-test("bulk save creates organization-scoped managed students with one-year defaults and no auth accounts", async () => {
-  const db = fakeClient();
-  const results = await createBulkStudents(db.client, "org-a", [row(), row(1)]);
+  const results = await createBulkStudents(client as any, "org-a", [
+    row(),
+    row(1),
+  ]);
   assert.deepEqual(
     results.map((item) => item.success),
     [true, true],
   );
-  assert.equal(db.profiles.length, 2);
-  for (const [index, profile] of db.profiles.entries()) {
-    assert.equal(profile.auth_user_id, null);
-    assert.equal(profile.contact_email, null);
-    assert.equal(profile.marketing_consent, false);
-    assert.ok(profile.class_end_date > profile.class_start_date);
-    assert.equal(db.memberships[index].organization_id, "org-a");
-    assert.equal(db.memberships[index].profile_id, profile.profile_id);
-    assert.equal(db.memberships[index].role, "STUDENT");
-    assert.equal(db.memberships[index].state, "NORMAL");
+  assert.ok(
+    results.every(
+      (item) => item.profileId === "00000000-0000-0000-0000-000000000099",
+    ),
+  );
+  for (const call of calls) {
+    assert.equal(call.name, "save_managed_student");
+    assert.equal(call.args.p_organization_id, "org-a");
+    assert.ok(
+      call.args.p_values.class_end_date > call.args.p_values.class_start_date,
+    );
+    assert.equal(call.args.p_values.auth_user_id, undefined);
   }
 });
 
-test("membership failure removes only the incomplete profile and reports partial success", async () => {
-  const db = fakeClient({ failMembership: true });
-  const results = await createBulkStudents(db.client, "org-a", [row(), row(1)]);
+test("bulk RPC failure reports only failed rows and keeps successful profile IDs", async () => {
+  let count = 0;
+  const client = {
+    rpc: async () =>
+      ++count === 1
+        ? { data: null, error: { code: "23505" } }
+        : { data: "00000000-0000-0000-0000-000000000099", error: null },
+  };
+  const results = await createBulkStudents(client as any, "org-a", [
+    row(),
+    row(1),
+  ]);
   assert.deepEqual(
     results.map((item) => item.success),
     [false, true],
   );
-  assert.deepEqual(db.deleted, [db.profiles[0].profile_id]);
-  assert.equal(db.memberships.length, 1);
-});
-
-test("profile failure never creates a membership; cleanup failure asks for state verification", async () => {
-  const db = fakeClient({ failProfile: true });
-  assert.equal(
-    (await createBulkStudents(db.client, "org-a", [row()]))[0].success,
-    false,
-  );
-  assert.equal(db.memberships.length, 0);
-  const cleanup = fakeClient({ failMembership: true, failCleanup: true });
-  assert.match(
-    (await createBulkStudents(cleanup.client, "org-a", [row()]))[0].error ?? "",
-    /등록 상태 확인/,
-  );
+  assert.match(results[0].error ?? "", /동일한 전화번호/);
+  assert.equal(results[0].profileId, undefined);
+  assert.ok(results[1].profileId);
 });
 
 test("duplicate lookup scopes the organization and paginates beyond 1000 including inactive memberships", async () => {
@@ -195,6 +163,11 @@ test("duplicate lookup scopes the organization and paginates beyond 1000 includi
     },
     eq(key: string, value: string) {
       filters.push([key, value]);
+      return this;
+    },
+    in(key: string, values: string[]) {
+      assert.equal(key, "profiles.phone_normalized");
+      assert.deepEqual(values, [row().phone, row(1).phone]);
       return this;
     },
     order() {

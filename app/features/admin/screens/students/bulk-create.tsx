@@ -2,6 +2,7 @@ import type {
   BulkStudentActionData,
   BulkStudentRow,
 } from "../../lib/student-bulk";
+import type { EditableStudentRow } from "../../lib/student-bulk-draft";
 import type { Route } from "./+types/bulk-create";
 
 import { ChevronLeftIcon, PlusIcon, Trash2Icon } from "lucide-react";
@@ -34,6 +35,7 @@ import {
 import { Textarea } from "~/core/components/ui/textarea";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import StudentInviteDialog from "../../components/student-invite-dialog";
 import { requireAdminRole } from "../../guards.server";
 import {
   MAX_BULK_STUDENTS,
@@ -41,8 +43,12 @@ import {
   parseStudentClipboard,
   studentTypeLabels,
 } from "../../lib/student-bulk";
+import {
+  hasStudentInput,
+  readStudentBulkDraft,
+} from "../../lib/student-bulk-draft";
 
-type EditableRow = BulkStudentRow & { saved?: boolean; error?: string };
+type EditableRow = EditableStudentRow;
 const emptyRow = (id: string): EditableRow => ({
   id,
   name: "",
@@ -50,16 +56,17 @@ const emptyRow = (id: string): EditableRow => ({
   region: "",
   type: "EXAMINEE",
 });
-const hasInput = (row: EditableRow) =>
-  Boolean(row.name.trim() || row.phone.trim() || row.region.trim());
+const hasInput = hasStudentInput;
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAdminRole(client);
-  return null;
+  const { profileId, organizationId } = await requireAdminRole(client);
+  return { draftKey: `lestly:student-bulk:${profileId}:${organizationId}:v1` };
 }
 
-export default function StudentBulkCreateScreen() {
+export default function StudentBulkCreateScreen({
+  loaderData,
+}: Route.ComponentProps) {
   const fetcher = useFetcher<BulkStudentActionData>();
   const busy = fetcher.state !== "idle";
   const nextId = useRef(3);
@@ -70,15 +77,78 @@ export default function StudentBulkCreateScreen() {
   const [message, setMessage] = useState("");
   const pending = rows.filter((row) => !row.saved && hasInput(row));
   const savedCount = rows.filter((row) => row.saved).length;
+  const [loadedDraftKey, setLoadedDraftKey] = useState<string | null>(null);
+  const draftReady = loadedDraftKey === loaderData.draftKey;
+  const handledResult = useRef<BulkStudentActionData | undefined>(undefined);
+  const [draftNotice, setDraftNotice] = useState("");
+  const [inviteStudent, setInviteStudent] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
-    if (fetcher.state !== "idle" || !fetcher.data) return;
+    try {
+      const draft = readStudentBulkDraft(
+        sessionStorage.getItem(loaderData.draftKey),
+      );
+      if (draft) {
+        setRows(draft.rows);
+        setClipboard(draft.clipboard);
+        nextId.current = Math.max(
+          3,
+          ...draft.rows
+            .map((row) => Number(row.id) + 1)
+            .filter(Number.isFinite),
+        );
+        setDraftNotice("이 탭에 임시 저장된 명단을 복원했습니다.");
+      } else {
+        setRows([0, 1, 2].map((id) => emptyRow(String(id))));
+        setClipboard("");
+        nextId.current = 3;
+      }
+    } catch {
+      setDraftNotice(
+        "임시 저장을 사용할 수 없습니다. 화면을 닫기 전에 등록해 주세요.",
+      );
+    }
+    setLoadedDraftKey(loaderData.draftKey);
+  }, [loaderData.draftKey]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    try {
+      if (clipboard.trim() || rows.some((row) => row.saved || hasInput(row))) {
+        sessionStorage.setItem(
+          loaderData.draftKey,
+          JSON.stringify({ updatedAt: Date.now(), rows, clipboard }),
+        );
+      } else sessionStorage.removeItem(loaderData.draftKey);
+    } catch {
+      setDraftNotice(
+        "임시 저장을 사용할 수 없습니다. 화면을 닫기 전에 등록해 주세요.",
+      );
+    }
+  }, [rows, clipboard, draftReady, loaderData.draftKey]);
+
+  useEffect(() => {
+    if (
+      fetcher.state !== "idle" ||
+      !fetcher.data ||
+      fetcher.data === handledResult.current
+    )
+      return;
+    handledResult.current = fetcher.data;
     const result = fetcher.data;
     setRows((current) =>
       current.map((row) => {
         const status = result.results?.find((item) => item.id === row.id);
         return status
-          ? { ...row, saved: status.success, error: status.error }
+          ? {
+              ...row,
+              saved: status.success,
+              profileId: status.profileId,
+              error: status.error,
+            }
           : row;
       }),
     );
@@ -174,11 +244,17 @@ export default function StudentBulkCreateScreen() {
         </div>
       </div>
 
+      {draftNotice && (
+        <p role="status" className="text-muted-foreground text-sm">
+          {draftNotice}
+        </p>
+      )}
       {savedCount > 0 && (
         <Alert role="status">
           <AlertTitle>{savedCount}명 등록 완료</AlertTitle>
           <AlertDescription>
-            등록된 수강생은 목록에서 확인하고 초대 링크를 전달할 수 있습니다.
+            등록 완료 행에서 상세 정보를 확인하거나 초대 링크를 바로 만들 수
+            있습니다.
           </AlertDescription>
         </Alert>
       )}
@@ -190,7 +266,7 @@ export default function StudentBulkCreateScreen() {
       )}
 
       <form onSubmit={submit}>
-        <fieldset disabled={busy} className="min-w-0 space-y-6">
+        <fieldset disabled={busy || !draftReady} className="min-w-0 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>엑셀 명단 붙여넣기</CardTitle>
@@ -288,9 +364,35 @@ export default function StudentBulkCreateScreen() {
                       </TableCell>
                       <TableCell className="max-w-56 min-w-24 whitespace-normal">
                         {row.saved ? (
-                          <span className="text-primary font-medium">
-                            등록 완료
-                          </span>
+                          <div className="space-y-1">
+                            <span className="text-primary font-medium">
+                              등록 완료
+                            </span>
+                            {row.profileId && (
+                              <div className="flex flex-wrap gap-2">
+                                <Link
+                                  className="text-primary text-xs underline"
+                                  to={`/admin/students/${row.profileId}`}
+                                >
+                                  상세 정보
+                                </Link>
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto p-0 text-xs"
+                                  onClick={() =>
+                                    setInviteStudent({
+                                      id: row.profileId!,
+                                      name: row.name,
+                                    })
+                                  }
+                                >
+                                  초대 링크
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         ) : row.error ? (
                           <p
                             id={`row-error-${row.id}`}
@@ -341,6 +443,22 @@ export default function StudentBulkCreateScreen() {
             </CardContent>
           </Card>
           <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRows(
+                  Array.from({ length: 3 }, () =>
+                    emptyRow(String(nextId.current++)),
+                  ),
+                );
+                setClipboard("");
+                setMessage("");
+                setDraftNotice("");
+              }}
+            >
+              명단 초기화
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/admin/students">수강생 목록</Link>
             </Button>
@@ -350,6 +468,13 @@ export default function StudentBulkCreateScreen() {
           </div>
         </fieldset>
       </form>
+      {inviteStudent && (
+        <StudentInviteDialog
+          key={inviteStudent.id}
+          student={inviteStudent}
+          onClose={() => setInviteStudent(null)}
+        />
+      )}
     </div>
   );
 }

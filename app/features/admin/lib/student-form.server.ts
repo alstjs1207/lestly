@@ -75,44 +75,14 @@ export async function findDuplicateStudentPhone(
     excludeProfileId?: string;
   },
 ) {
-  let membershipQuery = client
+  let query = client
     .from("organization_members")
-    .select("profile_id, state")
+    .select("state, profiles!inner(profile_id, name, phone)")
     .eq("organization_id", organizationId)
-    .eq("role", "STUDENT");
-
-  if (excludeProfileId) {
-    membershipQuery = membershipQuery.neq("profile_id", excludeProfileId);
-  }
-
-  const { data: memberships, error: membershipError } = await membershipQuery;
-  if (membershipError) throw membershipError;
-  if (!memberships?.length) return null;
-
-  const { data: profiles, error: profileError } = await client
-    .from("profiles")
-    .select("profile_id, name, phone")
-    .in(
-      "profile_id",
-      memberships.map((membership) => membership.profile_id),
-    );
-
-  if (profileError) throw profileError;
-
-  const normalizedPhone = normalizePhone(phone);
-  const duplicate = profiles?.find(
-    (profile) =>
-      profile.phone && normalizePhone(profile.phone) === normalizedPhone,
-  );
-
-  if (!duplicate) return null;
-
-  const membership = memberships.find(
-    (item) => item.profile_id === duplicate.profile_id,
-  );
-
-  return {
-    ...duplicate,
-    state: membership?.state,
-  };
+    .eq("role", "STUDENT")
+    .eq("profiles.phone_normalized", normalizePhone(phone));
+  if (excludeProfileId) query = query.neq("profile_id", excludeProfileId);
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data ? { ...data.profiles, state: data.state } : null;
 }

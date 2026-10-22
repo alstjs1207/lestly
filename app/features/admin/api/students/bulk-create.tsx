@@ -3,7 +3,6 @@ import type { Route } from "./+types/bulk-create";
 import { data } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import { requireAdminRole } from "../../guards.server";
@@ -52,7 +51,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
   try {
     const duplicates = await findBulkStudentDuplicates(
-      adminClient,
+      client,
       organizationId,
       parsed.data,
     );
@@ -77,6 +76,6 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
   return data({
-    results: await createBulkStudents(adminClient, organizationId, parsed.data),
+    results: await createBulkStudents(client, organizationId, parsed.data),
   });
 }

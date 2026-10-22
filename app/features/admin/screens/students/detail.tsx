@@ -44,6 +44,12 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import StudentInviteDialog from "../../components/student-invite-dialog";
 import { StudentTotalHours } from "../../components/student-total-hours";
 import { requireAdminRole } from "../../guards.server";
+import {
+  studentAge,
+  studentScheduleDate,
+  studentScheduleDay,
+  studentScheduleTime,
+} from "../../lib/student-display";
 import { getStudentById, getStudentsTotalHours } from "../../queries";
 import { getStudentScheduleOverview } from "../../utils/student-schedule-overview";
 
@@ -91,8 +97,6 @@ const typeLabels: Record<string, string> = {
   ADULT: "성인",
 };
 
-const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
-
 function formatPhoneNumber(value: string | null) {
   if (!value) return "연락처 없음";
   const digits = value.replace(/\D/g, "");
@@ -125,20 +129,7 @@ export default function StudentDetailScreen({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copiedCurrent, setCopiedCurrent] = useState(false);
   const [copiedNext, setCopiedNext] = useState(false);
-
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
+  const [copyError, setCopyError] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -287,6 +278,11 @@ export default function StudentDetailScreen({
         </div>
       </div>
 
+      {copyError && (
+        <p role="alert" className="text-destructive text-sm">
+          일정을 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인해 주세요.
+        </p>
+      )}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -322,7 +318,7 @@ export default function StudentDetailScreen({
                 <p className="text-muted-foreground text-sm">나이</p>
                 <p className="font-medium">
                   {student.birth_date
-                    ? `${calculateAge(student.birth_date)}세 (${student.birth_date})`
+                    ? `${studentAge(student.birth_date)}세 (${student.birth_date})`
                     : "-"}
                 </p>
               </div>
@@ -406,27 +402,22 @@ export default function StudentDetailScreen({
                 const lines = monthlySchedules.map((schedule) => {
                   const startDate = new Date(schedule.start_time);
                   const endDate = new Date(schedule.end_time);
-                  const dateStr = startDate.toLocaleDateString("ko-KR", {
-                    month: "long",
-                    day: "numeric",
-                  });
-                  const day = dayLabels[startDate.getDay()];
-                  const startTime = startDate.toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  const endTime = endDate.toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
+                  const dateStr = studentScheduleDate(startDate, "long");
+                  const day = studentScheduleDay(startDate);
+                  const startTime = studentScheduleTime(startDate);
+                  const endTime = studentScheduleTime(endDate);
                   const program = schedule.program?.title || "-";
                   return `${dateStr} (${day}) ${startTime}-${endTime} ${program}`;
                 });
                 const text = `[${student.name}] ${currentYear}년 ${currentMonth}월 일정\n${lines.join("\n")}`;
-                navigator.clipboard.writeText(text).then(() => {
-                  setCopiedCurrent(true);
-                  setTimeout(() => setCopiedCurrent(false), 2000);
-                });
+                setCopyError(false);
+                navigator.clipboard
+                  .writeText(text)
+                  .then(() => {
+                    setCopiedCurrent(true);
+                    setTimeout(() => setCopiedCurrent(false), 2000);
+                  })
+                  .catch(() => setCopyError(true));
               }}
             >
               {copiedCurrent ? (
@@ -464,25 +455,16 @@ export default function StudentDetailScreen({
                     return (
                       <TableRow key={schedule.schedule_id}>
                         <TableCell>
-                          {startDate.toLocaleDateString("ko-KR", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {studentScheduleDate(startDate, "short")}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {dayLabels[startDate.getDay()]}
+                          {studentScheduleDay(startDate)}
                         </TableCell>
                         <TableCell>{schedule.program?.title || "-"}</TableCell>
                         <TableCell>
-                          {startDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(startDate)}
                           {" - "}
-                          {endDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(endDate)}
                         </TableCell>
                       </TableRow>
                     );
@@ -509,27 +491,22 @@ export default function StudentDetailScreen({
                 const lines = nextMonthSchedules.map((schedule) => {
                   const startDate = new Date(schedule.start_time);
                   const endDate = new Date(schedule.end_time);
-                  const dateStr = startDate.toLocaleDateString("ko-KR", {
-                    month: "long",
-                    day: "numeric",
-                  });
-                  const day = dayLabels[startDate.getDay()];
-                  const startTime = startDate.toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  const endTime = endDate.toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
+                  const dateStr = studentScheduleDate(startDate, "long");
+                  const day = studentScheduleDay(startDate);
+                  const startTime = studentScheduleTime(startDate);
+                  const endTime = studentScheduleTime(endDate);
                   const program = schedule.program?.title || "-";
                   return `${dateStr} (${day}) ${startTime}-${endTime} ${program}`;
                 });
                 const text = `[${student.name}] ${nextMonthYear}년 ${nextMonth}월 일정\n${lines.join("\n")}`;
-                navigator.clipboard.writeText(text).then(() => {
-                  setCopiedNext(true);
-                  setTimeout(() => setCopiedNext(false), 2000);
-                });
+                setCopyError(false);
+                navigator.clipboard
+                  .writeText(text)
+                  .then(() => {
+                    setCopiedNext(true);
+                    setTimeout(() => setCopiedNext(false), 2000);
+                  })
+                  .catch(() => setCopyError(true));
               }}
             >
               {copiedNext ? (
@@ -567,25 +544,16 @@ export default function StudentDetailScreen({
                     return (
                       <TableRow key={schedule.schedule_id}>
                         <TableCell>
-                          {startDate.toLocaleDateString("ko-KR", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {studentScheduleDate(startDate, "short")}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {dayLabels[startDate.getDay()]}
+                          {studentScheduleDay(startDate)}
                         </TableCell>
                         <TableCell>{schedule.program?.title || "-"}</TableCell>
                         <TableCell>
-                          {startDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(startDate)}
                           {" - "}
-                          {endDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(endDate)}
                         </TableCell>
                       </TableRow>
                     );
@@ -625,25 +593,16 @@ export default function StudentDetailScreen({
                     return (
                       <TableRow key={schedule.schedule_id}>
                         <TableCell>
-                          {startDate.toLocaleDateString("ko-KR", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {studentScheduleDate(startDate, "short")}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {dayLabels[startDate.getDay()]}
+                          {studentScheduleDay(startDate)}
                         </TableCell>
                         <TableCell>{schedule.program?.title || "-"}</TableCell>
                         <TableCell>
-                          {startDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(startDate)}
                           {" - "}
-                          {endDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(endDate)}
                         </TableCell>
                       </TableRow>
                     );
@@ -681,25 +640,16 @@ export default function StudentDetailScreen({
                     return (
                       <TableRow key={schedule.schedule_id}>
                         <TableCell>
-                          {startDate.toLocaleDateString("ko-KR", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {studentScheduleDate(startDate, "short")}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {dayLabels[startDate.getDay()]}
+                          {studentScheduleDay(startDate)}
                         </TableCell>
                         <TableCell>{schedule.program?.title || "-"}</TableCell>
                         <TableCell>
-                          {startDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(startDate)}
                           {" - "}
-                          {endDate.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {studentScheduleTime(endDate)}
                         </TableCell>
                       </TableRow>
                     );

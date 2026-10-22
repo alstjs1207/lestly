@@ -3,8 +3,11 @@ import type { Database } from "database.types";
 
 import type { BulkStudentResult, BulkStudentRow } from "./student-bulk.ts";
 
-import { getDefaultStudentClassDates } from "./student-class-dates.ts";
 import { normalizePhone } from "./student-fields.ts";
+import {
+  saveManagedStudent,
+  studentSaveFailure,
+} from "./student-save.server.ts";
 
 export async function findBulkStudentDuplicates(
   client: SupabaseClient<Database>,
@@ -19,6 +22,10 @@ export async function findBulkStudentDuplicates(
       .select("profile_id, profiles!inner(name, phone)")
       .eq("organization_id", organizationId)
       .eq("role", "STUDENT")
+      .in(
+        "profiles.phone_normalized",
+        rows.map((row) => normalizePhone(row.phone)),
+      )
       .order("profile_id")
       .range(offset, offset + 999);
     if (error) throw error;
@@ -47,62 +54,22 @@ export async function createBulkStudents(
   organizationId: string,
   rows: BulkStudentRow[],
 ): Promise<BulkStudentResult[]> {
-  const dates = getDefaultStudentClassDates();
   const results: BulkStudentResult[] = [];
   const create = async (row: BulkStudentRow): Promise<BulkStudentResult> => {
-    const profileId = crypto.randomUUID();
-    let profileCreated = false;
     try {
-      const profile = await client.from("profiles").insert({
-        profile_id: profileId,
-        auth_user_id: null,
-        contact_email: null,
+      const profileId = await saveManagedStudent(client, organizationId, {
         name: row.name,
         phone: row.phone,
         region: row.region,
-        class_start_date: dates.classStartDate,
-        class_end_date: dates.classEndDate,
-        color: "#3B82F6",
-        marketing_consent: false,
-      });
-      if (profile.error) throw profile.error;
-      profileCreated = true;
-      const membership = await client.from("organization_members").insert({
-        organization_id: organizationId,
-        profile_id: profileId,
-        role: "STUDENT",
-        state: "NORMAL",
         type: row.type,
       });
-      if (membership.error) throw membership.error;
-      return { id: row.id, success: true };
+      return { id: row.id, success: true, profileId };
     } catch (error) {
       console.error("Failed to bulk create student", error);
-      if (profileCreated) {
-        try {
-          const cleanup = await client
-            .from("profiles")
-            .delete()
-            .eq("profile_id", profileId);
-          if (cleanup.error) throw cleanup.error;
-        } catch (cleanupError) {
-          console.error(
-            "Failed to remove incomplete bulk student profile",
-            profileId,
-            cleanupError,
-          );
-          return {
-            id: row.id,
-            success: false,
-            error:
-              "저장 중 오류가 발생했습니다. 관리자에게 등록 상태 확인을 요청해 주세요.",
-          };
-        }
-      }
       return {
         id: row.id,
         success: false,
-        error: "저장하지 못했습니다. 다시 시도해 주세요.",
+        error: studentSaveFailure(error).error,
       };
     }
   };
