@@ -1,0 +1,16 @@
+[
+  {
+    "name": "anon",
+    "status": 401,
+    "body": {
+      "error": "Unauthorized"
+    }
+  },
+  {
+    "name": "service",
+    "status": 400,
+    "body": {
+      "error": "notification_id is required"
+    }
+  }
+]

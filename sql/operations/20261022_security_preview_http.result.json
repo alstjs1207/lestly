@@ -1,0 +1,35 @@
+[
+  {
+    "path": "/login",
+    "status": 200,
+    "noncePresent": true,
+    "cspMatches": true,
+    "missingNonce": []
+  },
+  {
+    "path": "/legal/privacy-policy",
+    "status": 200,
+    "noncePresent": true,
+    "cspMatches": true,
+    "missingNonce": []
+  },
+  {
+    "path": "/legal/terms-of-service",
+    "status": 200,
+    "noncePresent": true,
+    "cspMatches": true,
+    "missingNonce": []
+  },
+  {
+    "path": "/api/consult-request",
+    "status": 503
+  },
+  {
+    "path": "/api/cron/email",
+    "status": 401
+  },
+  {
+    "path": "/.env",
+    "status": 404
+  }
+]

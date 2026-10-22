@@ -1,0 +1,39 @@
+{
+  "phase": "finalize",
+  "at": "2026-10-22T14:23:01.145Z",
+  "businessDataUnchanged": true,
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1452
+  },
+  "migrationHashes": {
+    "16": "870c2f313f1e2e71b385473965e31a1ab890a93c692c06a882dbf7ed8c1c8c46",
+    "17": "c053310deca4cf9a5c21e80aa681e0cb10eebd293060f6504c94964a1188b9ef",
+    "18": "ea0d6009ff03cdd269f2d0f47f4ff24b3597b5ba8487559146227121a2343db6",
+    "19": "ed4460d4decedcda7a42dd8d10041f789173bf6b2624b3506216475a1f77517d",
+    "20": "f06a5a059c1f6d6c21fe9e52b48755c087123cdc226e1277d42269425c2e2b0b"
+  },
+  "ledger": [
+    {
+      "created_at": "1790953200000",
+      "hash": "870c2f313f1e2e71b385473965e31a1ab890a93c692c06a882dbf7ed8c1c8c46"
+    },
+    {
+      "created_at": "1792587600000",
+      "hash": "c053310deca4cf9a5c21e80aa681e0cb10eebd293060f6504c94964a1188b9ef"
+    },
+    {
+      "created_at": "1792666800000",
+      "hash": "ea0d6009ff03cdd269f2d0f47f4ff24b3597b5ba8487559146227121a2343db6"
+    },
+    {
+      "created_at": "1792676876000",
+      "hash": "ed4460d4decedcda7a42dd8d10041f789173bf6b2624b3506216475a1f77517d"
+    },
+    {
+      "created_at": "1792676876001",
+      "hash": "f06a5a059c1f6d6c21fe9e52b48755c087123cdc226e1277d42269425c2e2b0b"
+    }
+  ]
+}

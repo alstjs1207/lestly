@@ -1,0 +1,63 @@
+{
+  "at": "2026-10-22T14:25:16.722Z",
+  "unsafePoliciesRemaining": 0,
+  "validatedTenantConstraints": 8,
+  "guardTriggers": 4,
+  "grants": {
+    "anon_consult_insert": false,
+    "anon_booking_rpc": false,
+    "student_booking_rpc": true
+  },
+  "catalogWritePolicies": 0,
+  "buckets": [
+    {
+      "id": "avatars",
+      "allowed_mime_types": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ]
+    },
+    {
+      "id": "coverimages",
+      "allowed_mime_types": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ]
+    },
+    {
+      "id": "instructors",
+      "allowed_mime_types": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ]
+    }
+  ],
+  "studentCourseDateUpdateDenied": true,
+  "studentCatalogInsertDenied": true,
+  "anonConsultInsertDenied": true,
+  "securityProbeWritesRolledBack": true,
+  "temporaryOrganizationsRemaining": 0,
+  "storageMimeGroups": [
+    {
+      "bucket_id": "coverimages",
+      "mime": "image/jpeg",
+      "count": 1
+    },
+    {
+      "bucket_id": "instructors",
+      "mime": "image/jpeg",
+      "count": 4
+    }
+  ],
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1452
+  }
+}
