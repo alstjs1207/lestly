@@ -85,7 +85,7 @@ export async function updateSuperTemplate(
     status?: TemplateStatus;
   },
 ) {
-  const updates: Record<string, unknown> = {};
+  const updates: Database["public"]["Tables"]["super_templates"]["Update"] = {};
 
   if (name !== undefined) {
     updates.name = name;

@@ -3,12 +3,7 @@ import type { Route } from "./+types/create-schedule";
 import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-import {
-  createSchedule,
-  validateScheduleCreation,
-} from "~/features/schedules/queries";
 import {
   DURATION_OPTIONS,
   applyTimeToDate,
@@ -20,7 +15,7 @@ import {
 export async function action({ request }: Route.ActionArgs) {
   requireMethod("POST")(request);
 
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
 
   const {
     data: { user },
@@ -68,6 +63,17 @@ export async function action({ request }: Route.ActionArgs) {
   const programIdStr = formData.get("program_id") as string | null;
   const programId = programIdStr ? parseInt(programIdStr) : null;
 
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(dateStr || "") ||
+    !/^(09|1\d|20):(00|30)$/.test(startTimeStr || "") ||
+    !DURATION_OPTIONS.some((option) => option.value === durationValue) ||
+    (programIdStr && !/^[1-9]\d*$/.test(programIdStr))
+  ) {
+    return data(
+      { success: false, error: "날짜와 시간을 확인해주세요." },
+      { status: 400, headers },
+    );
+  }
   // Parse date and time (use parseDateString to avoid UTC timezone issue)
   const date = parseDateString(dateStr);
 
@@ -96,43 +102,28 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  // Validate concurrent limit and student time conflict in a single query
-  const { allowed, currentCount, maxCount, hasConflict } =
-    await validateScheduleCreation(adminClient, {
-      organizationId,
-      studentId: profile.profile_id,
-      startTime,
-      endTime,
-    });
-
-  if (!allowed) {
-    return data(
-      {
-        success: false,
-        error: `동시간대 최대 인원(${maxCount}명)을 초과했습니다. 현재 ${currentCount}명 등록됨.`,
-      },
-      { status: 400 },
-    );
-  }
-
-  if (hasConflict) {
-    return data(
-      {
-        success: false,
-        error: "이미 다른 클래스에 같은 시간대 스케줄이 있습니다.",
-      },
-      { status: 400 },
-    );
-  }
-
-  // Create schedule
-  await createSchedule(client, {
-    organization_id: organizationId,
-    student_id: profile.profile_id,
-    program_id: programId,
-    start_time: startTime.toISOString(),
-    end_time: endTime.toISOString(),
+  const { error } = await client.rpc("book_student_schedule", {
+    p_organization_id: organizationId,
+    p_program_id: programId,
+    p_start_time: startTime.toISOString(),
+    p_end_time: endTime.toISOString(),
   });
+  if (error) {
+    const errors: Record<string, string> = {
+      schedule_student_conflict: "이미 같은 시간대에 등록한 일정이 있습니다.",
+      schedule_capacity_exceeded: "동시간대 정원이 찼습니다.",
+      schedule_outside_course: "수강 기간에 포함된 날짜를 선택해주세요.",
+      schedule_program_not_eligible: "선택한 클래스를 등록할 수 없습니다.",
+    };
+    return data(
+      {
+        success: false,
+        error:
+          errors[error.message] || "등록 가능한 날짜와 시간을 확인해주세요.",
+      },
+      { status: 400, headers },
+    );
+  }
 
-  return data({ success: true });
+  return data({ success: true }, { headers });
 }

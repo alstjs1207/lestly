@@ -1,29 +1,35 @@
+import mdx from "@mdx-js/rollup";
 import { reactRouter } from "@react-router/dev/vite";
 import {
   type SentryReactRouterBuildOptions,
   sentryReactRouter,
-} from "@sentry/react-router";
+} from "@sentry/react-router/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { type PluginOption, defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-export default defineConfig((config) => {
+export default defineConfig(async (config) => {
   const sentryConfig: SentryReactRouterBuildOptions = {
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
     authToken: process.env.SENTRY_AUTH_TOKEN,
     telemetry: false,
-    sourceMapsUploadOptions: {
+    sourcemaps: {
       filesToDeleteAfterUpload: ["./build/client/**/*.map"],
     },
   };
-  let plugins: PluginOption[] = [tailwindcss(), reactRouter(), tsconfigPaths()];
+  let plugins: PluginOption[] = [
+    mdx(),
+    tailwindcss(),
+    reactRouter(),
+    tsconfigPaths(),
+  ];
   if (
     process.env.SENTRY_ORG &&
     process.env.SENTRY_PROJECT &&
     process.env.SENTRY_AUTH_TOKEN
   ) {
-    plugins = [...plugins, sentryReactRouter(sentryConfig, config)];
+    plugins = [...plugins, ...(await sentryReactRouter(sentryConfig, config))];
   }
   return {
     server: {
@@ -46,11 +52,11 @@ export default defineConfig((config) => {
         process.env.SENTRY_AUTH_TOKEN &&
         process.env.SENTRY_ORG &&
         process.env.SENTRY_PROJECT
-          ? "hidden"
+          ? ("hidden" as const)
           : false,
       rollupOptions: {
         output: {
-          manualChunks(id) {
+          manualChunks(id: string) {
             // Only apply to client build (node_modules)
             if (id.includes("node_modules")) {
               // FullCalendar packages - separate chunk for lazy loading

@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-22T14:15:06.942Z",
+  "unitTests": 98,
+  "sqlChecks": 42,
+  "cleanInstall": true,
+  "productionBuild": true,
+  "emailHtmlExport": 7,
+  "clientSourceMaps": 0,
+  "knownPrivateClientValues": 0,
+  "audits": {
+    "production": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 7,
+      "critical": 0,
+      "total": 7
+    },
+    "full": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 7,
+      "critical": 0,
+      "total": 7
+    },
+    "email": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "remainingRegistryAdvisory": {
+    "id": "GHSA-vfj7-8cjw-p6xm",
+    "package": "braces@3.0.3",
+    "upstreamPatchAvailable": false,
+    "localGuard": "scripts/harden-braces.mjs",
+    "installedAttackRegressionPassed": true
+  }
+}

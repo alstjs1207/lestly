@@ -91,19 +91,13 @@ export const schedules = pgTable(
       as: "permissive",
       using: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id})`,
     }),
-    // RLS Policy: Students can insert their own schedules (within same organization)
-    pgPolicy("student-insert-own-schedules-policy", {
-      for: "insert",
-      to: authenticatedRole,
-      as: "permissive",
-      withCheck: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id})`,
-    }),
+    // Student creation uses book_student_schedule; no direct INSERT policy.
     // RLS Policy: Students can delete their own schedules (not on the same day)
     pgPolicy("student-delete-own-schedules-policy", {
       for: "delete",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id}) AND ${table.start_time}::date > CURRENT_DATE`,
+      using: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id}) AND (${table.start_time} AT TIME ZONE 'Asia/Seoul')::date > (now() AT TIME ZONE 'Asia/Seoul')::date`,
     }),
     // RLS Policy: ADMIN can view schedules in their organization
     pgPolicy("admin-select-org-schedules-policy", {

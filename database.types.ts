@@ -12,6 +12,13 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  pgmq_public: {
+    Tables: { [_ in never]: never }
+    Views: { [_ in never]: never }
+    Functions: { pop: { Args: { queue_name: string }; Returns: { message: Json } | null } }
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
+  }
   public: {
     Tables: {
       in_app_notifications: {
@@ -880,6 +887,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      book_student_schedule: {
+        Args: { p_organization_id: string; p_program_id: number | null; p_start_time: string; p_end_time: string }
+        Returns: number
+      }
       save_managed_student: {
         Args: { p_organization_id: string; p_values: Json; p_student_id?: string }
         Returns: string

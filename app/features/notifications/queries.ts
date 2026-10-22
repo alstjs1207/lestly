@@ -136,7 +136,7 @@ export async function updateConsultNotification(
     consultNotes?: string;
   },
 ) {
-  const updates: Record<string, unknown> = {};
+  const updates: Database["public"]["Tables"]["notifications"]["Update"] = {};
 
   if (consultStatus) {
     updates.consult_status = consultStatus;

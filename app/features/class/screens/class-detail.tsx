@@ -123,14 +123,6 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     setDialogOpen(false);
   };
 
-  const openDialog = () => {
-    setName("");
-    setPhone("");
-    setMessage("");
-    setSubmitted(false);
-    setDialogOpen(true);
-  };
-
   return (
     <div className="min-h-screen bg-[#f5f0eb]">
       {/* 히어로 섹션 */}
@@ -147,10 +139,11 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       <div className="relative z-10 mt-6 flex justify-center">
         <button
           type="button"
-          onClick={openDialog}
-          className="flex items-center gap-2 rounded-full bg-[#d4a574] px-8 py-3 text-lg font-semibold text-white shadow-lg transition-colors hover:bg-[#c49464]"
+          disabled
+          aria-disabled="true"
+          className="flex items-center gap-2 rounded-full bg-[#d4a574] px-8 py-3 text-lg font-semibold text-white shadow-lg transition-colors hover:bg-[#c49464] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          상담 신청하기
+          상담 신청 일시 중단
           <svg
             className="h-5 w-5"
             fill="none"

@@ -88,6 +88,18 @@ try {
     CREATE SCHEMA auth;
     CREATE SCHEMA pgmq;
     CREATE SCHEMA cron;
+    CREATE SCHEMA storage;
+    CREATE TABLE storage.buckets(id text PRIMARY KEY, allowed_mime_types text[]);
+    INSERT INTO storage.buckets VALUES ('avatars',ARRAY['image/*']),('coverimages',ARRAY['image/*']),('instructors',ARRAY['image/*']);
+    CREATE TABLE storage.objects(name text PRIMARY KEY,bucket_id text);
+    ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    GRANT USAGE ON SCHEMA storage TO authenticated,service_role;
+    GRANT ALL ON storage.objects TO authenticated,service_role;
+    CREATE POLICY catalog_read ON storage.objects FOR SELECT TO authenticated USING(true);
+    CREATE POLICY catalog_cover_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='coverimages');
+    CREATE POLICY catalog_instructor_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='instructors');
+    CREATE POLICY catalog_cover_update ON storage.objects FOR UPDATE TO authenticated USING(bucket_id='coverimages');
+
     CREATE TABLE auth.users (
       id uuid PRIMARY KEY, email text,
       raw_user_meta_data jsonb, raw_app_meta_data jsonb
@@ -219,7 +231,7 @@ try {
         `INSERT INTO schedules (organization_id,student_id,start_time,end_time)
       VALUES ($1,$2,now(),now()+interval '1 hour')`,
         [orgA, managedStudent],
-        /row-level security/,
+        /row-level security|schedule_not_authorized/,
       );
     },
   );
@@ -239,7 +251,7 @@ try {
       await blocked(
         "INSERT INTO organization_members (organization_id,profile_id) VALUES ($1,$2)",
         [orgA, studentB],
-        /row-level security/,
+        /row-level security|schedule_not_authorized/,
       );
       await blocked(
         "UPDATE organization_members SET profile_id=$1 WHERE organization_id=$2 AND profile_id=$3",
@@ -275,7 +287,7 @@ try {
         `INSERT INTO schedules (organization_id,student_id,program_id,start_time,end_time)
       VALUES ($1,$2,2,now(),now()+interval '1 hour')`,
         [orgA, studentA],
-        /schedules_program_tenant_fk/,
+        /schedules_program_tenant_fk|schedule_program_not_eligible/,
       );
       await blocked(
         `INSERT INTO schedules (organization_id,student_id,start_time,end_time)
@@ -287,7 +299,7 @@ try {
         `INSERT INTO schedules (organization_id,student_id,start_time,end_time)
       VALUES ($1,$2,now(),now()-interval '1 hour')`,
         [orgA, studentA],
-        /schedules_valid_time_range/,
+        /schedules_valid_time_range|schedule_invalid_interval/,
       );
     },
   );
@@ -356,7 +368,7 @@ try {
       `INSERT INTO student_invites (organization_id,profile_id,token_hash,expires_at,created_by_profile_id)
       VALUES ($1,$2,'forged',now()+interval '1 day',$3)`,
       [orgA, studentB, adminA],
-      /row-level security/,
+      /row-level security|schedule_not_authorized/,
     );
     const changed = await db.query(
       "UPDATE student_invites SET profile_id=$1 WHERE token_hash='valid-invite' RETURNING invite_id",
@@ -679,8 +691,8 @@ try {
       await db.query(
         `
       INSERT INTO schedules (organization_id,student_id,start_time,end_time)
-      SELECT $1,$2,now()-interval '3 days',now()-interval '3 days'+interval '1 hour'
-      FROM generate_series(1,1005)
+      SELECT $1,$2,now()-i*interval '1 day'-interval '10 days',now()-i*interval '1 day'-interval '10 days'+interval '1 hour'
+      FROM generate_series(1,1005) AS i
     `,
         [orgA, studentA],
       );
@@ -1019,6 +1031,12 @@ try {
         "01077770000",
       );
       await asRole("authenticated", studentA);
+      await blocked(
+        "UPDATE profiles SET phone='010-8888-0000' WHERE profile_id=$1",
+        [studentA],
+        /profile_management_update_not_allowed/,
+      );
+      await asRole("postgres");
       await db.query(
         "UPDATE profiles SET phone='010-8888-0000' WHERE profile_id=$1",
         [studentA],
@@ -1121,6 +1139,158 @@ try {
         "SELECT indisvalid FROM pg_index WHERE indexrelid='public.organization_student_phone_unique'::regclass",
       );
       assert.equal(indexes.rows[0].indisvalid, true);
+    },
+  );
+
+  await check(
+    "self profile updates cannot alter course dates or management metadata",
+    async () => {
+      await asRole("authenticated", studentA);
+      for (const mutation of [
+        "class_end_date='2099-12-31'",
+        "class_start_date='2020-01-01'",
+        "region='forged'",
+        "contact_email='forged@example.test'",
+      ]) {
+        await blocked(
+          `UPDATE profiles SET ${mutation} WHERE profile_id=$1`,
+          [studentA],
+          /profile_management_update_not_allowed/,
+        );
+      }
+      const result = await db.query(
+        "UPDATE profiles SET name='Allowed name',marketing_consent=true WHERE profile_id=$1 RETURNING name",
+        [studentA],
+      );
+      assert.equal(result.rows[0].name, "Allowed name");
+      await asRole("authenticated", adminA);
+      await db.query(
+        "UPDATE profiles SET class_end_date='2099-12-31' WHERE profile_id=$1",
+        [studentA],
+      );
+    },
+  );
+
+  const nextBooking = async () =>
+    (
+      await db.query(
+        `SELECT ((now() AT TIME ZONE 'Asia/Seoul')::date + 1 + time '09:00') AT TIME ZONE 'Asia/Seoul' AS start`,
+      )
+    ).rows[0].start;
+  const bookSql =
+    "SELECT book_student_schedule($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours') AS id";
+  await check(
+    "student booking RPC enforces identity, date window, time and tenant",
+    async () => {
+      const start = await nextBooking();
+      await asRole("anon");
+      await blocked(bookSql, [orgA, null, start], /permission denied/);
+      await asRole("authenticated", studentA);
+      await blocked(bookSql, [orgB, null, start], /schedule_not_authorized/);
+      await blocked(bookSql, [orgA, 2, start], /schedule_program_not_eligible/);
+      await blocked(
+        bookSql,
+        [orgA, null, "2020-01-01T00:00:00Z"],
+        /schedule_date_not_allowed/,
+      );
+      await blocked(
+        bookSql,
+        [orgA, null, "2099-01-01T00:00:00Z"],
+        /schedule_date_not_allowed/,
+      );
+      await blocked(
+        "SELECT book_student_schedule($1,null,$2::timestamptz,$2::timestamptz+interval '1 hour')",
+        [orgA, start],
+        /schedule_time_not_allowed/,
+      );
+      await blocked(
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours')",
+        [orgA, studentA, start],
+        /row-level security/,
+      );
+      const result = await db.query(bookSql, [orgA, 1, start]);
+      assert.ok(result.rows[0].id);
+      await blocked(bookSql, [orgA, 1, start], /schedule_student_conflict/);
+    },
+  );
+  await check(
+    "course dates, membership state and atomic capacity apply in the database",
+    async () => {
+      const start = await nextBooking();
+      await db.query(
+        "UPDATE profiles SET class_end_date='2020-01-01' WHERE profile_id=$1",
+        [studentA],
+      );
+      await asRole("authenticated", studentA);
+      await blocked(bookSql, [orgA, null, start], /schedule_outside_course/);
+      await asRole("postgres");
+      await db.query(
+        "UPDATE profiles SET class_end_date=null WHERE profile_id=$1",
+        [studentA],
+      );
+      await db.query(
+        "UPDATE organization_members SET state='GRADUATE' WHERE organization_id=$1 AND profile_id=$2",
+        [orgA, studentA],
+      );
+      await asRole("authenticated", studentA);
+      await blocked(bookSql, [orgA, null, start], /schedule_not_authorized/);
+      await asRole("postgres");
+      await db.query(
+        "UPDATE organization_members SET state='NORMAL' WHERE organization_id=$1 AND profile_id=$2",
+        [orgA, studentA],
+      );
+      await db.query(
+        "INSERT INTO settings(organization_id,setting_key,setting_value) VALUES ($1,'max_concurrent_students','{\"value\":1}') ON CONFLICT(organization_id,setting_key) DO UPDATE SET setting_value=excluded.setting_value",
+        [orgA],
+      );
+      await db.query(
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours')",
+        [orgA, managedStudent, start],
+      );
+      await asRole("authenticated", studentA);
+      await blocked(bookSql, [orgA, null, start], /schedule_capacity_exceeded/);
+      await asRole("authenticated", adminA);
+      await blocked(
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours')",
+        [orgA, studentA, start],
+        /schedule_capacity_exceeded/,
+      );
+    },
+  );
+  await check(
+    "catalog uploads require a trusted server and buckets allow only raster MIME types",
+    async () => {
+      await asRole("service_role");
+      await db.query(
+        "INSERT INTO storage.objects(name,bucket_id) VALUES ('existing.png','coverimages')",
+      );
+      for (const caller of [studentA, adminA]) {
+        await asRole("authenticated", caller);
+        for (const bucket of ["coverimages", "instructors"])
+          await blocked(
+            "INSERT INTO storage.objects(name,bucket_id) VALUES ('new.png',$1)",
+            [bucket],
+            /row-level security/,
+          );
+        assert.equal(
+          (
+            await db.query(
+              "UPDATE storage.objects SET name='replaced.png' WHERE name='existing.png' RETURNING name",
+            )
+          ).rows.length,
+          0,
+        );
+      }
+      await asRole("postgres");
+      for (const row of (
+        await db.query("SELECT allowed_mime_types FROM storage.buckets")
+      ).rows)
+        assert.deepEqual(row.allowed_mime_types, [
+          "image/png",
+          "image/jpeg",
+          "image/webp",
+          "image/gif",
+        ]);
     },
   );
 
