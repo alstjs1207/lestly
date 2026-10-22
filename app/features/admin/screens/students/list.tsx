@@ -215,22 +215,31 @@ export default function StudentListScreen({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold md:text-2xl">수강생 관리</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
             총 {totalCount}명의 수강생이 등록되어 있습니다.
           </p>
         </div>
-        <Button
-          className="min-h-11 shrink-0 rounded-full px-4 shadow-sm"
-          asChild
-        >
-          <Link to="/admin/students/new">
-            <UserPlusIcon className="mr-1.5 h-4 w-4" />
-            <span>수강생 등록</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="min-h-11 shrink-0 rounded-full px-4"
+            asChild
+          >
+            <Link to="/admin/students/bulk">일괄 등록</Link>
+          </Button>
+          <Button
+            className="min-h-11 shrink-0 rounded-full px-4 shadow-sm"
+            asChild
+          >
+            <Link to="/admin/students/new">
+              <UserPlusIcon className="mr-1.5 h-4 w-4" />
+              <span>수강생 등록</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-background/95 sticky top-0 z-20 -mx-4 space-y-3 border-y px-4 py-3 backdrop-blur md:static md:mx-0 md:flex md:items-center md:gap-3 md:space-y-0 md:border-0 md:bg-transparent md:p-0">

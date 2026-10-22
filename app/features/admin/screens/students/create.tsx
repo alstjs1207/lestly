@@ -28,7 +28,7 @@ export default function StudentCreateScreen({
 }: Route.ComponentProps) {
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link to="/admin/students">
             <ChevronLeftIcon className="h-4 w-4" />
@@ -40,6 +40,9 @@ export default function StudentCreateScreen({
             새로운 수강생 정보를 입력하세요.
           </p>
         </div>
+        <Button variant="outline" className="ml-auto" asChild>
+          <Link to="/admin/students/bulk">일괄 등록</Link>
+        </Button>
       </div>
 
       <Card>
