@@ -204,7 +204,9 @@ export default function Checkout({ loaderData }: Route.ComponentProps) {
         orderName: `Supabase Beagle NFT`,
 
         // Customer information from authenticated user
-        customerEmail: loaderData.userEmail,
+        ...(loaderData.userEmail
+          ? { customerEmail: loaderData.userEmail }
+          : {}),
         customerName: loaderData.userName,
 
         // Additional metadata about the order

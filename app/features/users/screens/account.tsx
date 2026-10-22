@@ -5,7 +5,6 @@ import { Await } from "react-router";
 
 import makeServerClient from "~/core/lib/supa-client.server";
 
-import ChangeEmailForm from "../components/forms/change-email-form";
 import ChangePasswordForm from "../components/forms/change-password-form";
 import EditProfileForm from "../components/forms/edit-profile-form";
 import { getUserProfile } from "../queries";
@@ -58,9 +57,14 @@ export default function Account({ loaderData }: Route.ComponentProps) {
           }}
         </Await>
       </Suspense>
-      {/* 이메일 변경 기능 임시 비활성화 */}
-      {/* <ChangeEmailForm email={user?.email ?? ""} /> */}
-      <ChangePasswordForm hasPassword={hasEmailIdentity ?? false} />
+      {user?.email ? (
+        <ChangePasswordForm hasPassword={hasEmailIdentity ?? false} />
+      ) : (
+        <p className="text-muted-foreground w-full max-w-screen-md text-sm">
+          카카오 계정으로 로그인하고 있습니다. 이메일과 별도 비밀번호 없이
+          이용할 수 있으며, 로그인 문제는 카카오 계정에서 확인해 주세요.
+        </p>
+      )}
     </div>
   );
 }

@@ -104,9 +104,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const invite = searchParams.get("invite");
   if (invite) {
-    const { error: claimError } = await client.rpc("claim_student_invite", {
-      p_token_hash: hashStudentInviteToken(invite),
-    });
+    const { error: claimError } = await client.rpc(
+      "claim_student_invite_with_contact_email",
+      {
+        p_token_hash: hashStudentInviteToken(invite),
+      },
+    );
 
     if (claimError) {
       console.error("Student invite claim failed", claimError);

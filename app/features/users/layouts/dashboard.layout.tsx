@@ -46,7 +46,7 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
         user={{
           name: user?.user_metadata.name ?? "",
           avatarUrl: user?.user_metadata.avatar_url ?? "",
-          email: user?.email ?? "",
+          email: user?.email,
         }}
       />
       <SidebarInset>

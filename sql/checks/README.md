@@ -3,6 +3,9 @@
 Run `npm run test:db` to replay the complete migration journal in an isolated,
 in-memory PostgreSQL instance and verify tenant isolation, RLS, invite claims,
 public class reads, signup metadata, welcome-email payloads and schedule totals.
+Migration 0017 adds atomic invite email enrichment checks against trusted Kakao
+identity data, including preservation, missing/unverified email, provider/user
+isolation, editable metadata, rollback, and compatibility with the 0015 claim RPC.
 The suite uses PGlite and needs no database credentials or network connection.
 
 The fixture stubs `auth.uid()`, `auth.jwt()`, pgmq and cron APIs. It skips only
@@ -15,7 +18,14 @@ Migration 0016 leaves existing tenant data untouched. Its `NOT VALID` foreign
 keys and time-range check enforce new writes. Run the read-only
 `tenant_integrity.sql` with a trusted database role, review any returned rows,
 and resolve invalid historical records before validating those constraints.
-This task does not apply migrations or modify a deployed database.
+The test command does not apply migrations or modify a deployed database.
+
+0017 is additive and supports both the 0015 and 0016 claim definitions. When
+deploying it to a database whose ledger still ends at 0015, apply only its
+idempotent SQL without advancing the ledger past the pending 0016 migration.
+A later regular migration run must still apply 0016 followed by 0017. The new
+preview caller uses `claim_student_invite_with_contact_email`; older callers
+continue to use `claim_student_invite` unchanged.
 
 The composite tenant foreign keys coexist with the original single-column
 foreign keys so deletion keeps the existing `SET NULL`/`CASCADE` behavior.

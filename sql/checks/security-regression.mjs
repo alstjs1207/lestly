@@ -55,6 +55,30 @@ async function check(name, run) {
   }
 }
 
+async function seedIdentity(
+  identityData,
+  { provider = "kakao", userId = claimant } = {},
+) {
+  await db.query(
+    "INSERT INTO auth.identities (user_id,provider,identity_data) VALUES ($1,$2,$3)",
+    [userId, provider, JSON.stringify(identityData)],
+  );
+}
+
+async function claimWithContactEmail() {
+  await asRole("authenticated", claimant);
+  const { rows } = await db.query(
+    "SELECT claim_student_invite_with_contact_email('valid-invite') AS profile_id",
+  );
+  assert.equal(rows[0].profile_id, managedStudent);
+  return (
+    await db.query(
+      "SELECT auth_user_id,contact_email,name,phone FROM profiles WHERE profile_id=$1",
+      [managedStudent],
+    )
+  ).rows[0];
+}
+
 try {
   await db.exec(`
     CREATE ROLE anon;
@@ -67,6 +91,12 @@ try {
     CREATE TABLE auth.users (
       id uuid PRIMARY KEY, email text,
       raw_user_meta_data jsonb, raw_app_meta_data jsonb
+    );
+    CREATE TABLE auth.identities (
+      user_id uuid NOT NULL REFERENCES auth.users(id),
+      provider text NOT NULL,
+      identity_data jsonb NOT NULL DEFAULT '{}'::jsonb,
+      updated_at timestamptz NOT NULL DEFAULT now()
     );
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
       SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
@@ -394,6 +424,224 @@ try {
     },
   );
 
+  for (const emptyEmail of [null, "", "   "]) {
+    await check(
+      `invite fills ${JSON.stringify(emptyEmail)} contact email from verified Kakao identity`,
+      async () => {
+        await db.query(
+          "UPDATE profiles SET contact_email=$1,phone='01012345678' WHERE profile_id=$2",
+          [emptyEmail, managedStudent],
+        );
+        await db.query(
+          "UPDATE auth.users SET email='auth-only@example.test' WHERE id=$1",
+          [claimant],
+        );
+        await db.query(
+          "UPDATE profiles SET contact_email='editable-profile@example.test' WHERE auth_user_id=$1",
+          [claimant],
+        );
+        await seedIdentity({
+          email: "  kakao@example.test  ",
+          email_verified: true,
+        });
+        assert.deepEqual(await claimWithContactEmail(), {
+          auth_user_id: claimant,
+          contact_email: "kakao@example.test",
+          name: "Managed student",
+          phone: "01012345678",
+        });
+        await asRole("postgres");
+        assert.ok(
+          (
+            await db.query(
+              "SELECT used_at FROM student_invites WHERE token_hash='valid-invite'",
+            )
+          ).rows[0].used_at,
+        );
+        assert.equal(
+          (
+            await db.query("SELECT * FROM profiles WHERE profile_id=$1", [
+              claimant,
+            ])
+          ).rows.length,
+          0,
+        );
+      },
+    );
+  }
+
+  await check(
+    "invite preserves the administrator's existing contact email",
+    async () => {
+      await db.query(
+        "UPDATE profiles SET contact_email='admin-entered@example.test' WHERE profile_id=$1",
+        [managedStudent],
+      );
+      await seedIdentity({ email: "kakao@example.test", email_verified: true });
+      assert.equal(
+        (await claimWithContactEmail()).contact_email,
+        "admin-entered@example.test",
+      );
+    },
+  );
+
+  const ignoredIdentities = [
+    { name: "no Kakao identity", data: null },
+    { name: "missing email", data: { email_verified: true } },
+    { name: "empty email", data: { email: "", email_verified: true } },
+    { name: "blank email", data: { email: "   ", email_verified: true } },
+    {
+      name: "unverified email",
+      data: { email: "unverified@example.test", email_verified: false },
+    },
+    { name: "missing verification", data: { email: "unchecked@example.test" } },
+    {
+      name: "another provider",
+      data: { email: "github@example.test", email_verified: true },
+      provider: "github",
+    },
+    {
+      name: "another user",
+      data: { email: "foreign@example.test", email_verified: true },
+      userId: secondClaimant,
+    },
+  ];
+  for (const scenario of ignoredIdentities) {
+    await check(
+      `invite succeeds without filling from ${scenario.name} or editable metadata`,
+      async () => {
+        await db.query(
+          `UPDATE auth.users SET email='account-only@example.test',raw_user_meta_data='{"email":"spoofed@example.test","email_verified":true}' WHERE id=$1`,
+          [claimant],
+        );
+        await db.query(
+          "UPDATE profiles SET contact_email='editable-profile@example.test' WHERE auth_user_id=$1",
+          [claimant],
+        );
+        if (scenario.data) await seedIdentity(scenario.data, scenario);
+        const profile = await claimWithContactEmail();
+        assert.equal(profile.auth_user_id, claimant);
+        assert.equal(profile.contact_email, null);
+      },
+    );
+  }
+
+  await check(
+    "email enrichment cannot bypass authentication or expired invitations",
+    async () => {
+      await seedIdentity({ email: "kakao@example.test", email_verified: true });
+      await asRole("anon");
+      await blocked(
+        "SELECT claim_student_invite_with_contact_email('valid-invite')",
+        [],
+        /permission denied/,
+      );
+      await asRole("authenticated");
+      await blocked(
+        "SELECT claim_student_invite_with_contact_email('valid-invite')",
+        [],
+        /authentication_required/,
+      );
+      await asRole("authenticated", claimant);
+      await blocked(
+        "SELECT claim_student_invite_with_contact_email('expired-invite')",
+        [],
+        /invalid_or_expired_invite/,
+      );
+      await asRole("postgres");
+      const profile = (
+        await db.query(
+          "SELECT auth_user_id,contact_email FROM profiles WHERE profile_id=$1",
+          [managedStudent],
+        )
+      ).rows[0];
+      assert.deepEqual(profile, { auth_user_id: null, contact_email: null });
+    },
+  );
+
+  await check(
+    "email update failure rolls back the account link, invite use and bootstrap deletion",
+    async () => {
+      await seedIdentity({ email: "kakao@example.test", email_verified: true });
+      await db.exec(`
+      CREATE FUNCTION public.test_reject_contact_email() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'test_email_update_failed'; END; $$;
+      CREATE TRIGGER test_reject_contact_email BEFORE UPDATE OF contact_email ON profiles
+      FOR EACH ROW EXECUTE FUNCTION public.test_reject_contact_email();
+    `);
+      await asRole("authenticated", claimant);
+      await blocked(
+        "SELECT claim_student_invite_with_contact_email('valid-invite')",
+        [],
+        /test_email_update_failed/,
+      );
+      await asRole("postgres");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT auth_user_id FROM profiles WHERE profile_id=$1",
+            [managedStudent],
+          )
+        ).rows[0].auth_user_id,
+        null,
+      );
+      assert.equal(
+        (
+          await db.query("SELECT * FROM profiles WHERE profile_id=$1", [
+            claimant,
+          ])
+        ).rows.length,
+        1,
+      );
+      assert.equal(
+        (
+          await db.query(
+            "SELECT used_at FROM student_invites WHERE token_hash='valid-invite'",
+          )
+        ).rows[0].used_at,
+        null,
+      );
+    },
+  );
+
+  await check(
+    "existing deployments retain the original claim behavior",
+    async () => {
+      await seedIdentity({ email: "kakao@example.test", email_verified: true });
+      await asRole("authenticated", claimant);
+      await db.query("SELECT claim_student_invite('valid-invite')");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT contact_email FROM profiles WHERE profile_id=$1",
+            [managedStudent],
+          )
+        ).rows[0].contact_email,
+        null,
+      );
+    },
+  );
+
+  await check(
+    "email enrichment also works with the deployed 0015 claim function",
+    async () => {
+      const legacy = await readFile(
+        new URL("0015_optional_student_email_and_invites.sql", migrationRoot),
+        "utf8",
+      );
+      const definition = legacy.match(
+        /CREATE OR REPLACE FUNCTION public\.claim_student_invite\(p_token_hash text\)[\s\S]*?\$\$;/,
+      )?.[0];
+      assert.ok(definition);
+      await db.exec(definition);
+      await seedIdentity({ email: "kakao@example.test", email_verified: true });
+      assert.equal(
+        (await claimWithContactEmail()).contact_email,
+        "kakao@example.test",
+      );
+    },
+  );
+
   await check(
     "invalid consent metadata succeeds without granting privileges",
     async () => {
@@ -492,6 +740,33 @@ try {
           },
         },
       ]);
+    },
+  );
+
+  await check(
+    "email-less Kakao signup creates a profile and skips welcome mail",
+    async () => {
+      const id = "00000000-0000-0000-0000-000000000008";
+      await db.exec(`
+      CREATE TRIGGER test_welcome AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE FUNCTION public.welcome_email();
+    `);
+      await db.query(
+        `INSERT INTO auth.users (id,email,raw_user_meta_data)
+       VALUES ($1,NULL,'{"name":"Kakao student","provider_id":"12345"}')`,
+        [id],
+      );
+      const { rows } = await db.query(
+        "SELECT auth_user_id, contact_email, name FROM profiles WHERE profile_id=$1",
+        [id],
+      );
+      assert.deepEqual(rows, [
+        { auth_user_id: id, contact_email: null, name: "Kakao student" },
+      ]);
+      assert.equal(
+        (await db.query("SELECT * FROM pgmq.test_messages")).rows.length,
+        0,
+      );
     },
   );
 

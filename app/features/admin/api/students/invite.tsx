@@ -3,6 +3,7 @@ import type { Route } from "./+types/invite";
 import { data } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
+import { getSiteOrigin } from "~/core/lib/site-origin.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
@@ -81,9 +82,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     );
   }
 
-  const configuredSiteUrl = process.env.SITE_URL?.replace(/\/$/, "");
-  const requestOrigin = new URL(request.url).origin;
-  const siteUrl = configuredSiteUrl || requestOrigin;
+  const siteUrl = getSiteOrigin(request, process.env);
 
   return data({
     success: true,

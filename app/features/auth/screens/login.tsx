@@ -241,95 +241,110 @@ export default function Login({ actionData }: Route.ComponentProps) {
             <CardHeader className="flex flex-col items-center">
               <CardTitle className="text-2xl font-semibold">로그인</CardTitle>
               <CardDescription className="text-base">
-                계정 정보를 입력해주세요
+                이메일 없이 카카오 계정으로 시작하세요
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <Form
-                className="flex w-full flex-col gap-5"
-                method="post"
-                ref={formRef}
+              <SignInButtons />
+              <p className="text-muted-foreground text-center text-sm">
+                처음 이용하는 수강생은 관리자에게 받은 초대 링크로 접속해
+                주세요.
+              </p>
+              <details
+                open={Boolean(actionData)}
+                className="group border-t pt-4"
               >
-                <div className="flex flex-col items-start space-y-2">
-                  <Label
-                    htmlFor="email"
-                    className="flex flex-col items-start gap-1"
-                  >
-                    이메일
-                  </Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    required
-                    type="email"
-                    placeholder="example@lestly.io"
-                  />
-                  {actionData &&
-                  "fieldErrors" in actionData &&
-                  actionData.fieldErrors.email ? (
-                    <FormErrors errors={actionData.fieldErrors.email} />
-                  ) : null}
-                </div>
-                <div className="flex flex-col items-start space-y-2">
-                  <div className="flex w-full items-center justify-between">
+                <summary className="text-muted-foreground cursor-pointer text-center text-sm">
+                  관리자 · 기존 이메일 계정으로 로그인
+                </summary>
+                <Form
+                  className="mt-5 flex w-full flex-col gap-5"
+                  method="post"
+                  ref={formRef}
+                >
+                  <div className="flex flex-col items-start space-y-2">
                     <Label
-                      htmlFor="password"
+                      htmlFor="email"
                       className="flex flex-col items-start gap-1"
                     >
-                      비밀번호
+                      이메일
                     </Label>
-                    <Link
-                      to="/auth/forgot-password/reset"
-                      className="text-muted-foreground text-underline hover:text-foreground self-end text-sm underline transition-colors"
-                      tabIndex={-1}
-                      viewTransition
-                    >
-                      비밀번호 찾기
-                    </Link>
+                    <Input
+                      id="email"
+                      name="email"
+                      required
+                      type="email"
+                      placeholder="example@lestly.io"
+                    />
+                    {actionData &&
+                    "fieldErrors" in actionData &&
+                    actionData.fieldErrors.email ? (
+                      <FormErrors errors={actionData.fieldErrors.email} />
+                    ) : null}
                   </div>
-                  <Input
-                    id="password"
-                    name="password"
-                    required
-                    type="password"
-                    placeholder="비밀번호를 입력하세요"
-                  />
+                  <div className="flex flex-col items-start space-y-2">
+                    <div className="flex w-full items-center justify-between">
+                      <Label
+                        htmlFor="password"
+                        className="flex flex-col items-start gap-1"
+                      >
+                        비밀번호
+                      </Label>
+                      <Link
+                        to="/auth/forgot-password/reset"
+                        className="text-muted-foreground text-underline hover:text-foreground self-end text-sm underline transition-colors"
+                        tabIndex={-1}
+                        viewTransition
+                      >
+                        비밀번호 찾기
+                      </Link>
+                    </div>
+                    <Input
+                      id="password"
+                      name="password"
+                      required
+                      type="password"
+                      placeholder="비밀번호를 입력하세요"
+                    />
 
-                  {actionData &&
-                  "fieldErrors" in actionData &&
-                  actionData.fieldErrors.password ? (
-                    <FormErrors errors={actionData.fieldErrors.password} />
+                    {actionData &&
+                    "fieldErrors" in actionData &&
+                    actionData.fieldErrors.password ? (
+                      <FormErrors errors={actionData.fieldErrors.password} />
+                    ) : null}
+                  </div>
+                  <FormButton label="로그인" className="w-full" />
+                  {actionData && "error" in actionData ? (
+                    actionData.error === "Email not confirmed" ? (
+                      <Alert
+                        variant="destructive"
+                        className="bg-destructive/10"
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>이메일 인증 필요</AlertTitle>
+                        <AlertDescription className="flex flex-col items-start gap-2">
+                          로그인하기 전에 이메일을 인증해주세요.
+                          <Button
+                            variant="outline"
+                            className="text-foreground flex items-center justify-between gap-2"
+                            onClick={onResendClick}
+                          >
+                            인증 이메일 재발송
+                            {fetcher.state === "submitting" ? (
+                              <Loader2Icon
+                                data-testid="resend-confirmation-email-spinner"
+                                className="size-4 animate-spin"
+                              />
+                            ) : null}
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <FormErrors errors={[actionData.error]} />
+                    )
                   ) : null}
-                </div>
-                <FormButton label="로그인" className="w-full" />
-                {actionData && "error" in actionData ? (
-                  actionData.error === "Email not confirmed" ? (
-                    <Alert variant="destructive" className="bg-destructive/10">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>이메일 인증 필요</AlertTitle>
-                      <AlertDescription className="flex flex-col items-start gap-2">
-                        로그인하기 전에 이메일을 인증해주세요.
-                        <Button
-                          variant="outline"
-                          className="text-foreground flex items-center justify-between gap-2"
-                          onClick={onResendClick}
-                        >
-                          인증 이메일 재발송
-                          {fetcher.state === "submitting" ? (
-                            <Loader2Icon
-                              data-testid="resend-confirmation-email-spinner"
-                              className="size-4 animate-spin"
-                            />
-                          ) : null}
-                        </Button>
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <FormErrors errors={[actionData.error]} />
-                  )
-                ) : null}
-              </Form>
-              <SignInButtons />
+                </Form>
+              </details>
             </CardContent>
           </Card>
 

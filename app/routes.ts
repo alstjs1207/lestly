@@ -91,6 +91,11 @@ export default [
 
   layout("core/layouts/navigation.layout.tsx", [
     route("/auth/confirm", "features/auth/screens/confirm.tsx"),
+    // OAuth must also complete for existing sessions (account linking and invites).
+    ...prefix("/auth/social", [
+      route("/start/:provider", "features/auth/screens/social/start.tsx"),
+      route("/complete/:provider", "features/auth/screens/social/complete.tsx"),
+    ]),
     // index("features/home/screens/home.tsx"),
     route("/error", "core/screens/error.tsx"),
     layout("core/layouts/public.layout.tsx", [
@@ -102,13 +107,6 @@ export default [
         ...prefix("/otp", [
           route("/start", "features/auth/screens/otp/start.tsx"),
           route("/complete", "features/auth/screens/otp/complete.tsx"),
-        ]),
-        ...prefix("/social", [
-          route("/start/:provider", "features/auth/screens/social/start.tsx"),
-          route(
-            "/complete/:provider",
-            "features/auth/screens/social/complete.tsx",
-          ),
         ]),
       ]),
     ]),

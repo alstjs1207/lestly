@@ -40,7 +40,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     user: {
       name: profile?.name ?? adminUser.user.user_metadata?.name ?? "",
-      email: adminUser.user.email ?? "",
+      email: adminUser.user.email,
       avatarUrl:
         profile?.avatar_url ?? adminUser.user.user_metadata?.avatar_url ?? "",
     },

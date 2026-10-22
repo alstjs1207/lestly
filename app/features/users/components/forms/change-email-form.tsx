@@ -58,7 +58,6 @@ export default function ChangeEmailForm({ email }: { email: string }) {
               <Input
                 id="currentEmail"
                 name="currentEmail"
-                required
                 type="email"
                 disabled
                 value={email}

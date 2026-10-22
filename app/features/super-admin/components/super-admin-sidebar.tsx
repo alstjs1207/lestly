@@ -46,7 +46,7 @@ interface Organization {
 interface SuperAdminSidebarProps {
   user: {
     name: string;
-    email: string;
+    email?: string;
     avatarUrl: string;
   };
   organizations: Organization[];
@@ -176,7 +176,9 @@ export default function SuperAdminSidebar({
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
+                    {user.email && (
+                      <span className="truncate text-xs">{user.email}</span>
+                    )}
                   </div>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -198,7 +200,9 @@ export default function SuperAdminSidebar({
                       <span className="truncate font-semibold">
                         {user.name}
                       </span>
-                      <span className="truncate text-xs">{user.email}</span>
+                      {user.email && (
+                        <span className="truncate text-xs">{user.email}</span>
+                      )}
                     </div>
                   </div>
                 </DropdownMenuLabel>
