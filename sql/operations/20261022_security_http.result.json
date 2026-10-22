@@ -1,0 +1,72 @@
+{
+  "base": "https://lestly.io",
+  "at": "2026-10-22T14:23:00.203Z",
+  "checks": [
+    {
+      "path": "/login",
+      "status": 200,
+      "nonceMatches": true,
+      "scripts": 6
+    },
+    {
+      "path": "/assets/entry.client-Cenu2kU4.js.map",
+      "status": 404
+    },
+    {
+      "path": "/legal/privacy-policy",
+      "status": 200,
+      "nonceMatches": true,
+      "scripts": 6
+    },
+    {
+      "path": "/legal/terms-of-service",
+      "status": 200,
+      "nonceMatches": true,
+      "scripts": 6
+    },
+    {
+      "path": "/api/consult-request",
+      "status": 503
+    },
+    {
+      "path": "/api/cron/alimtalk",
+      "status": 401
+    },
+    {
+      "path": "/api/cron/email",
+      "status": 401
+    },
+    {
+      "path": "/api/notifications/test-send",
+      "status": 401
+    },
+    {
+      "path": "/api/admin/students/create",
+      "status": 403
+    },
+    {
+      "path": "/debug/sentry",
+      "status": 404
+    },
+    {
+      "path": "/payments/checkout",
+      "status": 404
+    },
+    {
+      "path": "/.env",
+      "status": 404
+    },
+    {
+      "path": "/.git/config",
+      "status": 404
+    },
+    {
+      "path": "/super-admin",
+      "status": 302
+    },
+    {
+      "path": "/admin/students/bulk",
+      "status": 302
+    }
+  ]
+}

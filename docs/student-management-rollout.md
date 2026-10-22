@@ -15,3 +15,5 @@
 검증: `npm run test:unit`, `npm run test:db`, `npm run build`. DB 검사는 격리된 PGlite에서 마이그레이션 전체 적용, 권한, 고유 제약, 저장 실패 시 롤백을 확인한다. 실제 Supabase의 여러 연결을 사용한 동시 요청은 별도 배포 환경에서 확인한다.
 
 2026-10-22 운영 DB에는 위 절차대로 0018만 별도 적용했다. 사용자 승인을 받아 기존 테스트 번호 2건을 서로 겹치지 않게 정정했으며, 프로필·소속·수업 이력과 기존 초대 RPC 보존 및 PostgREST 스키마 인식을 확인했다. 상세 검증 결과는 `sql/operations/20261022_student_management.result.json`에 기록했다. 0016 보류 상태와 Drizzle 이력은 유지되어 있다.
+
+동일일 후속 보안 작업에서 0016을 적용하고 0017·0018의 원장을 정리했다. 이후 0019·0020까지 운영 적용과 권한 재검증을 완료했다. 위의 0016 보류 설명은 선행 작업 당시 기록이며, 현재 상태와 적용 절차는 `docs/security-remediation-2026-10-22.md` 및 `sql/operations/20261022_security_*.result.json`을 따른다.

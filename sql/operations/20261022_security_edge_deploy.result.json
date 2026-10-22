@@ -1,0 +1,14 @@
+{
+  "httpStatus": 201,
+  "id": "62b6b2ba-d9aa-4be2-a74a-ebf48d6c1971",
+  "slug": "send-alimtalk",
+  "name": "send-alimtalk",
+  "status": "ACTIVE",
+  "version": 12,
+  "created_at": 1768499924528,
+  "updated_at": 1792677436857,
+  "verify_jwt": true,
+  "import_map": false,
+  "entrypoint_path": "file:///tmp/user_fn_smbpzlzbvplhtpqggrjf_62b6b2ba-d9aa-4be2-a74a-ebf48d6c1971_12/source/index.ts",
+  "ezbr_sha256": "c41b1b604ba392c773e19f56e727f6c55eb3d557749ef300da6debefbe57192f"
+}
