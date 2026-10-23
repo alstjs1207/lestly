@@ -56,6 +56,18 @@ export const instructors = pgTable(
           AND programs.is_public = true AND programs.status = 'ACTIVE'
       )`,
     }),
+    pgPolicy("student-select-active-program-instructors", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_org_member(${table.organization_id}) AND EXISTS (
+        SELECT 1 FROM public.programs p WHERE p.instructor_id = ${table.instructor_id}
+          AND p.organization_id = ${table.organization_id} AND (p.status = 'ACTIVE' OR EXISTS (
+            SELECT 1 FROM public.schedules s WHERE s.program_id = p.program_id
+              AND s.organization_id = p.organization_id AND s.student_id = public.get_current_profile_id()
+          ))
+      )`,
+    }),
     // RLS Policy: Admin can view all instructors in their organization
     pgPolicy("admin-select-org-instructors-policy", {
       for: "select",

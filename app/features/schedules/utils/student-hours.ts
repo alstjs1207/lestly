@@ -12,7 +12,7 @@ export async function getStudentHoursTotals(
 ): Promise<Record<string, number>> {
   if (studentIds.length === 0) return {};
 
-  const { data, error } = await client.rpc("get_student_total_hours", {
+  const { data, error } = await client.rpc("get_student_completed_hours", {
     p_student_ids: studentIds,
     ...(organizationId && { p_organization_id: organizationId }),
   });
@@ -23,8 +23,8 @@ export async function getStudentHoursTotals(
     );
   }
 
-  // Rolling deployments may serve the application before the new RPC exists.
-  // Retain the same RLS-filtered result until migration 0016 is applied.
+  // Rolling deployments may serve the application before the completed-hours RPC exists.
+  // Retain the same RLS-filtered result until migration 0021 is applied.
   if (error.code !== "PGRST202" && error.code !== "42883") throw error;
   const now = new Date().toISOString();
   const schedules = await fetchAllRows((from, to) => {
@@ -32,7 +32,7 @@ export async function getStudentHoursTotals(
       .from("schedules")
       .select("student_id, start_time, end_time")
       .in("student_id", studentIds)
-      .lte("start_time", now)
+      .lte("end_time", now)
       .order("schedule_id", { ascending: true });
     if (organizationId) query = query.eq("organization_id", organizationId);
     return query.range(from, to);

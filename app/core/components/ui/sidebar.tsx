@@ -272,7 +272,7 @@ function SidebarTrigger({
       {...props}
     >
       <PanelLeftIcon />
-      <span className="sr-only">관리자 메뉴 열기</span>
+      <span className="sr-only">메뉴 열기</span>
     </Button>
   );
 }

@@ -1,0 +1,16 @@
+{
+  "mode": "preflight",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "at": "2026-10-23T06:01:38.644Z",
+  "migration": "0021_student_learning_experience",
+  "hash": "c6036996083080dac1cb511c639ba9a4ee9652a03a4ee95f2bbc4a5978b6e557",
+  "alreadyApplied": false,
+  "applied": false,
+  "businessDataUnchanged": true,
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1452
+  },
+  "verification": null
+}

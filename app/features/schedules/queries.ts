@@ -551,7 +551,7 @@ export async function getStudentYearlyStats(
       .eq("student_id", studentId)
       .gte("start_time", startDate.toISOString())
       .lt("start_time", endDate.toISOString())
-      .lte("start_time", now)
+      .lte("end_time", now)
       .order("schedule_id", { ascending: true })
       .range(from, to),
   );
@@ -600,7 +600,7 @@ export async function getStudentMonthlyStats(
       .select("start_time, end_time")
       .eq("student_id", studentId)
       .gte("start_time", lastMonthStart.toISOString())
-      .lte("start_time", currentTime)
+      .lte("end_time", currentTime)
       .order("schedule_id", { ascending: true })
       .range(from, to),
   );
@@ -642,7 +642,7 @@ export async function getStudentStreak(
       .from("schedules")
       .select("start_time")
       .eq("student_id", studentId)
-      .lte("start_time", now)
+      .lte("end_time", now)
       .order("start_time", { ascending: false })
       .order("schedule_id", { ascending: false })
       .range(from, to),
@@ -705,7 +705,7 @@ export async function getStudentProgramHoursBreakdown(
       .eq("student_id", studentId)
       .gte("start_time", startDate.toISOString())
       .lt("start_time", endDate.toISOString())
-      .lte("start_time", now)
+      .lte("end_time", now)
       .order("schedule_id", { ascending: true })
       .range(from, to),
   );

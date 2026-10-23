@@ -110,6 +110,16 @@ export const programs = pgTable(
       as: "permissive",
       using: sql`public.is_org_member(${table.organization_id}) AND ${table.status} = 'ACTIVE'`,
     }),
+    pgPolicy("student-select-scheduled-programs", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`public.is_org_member(${table.organization_id}) AND EXISTS (
+        SELECT 1 FROM public.schedules s WHERE s.program_id = ${table.program_id}
+          AND s.organization_id = ${table.organization_id}
+          AND s.student_id = public.get_current_profile_id()
+      )`,
+    }),
     // RLS Policy: Admin can view all programs in their organization
     pgPolicy("admin-select-org-programs-policy", {
       for: "select",

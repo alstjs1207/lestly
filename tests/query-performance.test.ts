@@ -144,7 +144,7 @@ test("hours aggregate receives the organization and returns totals without fetch
   let calls = 0;
   const client = mockClient(async (input, init) => {
     calls += 1;
-    assert.match(String(input), /\/rpc\/get_student_total_hours$/);
+    assert.match(String(input), /\/rpc\/get_student_completed_hours$/);
     assert.deepEqual(JSON.parse(String(init?.body)), {
       p_student_ids: ["student-a"],
       p_organization_id: "org-a",

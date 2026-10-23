@@ -1,6 +1,7 @@
-import { useMemo } from "react";
-import { isSameDay, isBefore, startOfDay, format } from "date-fns";
+import { format, isBefore, isSameDay, startOfDay } from "date-fns";
 import { CalendarIcon, ClockIcon, InfoIcon } from "lucide-react";
+import { useMemo } from "react";
+
 import { cn } from "~/core/lib/utils";
 import { canStudentRegisterSchedule } from "~/features/schedules/utils/student-schedule-rules";
 
@@ -25,12 +26,14 @@ interface SelectedEvent {
 
 interface MobileDayEventsProps {
   events: CalendarEvent[];
+  bookingDisabledReason?: string | null;
   selectedDate: Date;
   onEventClick: (event: SelectedEvent) => void;
 }
 
 export function MobileDayEvents({
   events,
+  bookingDisabledReason,
   selectedDate,
   onEventClick,
 }: MobileDayEventsProps) {
@@ -40,20 +43,24 @@ export function MobileDayEvents({
         const eventDate = new Date(event.start);
         return isSameDay(eventDate, selectedDate);
       })
-      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+      .sort(
+        (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+      );
   }, [events, selectedDate]);
 
   if (dayEvents.length === 0) {
     const isPast = isBefore(selectedDate, startOfDay(new Date()));
-    const canRegister = canStudentRegisterSchedule(selectedDate);
+    const canRegister = !bookingDisabledReason;
 
     if (isPast) {
       return (
         <div className="flex flex-col items-center justify-center py-16">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-            <ClockIcon className="h-5 w-5 text-muted-foreground/60" />
+          <div className="bg-muted mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+            <ClockIcon className="text-muted-foreground h-5 w-5" />
           </div>
-          <p className="text-sm text-muted-foreground/60">지난 날짜에는 일정을 등록할 수 없습니다</p>
+          <p className="text-muted-foreground text-sm">
+            지난 날짜에는 일정을 등록할 수 없습니다
+          </p>
         </div>
       );
     }
@@ -61,21 +68,25 @@ export function MobileDayEvents({
     if (!canRegister) {
       return (
         <div className="flex flex-col items-center justify-center py-16">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-            <InfoIcon className="h-5 w-5 text-muted-foreground/60" />
+          <div className="bg-muted mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+            <InfoIcon className="text-muted-foreground h-5 w-5" />
           </div>
-          <p className="text-sm text-muted-foreground/60">다음 달 일정은 매월 25일부터 등록할 수 있습니다</p>
+          <p className="text-muted-foreground text-sm">
+            예약 가능한 날짜를 선택해주세요
+          </p>
         </div>
       );
     }
 
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-          <CalendarIcon className="h-5 w-5 text-muted-foreground/60" />
+        <div className="bg-muted mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+          <CalendarIcon className="text-muted-foreground h-5 w-5" />
         </div>
-        <p className="text-sm text-muted-foreground/60">일정이 없습니다</p>
-        <p className="text-xs mt-1 text-muted-foreground/40">+ 버튼을 눌러 일정을 등록하세요</p>
+        <p className="text-muted-foreground text-sm">일정이 없습니다</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          + 버튼을 눌러 일정을 등록하세요
+        </p>
       </div>
     );
   }
@@ -91,8 +102,8 @@ export function MobileDayEvents({
             key={event.id}
             type="button"
             className={cn(
-              "w-full text-left rounded-xl border bg-card p-3.5 shadow-sm",
-              "active:scale-[0.98] transition-all duration-150",
+              "bg-card w-full rounded-xl border p-3.5 text-left shadow-sm",
+              "transition-all duration-150 active:scale-[0.98]",
             )}
             onClick={() =>
               onEventClick({
@@ -105,12 +116,12 @@ export function MobileDayEvents({
             }
           >
             <div className="flex items-start gap-3">
-              <div className="w-1 min-h-[36px] rounded-full bg-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">
+              <div className="bg-primary min-h-[36px] w-1 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">
                   {event.extendedProps?.programTitle || event.title}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-muted-foreground mt-0.5 text-sm">
                   {format(start, "HH:mm")} - {format(end, "HH:mm")}
                 </p>
               </div>

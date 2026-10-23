@@ -1,8 +1,8 @@
 import {
-  BrainCircuitIcon,
+  BookOpenIcon,
   CalendarIcon,
-  LayoutDashboardIcon,
   SettingsIcon,
+  SproutIcon,
 } from "lucide-react";
 import { Link, useLocation } from "react-router";
 
@@ -37,15 +37,10 @@ import {
 
 // 학생용 메뉴
 const menuItems = [
-  // {
-  //   title: "대시보드",
-  //   url: "/dashboard",
-  //   icon: LayoutDashboardIcon,
-  // },
   {
-    title: "AI 코칭 대시보드",
+    title: "학습 홈",
     url: "/dashboard",
-    icon: BrainCircuitIcon,
+    icon: SproutIcon,
   },
   {
     title: "나의 일정",
@@ -54,162 +49,19 @@ const menuItems = [
   },
 ];
 
+menuItems.push({
+  title: "배움 기록",
+  url: "/learning-records",
+  icon: BookOpenIcon,
+});
+
 const settingsItems = [
   {
-    title: "계정 설정",
+    title: "내 정보",
     url: "/account",
     icon: SettingsIcon,
   },
 ];
-
-/* --- 보일러플레이트 원본 데이터 (주석 처리) ---
-import {
-  AudioWaveformIcon,
-  BookOpenIcon,
-  BotIcon,
-  BriefcaseIcon,
-  BuildingIcon,
-  CommandIcon,
-  FrameIcon,
-  GalleryVerticalEndIcon,
-  HeartHandshakeIcon,
-  LayoutDashboardIcon,
-  LineChartIcon,
-  MapIcon,
-  MegaphoneIcon,
-  PieChartIcon,
-  RocketIcon,
-  Settings2Icon,
-  SquareTerminalIcon,
-  Target,
-  UsersIcon,
-} from "lucide-react";
-
-import SidebarMain from "./sidebar-main";
-import SidebarProjects from "./sidebar-projects";
-import TeamSwitcher from "./sidebar-team-switcher";
-import SidebarUser from "./sidebar-user";
-
-const data = {
-  teams: [
-    {
-      name: "SalesForge",
-      logo: BuildingIcon,
-      plan: "Enterprise",
-    },
-    {
-      name: "TechCo Solutions",
-      logo: BriefcaseIcon,
-      plan: "Startup",
-    },
-    {
-      name: "GrowthMate",
-      logo: RocketIcon,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: LayoutDashboardIcon,
-      isActive: true,
-      items: [
-        {
-          title: "Overview",
-          url: "/dashboard",
-        },
-        {
-          title: "Analytics",
-          url: "#",
-        },
-        {
-          title: "Reports",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Customers",
-      url: "#",
-      icon: UsersIcon,
-      items: [
-        {
-          title: "Contacts",
-          url: "#",
-        },
-        {
-          title: "Companies",
-          url: "#",
-        },
-        {
-          title: "Deals",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Sales",
-      url: "#",
-      icon: LineChartIcon,
-      items: [
-        {
-          title: "Pipeline",
-          url: "#",
-        },
-        {
-          title: "Opportunities",
-          url: "#",
-        },
-        {
-          title: "Quotes",
-          url: "#",
-        },
-        {
-          title: "Invoices",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2Icon,
-      items: [
-        {
-          title: "Workspace",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Integrations",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Sales Team",
-      url: "#",
-      icon: Target,
-    },
-    {
-      name: "Customer Success",
-      url: "#",
-      icon: HeartHandshakeIcon,
-    },
-    {
-      name: "Marketing",
-      url: "#",
-      icon: MegaphoneIcon,
-    },
-  ],
-};
---- 보일러플레이트 원본 데이터 끝 --- */
 
 export default function DashboardSidebar({
   user,
@@ -350,7 +202,7 @@ export default function DashboardSidebar({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/account">계정 설정</Link>
+                  <Link to="/account">내 정보</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <LogoutMenuItem>로그아웃</LogoutMenuItem>
