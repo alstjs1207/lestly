@@ -76,7 +76,12 @@ export function DesktopStudentBookingPanel({
     now,
     availability.data,
   );
-  const selectedReason = slots.find((s) => s.time === time)?.reason;
+  const selectedReason = time
+    ? (slots.find((s) => s.time === time)?.reason ??
+      (slots.some((s) => s.time === time)
+        ? null
+        : "이 시작 시간은 현재 신청할 수 없어요."))
+    : null;
   const selectedProgram = programs.find(
     (p) => String(p.program_id) === program,
   );
@@ -230,28 +235,29 @@ export function DesktopStudentBookingPanel({
                 </span>
               </legend>
               <div className="grid grid-cols-4 gap-1.5">
-                {slots.map((slot) => (
-                  <button
-                    key={slot.time}
-                    type="button"
-                    disabled={!!slot.reason}
-                    title={slot.reason ?? undefined}
-                    aria-label={`${slot.time}${slot.label ? ` · ${slot.label}` : ""}`}
-                    aria-pressed={time === slot.time}
-                    onClick={() => {
-                      setTime(slot.time);
-                      setError("");
-                    }}
-                    className="bg-background disabled:bg-muted/60 disabled:text-muted-foreground flex min-h-11 min-w-0 flex-col items-center justify-center rounded-lg border px-0.5 py-1 text-xs tabular-nums hover:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-500 disabled:border-transparent aria-pressed:border-violet-600 aria-pressed:bg-violet-600 aria-pressed:text-white dark:aria-pressed:border-violet-500 dark:aria-pressed:bg-violet-500"
-                  >
-                    {slot.time}
-                    {slot.label && (
-                      <span className="mt-0.5 text-[10px] leading-tight">
-                        {slot.label}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {!pending &&
+                  slots.map((slot) => (
+                    <button
+                      key={slot.time}
+                      type="button"
+                      disabled={!!slot.reason}
+                      title={slot.reason ?? undefined}
+                      aria-label={`${slot.time}${slot.label ? ` · ${slot.label}` : ""}`}
+                      aria-pressed={time === slot.time}
+                      onClick={() => {
+                        setTime(slot.time);
+                        setError("");
+                      }}
+                      className="bg-background disabled:bg-muted/60 disabled:text-muted-foreground flex min-h-11 min-w-0 flex-col items-center justify-center rounded-lg border px-0.5 py-1 text-xs tabular-nums hover:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-500 disabled:border-transparent aria-pressed:border-violet-600 aria-pressed:bg-violet-600 aria-pressed:text-white dark:aria-pressed:border-violet-500 dark:aria-pressed:bg-violet-500"
+                    >
+                      {slot.time}
+                      {slot.label && (
+                        <span className="mt-0.5 text-[10px] leading-tight">
+                          {slot.label}
+                        </span>
+                      )}
+                    </button>
+                  ))}
               </div>
               {!pending && !slots.some((s) => !s.reason) && (
                 <p

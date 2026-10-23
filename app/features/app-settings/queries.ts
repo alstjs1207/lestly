@@ -5,9 +5,12 @@
  * Settings are now scoped per organization for multi-tenancy.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-
 import type { Database } from "database.types";
 
+import {
+  DISABLED_BOOKING_TIMES_KEY,
+  parseDisabledBookingTimes,
+} from "./booking-times";
 import { DEFAULT_SETTINGS, SETTING_KEYS } from "./schema";
 
 type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
@@ -167,4 +170,20 @@ export async function getTimeSlotIntervalMinutes(
     key: SETTING_KEYS.TIME_SLOT_INTERVAL_MINUTES,
   });
   return setting.value ?? 30;
+}
+
+export async function getDisabledBookingTimes(
+  client: SupabaseClient<Database>,
+  { organizationId }: { organizationId: string },
+): Promise<string[]> {
+  const { data, error } = await client
+    .from("settings")
+    .select("setting_value")
+    .eq("organization_id", organizationId)
+    .eq("setting_key", DISABLED_BOOKING_TIMES_KEY)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return [];
+  const setting = data.setting_value as { value?: unknown } | null;
+  return parseDisabledBookingTimes(setting?.value);
 }

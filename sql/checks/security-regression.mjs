@@ -1390,6 +1390,93 @@ try {
   );
 
   await check(
+    "disabled start times are tenant-scoped, student-only, and preserve existing schedules",
+    async () => {
+      const start = await nextBooking();
+      const day = (
+        await db.query(
+          "SELECT to_char($1::timestamptz AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day",
+          [start],
+        )
+      ).rows[0].day;
+      // An existing reservation survives closing that start time.
+      await db.query(
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours')",
+        [orgA, managedStudent, start],
+      );
+      await asRole("authenticated", adminA);
+      await db.query(
+        "INSERT INTO settings(organization_id,setting_key,setting_value) VALUES ($1,'disabled_booking_start_times',$2::jsonb) ON CONFLICT(organization_id,setting_key) DO UPDATE SET setting_value=excluded.setting_value",
+        [orgA, JSON.stringify({ value: ["09:00", "20:00"] })],
+      );
+      await asRole("authenticated", studentA);
+      const setting = await db.query(
+        "SELECT organization_id FROM settings WHERE setting_key='disabled_booking_start_times'",
+      );
+      assert.deepEqual(
+        setting.rows.map((row) => row.organization_id),
+        [orgA],
+      );
+      assert.equal(
+        (
+          await db.query("SELECT * FROM schedules WHERE student_id=$1", [
+            managedStudent,
+          ])
+        ).rows.length,
+        0,
+      ); // other student's data remains private
+      assert.equal(
+        (
+          await db.query(
+            "UPDATE settings SET setting_value='{}' WHERE setting_key='disabled_booking_start_times' RETURNING *",
+          )
+        ).rows.length,
+        0,
+      );
+      await blocked(bookSql, [orgA, 1, start], /schedule_time_disabled/);
+      const sql =
+        "SELECT * FROM get_student_booking_availability($1,$2::date,$3)";
+      for (const hours of [3, 6, 9]) {
+        const slots = (await db.query(sql, [orgA, day, hours])).rows;
+        assert.equal(slots[0].reason, "disabled");
+        assert.equal(slots.at(-1).reason, "disabled");
+        assert.equal(slots[1].available, true); // only starting at 09:00 is closed
+      }
+      await asRole("authenticated", studentB);
+      assert.equal(
+        (await db.query(sql, [orgB, day, 3])).rows[0].available,
+        true,
+      );
+      await asRole("authenticated", adminA);
+      const inserted = await db.query(
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours') RETURNING schedule_id",
+        [orgA, studentA, start],
+      );
+      assert.ok(inserted.rows[0].schedule_id);
+      await db.query(
+        "UPDATE schedules SET start_time=start_time+interval '1 day',end_time=end_time+interval '1 day' WHERE schedule_id=$1",
+        [inserted.rows[0].schedule_id],
+      );
+      await asRole("postgres");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT * FROM schedules WHERE student_id=$1 AND start_time=$2",
+            [managedStudent, start],
+          )
+        ).rows.length,
+        1,
+      );
+      await db.query(
+        "UPDATE settings SET setting_value=$2::jsonb WHERE organization_id=$1 AND setting_key='disabled_booking_start_times'",
+        [orgA, JSON.stringify({ value: [] })],
+      );
+      await asRole("authenticated", studentA);
+      assert.ok((await db.query(bookSql, [orgA, 1, start])).rows[0].id);
+    },
+  );
+
+  await check(
     "student class and instructor history stay within their tenant and own schedules",
     async () => {
       await db.query("UPDATE programs SET instructor_id=1 WHERE program_id=1");

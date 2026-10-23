@@ -1,0 +1,43 @@
+{
+  "mode": "apply",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "at": "2026-10-23T08:38:02.182Z",
+  "migration": "0022_student_booking_times",
+  "hash": "d11954c7ed07c32e6216c83af9abf2b8196c2a6c0c9770720dbc00e9e2a51e2c",
+  "alreadyApplied": false,
+  "applied": true,
+  "businessDataUnchanged": true,
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1452
+  },
+  "verification": {
+    "functions": [
+      {
+        "name": "guard_schedule_write",
+        "securityDefiner": true
+      },
+      {
+        "name": "get_student_booking_availability",
+        "securityDefiner": true
+      }
+    ],
+    "privileges": {
+      "anon_availability": false,
+      "student_availability": true,
+      "student_guard": false
+    },
+    "policies": [
+      {
+        "policyname": "public-select-org-settings-policy",
+        "qual": "(is_org_member(organization_id) AND (setting_key = ANY (ARRAY['max_concurrent_students'::text, 'schedule_duration_hours'::text, 'time_slot_interval_minutes'::text, 'disabled_booking_start_times'::text])))"
+      }
+    ],
+    "studentRead": {
+      "availabilitySlots": 23,
+      "disabledTimesMatch": true,
+      "settingsRead": true
+    }
+  }
+}
