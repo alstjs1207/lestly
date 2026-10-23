@@ -4,7 +4,10 @@ import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-import { updateSetting } from "~/features/app-settings/queries";
+import {
+  DISABLED_BOOKING_TIMES_KEY,
+  disabledBookingTimesFromForm,
+} from "~/features/app-settings/booking-times";
 import { SETTING_KEYS } from "~/features/app-settings/schema";
 
 import { requireAdminRole } from "../../guards.server";
@@ -42,25 +45,40 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  // Update settings
+  let disabledTimes: string[];
   try {
-    await Promise.all([
-      updateSetting(client, {
-        organizationId,
-        key: SETTING_KEYS.MAX_CONCURRENT_STUDENTS,
-        value: { value: maxConcurrentStudents },
-      }),
-      updateSetting(client, {
-        organizationId,
-        key: SETTING_KEYS.SCHEDULE_DURATION_HOURS,
-        value: { value: scheduleDurationHours },
-      }),
-      updateSetting(client, {
-        organizationId,
-        key: SETTING_KEYS.TIME_SLOT_INTERVAL_MINUTES,
-        value: { value: timeSlotIntervalMinutes },
-      }),
-    ]);
+    disabledTimes = disabledBookingTimesFromForm(formData);
+  } catch {
+    return data({ error: "신청 가능 시간을 확인해 주세요." }, { status: 400 });
+  }
+
+  try {
+    const { error } = await client.from("settings").upsert(
+      [
+        {
+          organization_id: organizationId,
+          setting_key: SETTING_KEYS.MAX_CONCURRENT_STUDENTS,
+          setting_value: { value: maxConcurrentStudents },
+        },
+        {
+          organization_id: organizationId,
+          setting_key: SETTING_KEYS.SCHEDULE_DURATION_HOURS,
+          setting_value: { value: scheduleDurationHours },
+        },
+        {
+          organization_id: organizationId,
+          setting_key: SETTING_KEYS.TIME_SLOT_INTERVAL_MINUTES,
+          setting_value: { value: timeSlotIntervalMinutes },
+        },
+        {
+          organization_id: organizationId,
+          setting_key: DISABLED_BOOKING_TIMES_KEY,
+          setting_value: { value: disabledTimes },
+        },
+      ],
+      { onConflict: "organization_id,setting_key" },
+    );
+    if (error) throw error;
   } catch (error) {
     console.error("Failed to update settings", error);
     return data(

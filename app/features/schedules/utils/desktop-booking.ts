@@ -4,6 +4,7 @@ import { generateTimeSlots } from "./student-schedule-rules.ts";
 
 export interface BookingAvailability {
   key: string;
+  disabledTimes?: string[];
   slots:
     | {
         start_time: string;
@@ -32,31 +33,44 @@ export function desktopBookingSlots(
 ) {
   const current = availability?.key === `${date}:${hours}`;
   const slots = current ? availability.slots : null;
-  return generateTimeSlots(30).map(({ value: time }) => {
-    let reason = bookingSlotReason(date, time, hours, course, schedules, now);
-    let label = reason?.includes("지난")
-      ? "지난 시간"
-      : reason?.includes("겹")
-        ? "내 수업"
-        : reason
-          ? "예약 불가"
-          : null;
-    const slot = slots?.find((s) => formatLearningTime(s.start_time) === time);
-    if (!reason && slots && !slot) {
-      reason = "예약 가능 여부를 확인할 수 없는 시간이에요.";
-      label = "확인 불가";
-    } else if (!reason && slot && !slot.available) {
-      const reasons: Record<string, [string, string]> = {
-        past: ["이미 지난 시작 시각이에요.", "지난 시간"],
-        outside_course: ["수강 기간 밖의 날짜예요.", "예약 불가"],
-        student_conflict: ["내 다른 수업과 겹쳐요.", "내 수업"],
-        capacity: ["정원이 찼어요.", "정원 마감"],
-      };
-      [reason, label] = reasons[slot.reason ?? ""] ?? [
-        "예약할 수 없는 시간이에요.",
-        "예약 불가",
-      ];
-    }
-    return { time, reason, label };
-  });
+  const disabledTimes = current ? (availability.disabledTimes ?? []) : [];
+  return generateTimeSlots(30)
+    .filter(
+      ({ value: time }) =>
+        !disabledTimes.includes(time) &&
+        !slots?.some(
+          (slot) =>
+            formatLearningTime(slot.start_time) === time &&
+            slot.reason === "disabled",
+        ),
+    )
+    .map(({ value: time }) => {
+      let reason = bookingSlotReason(date, time, hours, course, schedules, now);
+      let label = reason?.includes("지난")
+        ? "지난 시간"
+        : reason?.includes("겹")
+          ? "내 수업"
+          : reason
+            ? "예약 불가"
+            : null;
+      const slot = slots?.find(
+        (s) => formatLearningTime(s.start_time) === time,
+      );
+      if (!reason && slots && !slot) {
+        reason = "예약 가능 여부를 확인할 수 없는 시간이에요.";
+        label = "확인 불가";
+      } else if (!reason && slot && !slot.available) {
+        const reasons: Record<string, [string, string]> = {
+          past: ["이미 지난 시작 시각이에요.", "지난 시간"],
+          outside_course: ["수강 기간 밖의 날짜예요.", "예약 불가"],
+          student_conflict: ["내 다른 수업과 겹쳐요.", "내 수업"],
+          capacity: ["정원이 찼어요.", "정원 마감"],
+        };
+        [reason, label] = reasons[slot.reason ?? ""] ?? [
+          "예약할 수 없는 시간이에요.",
+          "예약 불가",
+        ];
+      }
+      return { time, reason, label };
+    });
 }

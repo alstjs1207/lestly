@@ -13,9 +13,14 @@ import {
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import makeServerClient from "~/core/lib/supa-client.server";
+import {
+  DISABLED_BOOKING_TIMES_KEY,
+  parseDisabledBookingTimes,
+} from "~/features/app-settings/booking-times";
 import { getAllSettings } from "~/features/app-settings/queries";
 import { DEFAULT_SETTINGS, SETTING_KEYS } from "~/features/app-settings/schema";
 
+import { BookingTimeSettings } from "../components/booking-time-settings";
 import { requireAdminRole } from "../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -27,11 +32,22 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Convert to a map for easy access
   const settingsMap: Record<string, number> = {};
   settings.forEach((setting) => {
-    const value = setting.setting_value as { value: number };
-    settingsMap[setting.setting_key] = value.value;
+    const value = setting.setting_value as { value?: unknown } | null;
+    if (typeof value?.value === "number") {
+      settingsMap[setting.setting_key] = value.value;
+    }
   });
 
+  const bookingSetting = settings.find(
+    (setting) => setting.setting_key === DISABLED_BOOKING_TIMES_KEY,
+  );
+  const disabledBookingTimes = bookingSetting
+    ? parseDisabledBookingTimes(
+        (bookingSetting.setting_value as { value: unknown }).value,
+      )
+    : [];
   return {
+    disabledBookingTimes,
     maxConcurrentStudents:
       settingsMap[SETTING_KEYS.MAX_CONCURRENT_STUDENTS] ??
       DEFAULT_SETTINGS[SETTING_KEYS.MAX_CONCURRENT_STUDENTS].value,
@@ -49,6 +65,7 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
     maxConcurrentStudents,
     scheduleDurationHours,
     timeSlotIntervalMinutes,
+    disabledBookingTimes,
   } = loaderData;
   const fetcher = useFetcher<{ error?: string }>();
   const isSubmitting = fetcher.state !== "idle";
@@ -132,6 +149,12 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
                 </p>
               </div>
             </div>
+
+            <BookingTimeSettings
+              key={disabledBookingTimes.join(",")}
+              disabledTimes={disabledBookingTimes}
+              busy={isSubmitting}
+            />
 
             <div className="flex justify-end">
               <Button type="submit" disabled={isSubmitting}>

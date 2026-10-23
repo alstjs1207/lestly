@@ -155,6 +155,13 @@
       "when": 1792710000000,
       "tag": "0021_student_learning_experience",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792743782506,
+      "tag": "0022_student_booking_times",
+      "breakpoints": true
     }
   ]
 }

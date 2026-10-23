@@ -114,6 +114,8 @@ export async function action({ request }: Route.ActionArgs) {
     const errors: Record<string, string> = {
       schedule_date_not_allowed:
         "예약 가능한 날짜와 시작 시각을 다시 확인해주세요.",
+      schedule_time_disabled:
+        "이 시작 시간은 현재 신청할 수 없습니다. 다른 시간을 선택해주세요.",
       schedule_time_not_allowed:
         "시작 시간은 09:00~20:00, 수업 시간은 3·6·9시간 중 선택해주세요.",
       schedule_student_conflict: "이미 같은 시간대에 등록한 일정이 있습니다.",
