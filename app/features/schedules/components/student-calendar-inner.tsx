@@ -1,7 +1,8 @@
-import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import { useEffect, useRef } from "react";
 
 interface StudentCalendarInnerProps {
   events: Array<{
@@ -14,8 +15,8 @@ interface StudentCalendarInnerProps {
       programTitle: string | null;
     };
   }>;
-  allowedStartDate: string;
-  allowedEndDate: string;
+  initialDate?: string;
+  onMonthChange?: (date: Date) => void;
   onDateClick: (arg: { date: Date }) => void;
   onEventClick: (arg: {
     event: {
@@ -30,16 +31,32 @@ interface StudentCalendarInnerProps {
 
 export default function StudentCalendarInner({
   events,
-  allowedStartDate,
-  allowedEndDate,
+  initialDate,
+  onMonthChange,
   onDateClick,
   onEventClick,
 }: StudentCalendarInnerProps) {
+  const calendarRef = useRef<FullCalendar>(null);
+  useEffect(() => {
+    if (!initialDate) return;
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    const current = api.getDate();
+    const target = new Date(`${initialDate}T00:00:00`);
+    if (
+      current.getFullYear() !== target.getFullYear() ||
+      current.getMonth() !== target.getMonth()
+    )
+      api.gotoDate(initialDate);
+  }, [initialDate]);
   return (
     <>
       <FullCalendar
+        ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
+        initialDate={initialDate}
+        datesSet={(arg) => onMonthChange?.(arg.view.calendar.getDate())}
         headerToolbar={{
           left: "prev,next today",
           center: "title",
@@ -54,9 +71,10 @@ export default function StudentCalendarInner({
           month: "월",
           week: "주",
         }}
-        validRange={{
-          start: allowedStartDate,
-          end: allowedEndDate,
+        buttonHints={{
+          prev: "이전 기간",
+          next: "다음 기간",
+          today: "오늘로 이동",
         }}
         allDaySlot={false}
         slotMinTime="09:00:00"

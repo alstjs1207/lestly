@@ -139,6 +139,7 @@ export default [
         route("/payments", "features/payments/screens/payments.tsx"),
       ]),
       route("/account", "features/users/screens/account.tsx"),
+      route("/learning-records", "features/users/screens/learning-records.tsx"),
     ]),
   ]),
 
@@ -256,6 +257,7 @@ export default [
   // Student Schedule API Routes
   ...prefix("/api/schedules", [
     route("/create", "features/schedules/api/create-schedule.tsx"),
+    route("/availability", "features/schedules/api/booking-availability.tsx"),
     route("/:scheduleId/delete", "features/schedules/api/delete-schedule.tsx"),
   ]),
 

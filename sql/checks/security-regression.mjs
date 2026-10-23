@@ -1294,6 +1294,134 @@ try {
     },
   );
 
+  await check(
+    "completed-hour aggregates exclude an ongoing class and retain tenant RLS",
+    async () => {
+      await db.query(
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,now()-interval '1 hour',now()+interval '2 hours')",
+        [orgA, studentA],
+      );
+      await asRole("authenticated", studentA);
+      for (const fn of [
+        "get_student_completed_hours",
+        "get_student_total_hours",
+      ]) {
+        const result = await db.query(`SELECT * FROM ${fn}($1)`, [
+          [studentA, studentB],
+        ]);
+        assert.deepEqual(result.rows, [
+          { student_id: studentA, total_hours: 1 },
+        ]);
+      }
+      await asRole("anon");
+      await blocked(
+        "SELECT * FROM get_student_completed_hours($1)",
+        [[studentA]],
+        /permission denied/,
+      );
+    },
+  );
+
+  await check(
+    "booking availability exposes only flags and matches conflict, capacity and course guards",
+    async () => {
+      const start = await nextBooking();
+      const day = (
+        await db.query(
+          "SELECT to_char($1::timestamptz AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day",
+          [start],
+        )
+      ).rows[0].day;
+      const sql =
+        "SELECT * FROM get_student_booking_availability($1,$2::date,$3)";
+      await asRole("anon");
+      await blocked(sql, [orgA, day, 3], /permission denied/);
+      await asRole("authenticated", studentA);
+      await blocked(sql, [orgB, day, 3], /schedule_not_authorized/);
+      await blocked(sql, [orgA, day, 4], /schedule_date_not_allowed/);
+      await blocked(sql, [orgA, "2099-01-01", 3], /schedule_date_not_allowed/);
+      let result = await db.query(sql, [orgA, day, 3]);
+      assert.equal(result.rows.length, 23);
+      assert.deepEqual(Object.keys(result.rows[0]).sort(), [
+        "available",
+        "reason",
+        "start_time",
+      ]);
+      assert.ok(result.rows.every((row) => row.available));
+      await db.query(bookSql, [orgA, 1, start]);
+      result = await db.query(sql, [orgA, day, 3]);
+      assert.equal(result.rows[0].reason, "student_conflict");
+      assert.equal(result.rows[6].available, true); // back-to-back 12:00 is allowed
+      await asRole("postgres");
+      await db.query(
+        "DELETE FROM schedules WHERE student_id=$1 AND start_time=$2",
+        [studentA, start],
+      );
+      await db.query(
+        "INSERT INTO settings(organization_id,setting_key,setting_value) VALUES ($1,'max_concurrent_students','{\"value\":1}') ON CONFLICT(organization_id,setting_key) DO UPDATE SET setting_value=excluded.setting_value",
+        [orgA],
+      );
+      await db.query(
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours')",
+        [orgA, managedStudent, start],
+      );
+      await asRole("authenticated", studentA);
+      result = await db.query(sql, [orgA, day, 3]);
+      assert.equal(result.rows[0].reason, "capacity");
+      await asRole("postgres");
+      await db.query(
+        "UPDATE profiles SET class_end_date='2020-01-01' WHERE profile_id=$1",
+        [studentA],
+      );
+      await asRole("authenticated", studentA);
+      assert.ok(
+        (await db.query(sql, [orgA, day, 3])).rows.every(
+          (row) => row.reason === "outside_course",
+        ),
+      );
+      await asRole("postgres");
+      await db.query(
+        "UPDATE organization_members SET state='GRADUATE' WHERE profile_id=$1",
+        [studentA],
+      );
+      await asRole("authenticated", studentA);
+      await blocked(sql, [orgA, day, 3], /schedule_not_authorized/);
+    },
+  );
+
+  await check(
+    "student class and instructor history stay within their tenant and own schedules",
+    async () => {
+      await db.query("UPDATE programs SET instructor_id=1 WHERE program_id=1");
+      await asRole("authenticated", studentA);
+      const instructors = await db.query("SELECT name FROM instructors");
+      assert.deepEqual(instructors.rows, [{ name: "Instructor A" }]);
+      await asRole("postgres");
+      await db.query(
+        "UPDATE programs SET status='ARCHIVED' WHERE program_id=1",
+      );
+      await asRole("authenticated", studentA);
+      assert.deepEqual((await db.query("SELECT name FROM instructors")).rows, [
+        { name: "Instructor A" },
+      ]);
+      assert.deepEqual(
+        (await db.query("SELECT title FROM programs WHERE status='ARCHIVED'"))
+          .rows,
+        [{ title: "Program A" }],
+      );
+      await asRole("authenticated", studentB);
+      assert.equal(
+        (await db.query("SELECT name FROM instructors")).rows.length,
+        0,
+      );
+      assert.equal(
+        (await db.query("SELECT title FROM programs WHERE status='ARCHIVED'"))
+          .rows.length,
+        0,
+      );
+    },
+  );
+
   console.log(
     `SQL security regression: ${passed} checks passed; migrations from ${fileURLToPath(migrationRoot)}`,
   );

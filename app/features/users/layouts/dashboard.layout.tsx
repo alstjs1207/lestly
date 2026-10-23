@@ -1,20 +1,12 @@
 import type { Route } from "./+types/dashboard.layout";
 
-import { Outlet } from "react-router";
-
-import ThemeSwitcher from "~/core/components/theme-switcher";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "~/core/components/ui/sidebar";
 import makeServerClient, {
   getSessionUser,
 } from "~/core/lib/supa-client.server";
 import { getUserOrganizations } from "~/features/organizations/queries";
 import { getUserProfile } from "~/features/users/queries";
 
-import DashboardSidebar from "../components/dashboard-sidebar";
+import { StudentDashboardShell } from "../components/student-dashboard-shell";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
@@ -22,8 +14,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // 사용자의 조직 정보 조회
   let organizationName = null;
+  let profileName = "";
   if (user) {
     const profile = await getUserProfile(client, { userId: user.id });
+    profileName = profile?.name ?? "";
     const orgs = await getUserOrganizations(client, {
       profileId: profile?.profile_id || user.id,
     });
@@ -35,34 +29,20 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     user,
     organizationName,
+    profileName,
   };
 }
 
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
-  const { user, organizationName } = loaderData;
+  const { user, organizationName, profileName } = loaderData;
   return (
-    <SidebarProvider>
-      <DashboardSidebar
-        user={{
-          name: user?.user_metadata.name ?? "",
-          avatarUrl: user?.user_metadata.avatar_url ?? "",
-          email: user?.email,
-        }}
-      />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            {organizationName && (
-              <span className="text-lg font-semibold">{organizationName}</span>
-            )}
-          </div>
-          <div className="ml-auto flex items-center gap-2 px-4">
-            <ThemeSwitcher />
-          </div>
-        </header>
-        <Outlet />
-      </SidebarInset>
-    </SidebarProvider>
+    <StudentDashboardShell
+      organizationName={organizationName}
+      user={{
+        name: profileName || user?.user_metadata.name || "수강생",
+        avatarUrl: user?.user_metadata.avatar_url || "",
+        email: user?.email,
+      }}
+    />
   );
 }

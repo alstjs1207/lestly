@@ -3,7 +3,7 @@
  *
  * Business logic for student schedule registration and cancellation rules.
  */
-import { fromKST, nowKST, toKST } from "./kst";
+import { fromKST, nowKST, toKST } from "./kst.ts";
 
 /**
  * Check if a student can register a schedule for a given date
@@ -46,7 +46,8 @@ export function canStudentCancelSchedule(scheduleDate: Date): boolean {
 
   // Compare KST dates (year * 10000 + month * 100 + day for simple comparison)
   const todayValue = now.year * 10000 + now.month * 100 + now.day;
-  const scheduleValue = schedule.year * 10000 + schedule.month * 100 + schedule.day;
+  const scheduleValue =
+    schedule.year * 10000 + schedule.month * 100 + schedule.day;
 
   // Can only cancel if the schedule is after today
   return scheduleValue > todayValue;
@@ -57,7 +58,10 @@ export function canStudentCancelSchedule(scheduleDate: Date): boolean {
  *
  * Returns the start and end dates that a student can register schedules for.
  */
-export function getStudentAllowedDateRange(): { startDate: Date; endDate: Date } {
+export function getStudentAllowedDateRange(): {
+  startDate: Date;
+  endDate: Date;
+} {
   const now = nowKST();
 
   // Start date is always the first of the current month (KST)
@@ -86,8 +90,8 @@ export function generateTimeSlots(
   intervalMinutes: number = 30,
 ): { label: string; value: string }[] {
   const slots: { label: string; value: string }[] = [];
-  const startHour = 9;  // 09:00 시작
-  const endHour = 20;   // 20:00 까지 (마지막 시작 시간)
+  const startHour = 9; // 09:00 시작
+  const endHour = 20; // 20:00 까지 (마지막 시작 시간)
 
   for (let hour = startHour; hour <= endHour; hour++) {
     for (let minute = 0; minute < 60; minute += intervalMinutes) {

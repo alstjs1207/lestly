@@ -12,6 +12,8 @@ import {
   parseDateString,
 } from "~/features/schedules/utils/student-schedule-rules";
 
+import { toKSTDateString } from "../utils/kst";
+
 export async function action({ request }: Route.ActionArgs) {
   requireMethod("POST")(request);
 
@@ -78,7 +80,7 @@ export async function action({ request }: Route.ActionArgs) {
   const date = parseDateString(dateStr);
 
   // Check if student can register for this date
-  if (!canStudentRegisterSchedule(date)) {
+  if (toKSTDateString(date) !== dateStr || !canStudentRegisterSchedule(date)) {
     return data(
       { success: false, error: "해당 날짜에는 스케쥴을 등록할 수 없습니다." },
       { status: 400 },
@@ -95,7 +97,7 @@ export async function action({ request }: Route.ActionArgs) {
   const endTime = calculateEndTime(startTime, durationHours);
 
   // Check if schedule is in the past
-  if (startTime < new Date()) {
+  if (startTime <= new Date()) {
     return data(
       { success: false, error: "과거 날짜에는 스케쥴을 등록할 수 없습니다." },
       { status: 400 },
@@ -110,6 +112,10 @@ export async function action({ request }: Route.ActionArgs) {
   });
   if (error) {
     const errors: Record<string, string> = {
+      schedule_date_not_allowed:
+        "예약 가능한 날짜와 시작 시각을 다시 확인해주세요.",
+      schedule_time_not_allowed:
+        "시작 시간은 09:00~20:00, 수업 시간은 3·6·9시간 중 선택해주세요.",
       schedule_student_conflict: "이미 같은 시간대에 등록한 일정이 있습니다.",
       schedule_capacity_exceeded: "동시간대 정원이 찼습니다.",
       schedule_outside_course: "수강 기간에 포함된 날짜를 선택해주세요.",
