@@ -9,9 +9,11 @@ import { Textarea } from "~/core/components/ui/textarea";
 
 interface InstructorFormProps {
   mode: "create" | "edit";
+  pushAccounts: { profile_id: string; name: string }[];
   defaultValues?: {
     instructor_id?: number;
     name?: string;
+    push_profile_id?: string;
     info?: string;
     photo_url?: string;
     career?: string[];
@@ -21,6 +23,7 @@ interface InstructorFormProps {
 
 export default function InstructorForm({
   mode,
+  pushAccounts,
   defaultValues,
 }: InstructorFormProps) {
   const fetcher = useFetcher<{ error?: string }>();
@@ -152,6 +155,37 @@ export default function InstructorForm({
               className="hidden"
               onChange={handleFileChange}
             />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="push_profile_id">예약·취소 알림을 받을 계정</Label>
+            <select
+              id="push_profile_id"
+              name="push_profile_id"
+              defaultValue={defaultValues?.push_profile_id ?? ""}
+              className="border-input bg-background flex h-11 w-full rounded-md border px-3 text-sm"
+            >
+              <option value="">연결하지 않음</option>
+              {defaultValues?.push_profile_id &&
+                !pushAccounts.some(
+                  (account) =>
+                    account.profile_id === defaultValues.push_profile_id,
+                ) && (
+                  <option value={defaultValues.push_profile_id}>
+                    현재 연결 계정 (연결 해제 또는 변경 필요)
+                  </option>
+                )}
+              {pushAccounts.map((account) => (
+                <option key={account.profile_id} value={account.profile_id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-muted-foreground text-sm">
+              담당 강사가 사용하는 관리자 계정을 연결해 주세요. 해당 계정으로
+              로그인한 기기의 계정 설정에서 푸시 알림을 켜면 수강생의 예약·취소
+              알림을 받습니다.
+            </p>
           </div>
 
           <div className="space-y-2 md:col-span-2">

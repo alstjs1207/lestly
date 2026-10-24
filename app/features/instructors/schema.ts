@@ -18,6 +18,7 @@ import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
 import { organizations } from "~/features/organizations/schema";
+import { profiles } from "~/features/users/schema";
 
 /**
  * Instructors Table
@@ -37,6 +38,10 @@ export const instructors = pgTable(
     name: text().notNull(),
     info: text(),
     photo_url: text("photo_url"),
+    push_profile_id: uuid("push_profile_id").references(
+      () => profiles.profile_id,
+      { onDelete: "set null" },
+    ),
     career: jsonb().default([]),
     sns: jsonb().default({}),
     ...timestamps,

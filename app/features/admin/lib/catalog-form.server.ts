@@ -27,6 +27,10 @@ function jsonInput(value: unknown) {
 
 const instructorSchema = z.object({
   name: z.string().trim().min(1, "강사명을 입력해 주세요."),
+  push_profile_id: z.preprocess(
+    (value) => (value === "" || value == null ? null : value),
+    z.string().uuid().nullable(),
+  ),
   info: optionalText,
   career: z.preprocess(
     jsonInput,
@@ -104,6 +108,7 @@ export function getCatalogFormError(error: z.ZodError) {
   const field = error.issues[0]?.path[0];
   const messages: Record<string, string> = {
     name: "강사명을 입력해 주세요.",
+    push_profile_id: "알림을 받을 강사 계정을 선택해 주세요.",
     title: "클래스명을 입력해 주세요.",
     career: "경력은 문자열 배열로 입력해 주세요.",
     curriculum: "커리큘럼은 회차, 제목, 설명이 포함된 배열로 입력해 주세요.",

@@ -48,6 +48,7 @@ import { themeSessionResolver } from "./core/lib/theme-session.server";
 import { cn } from "./core/lib/utils";
 import NotFound from "./core/screens/404";
 import AppError from "./core/screens/app-error";
+import { PushSessionSync } from "./features/notifications/components/push-session-sync";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico" },
@@ -206,6 +207,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
       </head>
       <body className="h-full">
         {children}
+        <PushSessionSync />
         <Toaster richColors position="bottom-right" />
         <ScrollRestoration nonce={data?.nonce} />
         <Scripts nonce={data?.nonce} />

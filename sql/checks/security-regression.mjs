@@ -4,12 +4,45 @@
 // pgmq APIs are stubbed. Delivery, scheduling, and multi-connection contention
 // must be checked in a separate Supabase staging environment.
 import { PGlite } from "@electric-sql/pglite";
+import { sql as drizzleSql } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
+import { loadMockedModule } from "../../tests/helpers/mocked-module.ts";
+
 const migrationRoot = new URL("../migrations/", import.meta.url);
 const db = new PGlite();
+const dialect = new PgDialect();
+const pushStore = loadMockedModule(
+  new URL(
+    "../../app/features/notifications/push/store.server.ts",
+    import.meta.url,
+  ),
+  {
+    "drizzle-orm": { sql: drizzleSql },
+    "~/core/db/drizzle-client.server": {
+      default: {
+        async execute(query) {
+          const { sql, params } = dialect.sqlToQuery(query);
+          return (await db.query(sql, params)).rows;
+        },
+        async transaction(run) {
+          await db.exec("SAVEPOINT push_store_transaction");
+          try {
+            const result = await run(this);
+            await db.exec("RELEASE SAVEPOINT push_store_transaction");
+            return result;
+          } catch (error) {
+            await db.exec("ROLLBACK TO SAVEPOINT push_store_transaction");
+            throw error;
+          }
+        },
+      },
+    },
+  },
+);
 const orgA = "10000000-0000-0000-0000-000000000001";
 const orgB = "10000000-0000-0000-0000-000000000002";
 const adminA = "00000000-0000-0000-0000-000000000001";
@@ -1505,6 +1538,307 @@ try {
         (await db.query("SELECT title FROM programs WHERE status='ARCHIVED'"))
           .rows.length,
         0,
+      );
+    },
+  );
+
+  const pushDeviceA = "20000000-0000-0000-0000-000000000001";
+  const pushDeviceB = "20000000-0000-0000-0000-000000000002";
+  const browserSubscription = (suffix = "a") => ({
+    endpoint: `https://fcm.googleapis.com/fcm/send/${suffix}`,
+    keys: { p256dh: "B".repeat(87), auth: "A".repeat(22) },
+  });
+  async function seedPush() {
+    await db.query(
+      "UPDATE instructors SET push_profile_id=$1 WHERE instructor_id=1",
+      [adminA],
+    );
+    await db.exec("UPDATE programs SET instructor_id=1 WHERE program_id=1");
+    await pushStore.savePushSubscription(
+      orgA,
+      adminA,
+      pushDeviceA,
+      browserSubscription(),
+    );
+    await pushStore.savePushSubscription(
+      orgA,
+      adminA,
+      pushDeviceB,
+      browserSubscription("b"),
+    );
+    await pushStore.savePushSubscription(
+      orgB,
+      adminB,
+      "20000000-0000-0000-0000-000000000003",
+      browserSubscription("foreign"),
+    );
+  }
+  async function bookWithPush() {
+    await asRole("authenticated", studentA);
+    const id = (await db.query(bookSql, [orgA, 1, await nextBooking()])).rows[0]
+      .id;
+    await asRole("postgres");
+    return Number(id);
+  }
+
+  await check(
+    "Web Push records student booking and cancellation atomically without AlimTalk/email templates",
+    async () => {
+      await seedPush();
+      const id = await bookWithPush();
+      const events = (await db.query("SELECT * FROM push_events")).rows;
+      assert.equal(events.length, 1);
+      assert.equal(events[0].recipient_profile_id, adminA);
+      assert.equal(events[0].actor_profile_id, studentA);
+      assert.equal(events[0].event_type, "BOOKED");
+      assert.equal(
+        (await db.query("SELECT * FROM push_deliveries")).rows.length,
+        2,
+      );
+      await asRole("authenticated", studentA);
+      await blocked(
+        "SELECT endpoint FROM push_subscriptions",
+        [],
+        /permission denied/,
+      );
+      await blocked(
+        "UPDATE push_events SET recipient_profile_id=$1",
+        [studentA],
+        /permission denied/,
+      );
+      await db.query("DELETE FROM schedules WHERE schedule_id=$1", [id]);
+      await asRole("postgres");
+      assert.equal(
+        (await db.query("SELECT * FROM schedules WHERE schedule_id=$1", [id]))
+          .rows.length,
+        0,
+      );
+      const cancel = (
+        await db.query("SELECT * FROM push_events WHERE event_type='CANCELLED'")
+      ).rows[0];
+      assert.equal(cancel.recipient_profile_id, adminA);
+      assert.match(cancel.body, /Program A.*취소/);
+      assert.equal(
+        (await db.query("SELECT * FROM push_deliveries")).rows.length,
+        4,
+      );
+      assert.equal(
+        (
+          await db.query("SELECT * FROM notifications WHERE schedule_id=$1", [
+            id,
+          ])
+        ).rows.length,
+        0,
+      );
+      // Uncommitted schedule and outbox changes roll back together.
+      await db.exec("SAVEPOINT push_rollback");
+      await bookWithPush();
+      await db.exec("ROLLBACK TO SAVEPOINT push_rollback");
+      assert.equal(
+        (await db.query("SELECT * FROM push_events")).rows.length,
+        2,
+      );
+    },
+  );
+
+  await check(
+    "Web Push rejects foreign/student instructor accounts and ignores admin or unassigned changes",
+    async () => {
+      await blocked(
+        "UPDATE instructors SET push_profile_id=$1 WHERE instructor_id=1",
+        [adminB],
+        /instructor_push_account_not_eligible/,
+      );
+      await blocked(
+        "UPDATE instructors SET push_profile_id=$1 WHERE instructor_id=1",
+        [studentA],
+        /instructor_push_account_not_eligible/,
+      );
+      await seedPush();
+      await asRole("authenticated", adminA);
+      const start = await nextBooking();
+      const adminSchedule = (
+        await db.query(
+          `INSERT INTO schedules(organization_id,student_id,program_id,start_time,end_time)
+      VALUES($1,$2,1,$3,$3::timestamptz+interval '3 hours') RETURNING schedule_id`,
+          [orgA, studentA, start],
+        )
+      ).rows[0];
+      await db.query("DELETE FROM schedules WHERE schedule_id=$1", [
+        adminSchedule.schedule_id,
+      ]);
+      await asRole("postgres");
+      assert.equal(
+        (await db.query("SELECT * FROM push_events")).rows.length,
+        0,
+      );
+      await db.exec(
+        "UPDATE programs SET instructor_id=NULL WHERE program_id=1",
+      );
+      await bookWithPush();
+      assert.equal(
+        (await db.query("SELECT * FROM push_events")).rows.length,
+        0,
+      );
+      await asRole("anon");
+      await blocked(
+        "SELECT * FROM push_subscriptions",
+        [],
+        /permission denied/,
+      );
+      await blocked(
+        "INSERT INTO push_deliveries DEFAULT VALUES",
+        [],
+        /permission denied/,
+      );
+    },
+  );
+
+  await check(
+    "Web Push claims do not overlap, retry with leases, and preserve per-device sent state",
+    async () => {
+      await seedPush();
+      const scheduleId = await bookWithPush();
+      assert.equal(
+        (
+          await pushStore.claimPushDeliveries({
+            scheduleId,
+            actorProfileId: studentB,
+          })
+        ).length,
+        0,
+      );
+      const claimed = await pushStore.claimPushDeliveries({
+        scheduleId,
+        actorProfileId: studentA,
+      });
+      assert.equal(claimed.length, 2);
+      assert.equal((await pushStore.claimPushDeliveries()).length, 0);
+      await pushStore.finishPushDelivery(
+        { ...claimed[0], claim_token: "90000000-0000-0000-0000-000000000001" },
+        "SENT",
+      );
+      assert.equal(
+        (
+          await db.query(
+            "SELECT status FROM push_deliveries WHERE delivery_id=$1",
+            [claimed[0].delivery_id],
+          )
+        ).rows[0].status,
+        "SENDING",
+      );
+      await pushStore.finishPushDelivery(claimed[0], "SENT");
+      await pushStore.finishPushDelivery(
+        claimed[1],
+        "PENDING",
+        "push_http_503",
+      );
+      assert.equal((await pushStore.claimPushDeliveries()).length, 0);
+      await db.exec(
+        "UPDATE push_deliveries SET next_attempt_at=now()-interval '1 second' WHERE status='PENDING'",
+      );
+      const retry = await pushStore.claimPushDeliveries();
+      assert.equal(retry.length, 1);
+      assert.equal(retry[0].attempts, 2);
+      await db.exec(
+        "UPDATE push_deliveries SET locked_until=now()-interval '1 second' WHERE status='SENDING'",
+      );
+      const recovered = await pushStore.claimPushDeliveries();
+      assert.equal(recovered[0].attempts, 3);
+      assert.notEqual(recovered[0].claim_token, retry[0].claim_token);
+      await pushStore.finishPushDelivery(retry[0], "FAILED");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT status FROM push_deliveries WHERE delivery_id=$1",
+            [recovered[0].delivery_id],
+          )
+        ).rows[0].status,
+        "SENDING",
+      );
+      await db.exec(
+        "UPDATE push_deliveries SET attempts=5,locked_until=now()-interval '1 second' WHERE status='SENDING'",
+      );
+      await pushStore.maintainPushQueue();
+      assert.equal((await pushStore.claimPushDeliveries()).length, 0);
+      assert.deepEqual(
+        (
+          await db.query("SELECT status FROM push_deliveries ORDER BY status")
+        ).rows.map((row) => row.status),
+        ["FAILED", "SENT"],
+      );
+    },
+  );
+
+  await check(
+    "Web Push rechecks account state, instructor reassignment, expiry and device account switches before sending",
+    async () => {
+      await seedPush();
+      await bookWithPush();
+      const [claim] = await pushStore.claimPushDeliveries();
+      const target = () =>
+        pushStore.getPushDeliveryTarget(claim.delivery_id, claim.claim_token);
+      assert.equal((await target()).eligible, true);
+      await db.query(
+        "UPDATE organization_members SET state='GRADUATE' WHERE profile_id=$1 AND organization_id=$2",
+        [adminA, orgA],
+      );
+      assert.equal((await target()).eligible, false);
+      await db.query(
+        "UPDATE organization_members SET state='NORMAL' WHERE profile_id=$1 AND organization_id=$2",
+        [adminA, orgA],
+      );
+      await db.query(
+        "UPDATE instructors SET push_profile_id=NULL WHERE instructor_id=1",
+      );
+      assert.ok(!(await target()).eligible);
+      await db.query(
+        "UPDATE instructors SET push_profile_id=$1 WHERE instructor_id=1",
+        [adminA],
+      );
+      await db.exec(
+        "UPDATE push_subscriptions SET expires_at=now()-interval '1 second'",
+      );
+      assert.equal((await target()).eligible, false);
+      await db.exec("UPDATE push_subscriptions SET expires_at=NULL");
+      const sub = (
+        await db.query(
+          "SELECT * FROM push_subscriptions WHERE subscription_id=$1",
+          [(await target()).subscription_id],
+        )
+      ).rows[0];
+      await pushStore.savePushSubscription(orgB, adminB, sub.device_id, {
+        endpoint: sub.endpoint,
+        keys: { p256dh: sub.p256dh, auth: sub.auth },
+      });
+      assert.equal((await target()).eligible, false);
+      await pushStore.removePushDevice(sub.device_id);
+      assert.equal(await target(), null);
+    },
+  );
+
+  await check(
+    "Web Push session reconciliation keeps the current account and detaches only the switched device",
+    async () => {
+      await seedPush();
+      await pushStore.removeStalePushDevice(pushDeviceA, adminA);
+      assert.equal(
+        await pushStore.hasPushSubscription(orgA, adminA, pushDeviceA),
+        true,
+      );
+      await pushStore.removeStalePushDevice(pushDeviceA, adminB);
+      assert.equal(
+        await pushStore.hasPushSubscription(orgA, adminA, pushDeviceA),
+        false,
+      );
+      assert.equal(
+        await pushStore.hasPushSubscription(orgA, adminA, pushDeviceB),
+        true,
+      );
+      await pushStore.removeStalePushDevice(pushDeviceB, null);
+      assert.equal(
+        await pushStore.hasPushSubscription(orgA, adminA, pushDeviceB),
+        false,
       );
     },
   );

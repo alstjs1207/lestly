@@ -44,6 +44,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       avatarUrl:
         profile?.avatar_url ?? adminUser.user.user_metadata?.avatar_url ?? "",
     },
+    pushIdentity: `${adminUser.organizationId}:${adminUser.profileId}`,
     organizationId: adminUser.organizationId,
     organizationName: organization?.name ?? "조직",
     notificationsEnabled,

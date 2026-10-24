@@ -4,6 +4,7 @@ import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { dispatchSchedulePush } from "~/features/notifications/push/dispatch.server";
 import {
   DURATION_OPTIONS,
   applyTimeToDate,
@@ -104,12 +105,15 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  const { error } = await client.rpc("book_student_schedule", {
-    p_organization_id: organizationId,
-    p_program_id: programId,
-    p_start_time: startTime.toISOString(),
-    p_end_time: endTime.toISOString(),
-  });
+  const { data: scheduleId, error } = await client.rpc(
+    "book_student_schedule",
+    {
+      p_organization_id: organizationId,
+      p_program_id: programId,
+      p_start_time: startTime.toISOString(),
+      p_end_time: endTime.toISOString(),
+    },
+  );
   if (error) {
     const errors: Record<string, string> = {
       schedule_date_not_allowed:
@@ -133,5 +137,6 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
+  if (scheduleId) await dispatchSchedulePush(scheduleId, profile.profile_id);
   return data({ success: true }, { headers });
 }

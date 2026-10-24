@@ -87,8 +87,7 @@ export function useInAppNotifications(
               );
               setUnreadCount((prev) => prev + 1);
 
-              // Optional: Browser notification
-              showBrowserNotification(newNotification.message);
+              // OS notifications are delivered independently through Web Push.
             },
           )
           .on(
@@ -181,34 +180,4 @@ export function useInAppNotifications(
     markAllAsRead,
     refresh: loadNotifications,
   };
-}
-
-/**
- * Show browser notification if permission granted
- */
-function showBrowserNotification(message: string) {
-  if (typeof window === "undefined") return;
-  if (!("Notification" in window)) return;
-
-  if (Notification.permission === "granted") {
-    new Notification("새 알림", {
-      body: message,
-      icon: "/icons/notification.png",
-    });
-  }
-}
-
-/**
- * Request browser notification permission
- */
-export async function requestNotificationPermission(): Promise<boolean> {
-  if (typeof window === "undefined") return false;
-  if (!("Notification" in window)) return false;
-
-  if (Notification.permission === "default") {
-    const permission = await Notification.requestPermission();
-    return permission === "granted";
-  }
-
-  return Notification.permission === "granted";
 }

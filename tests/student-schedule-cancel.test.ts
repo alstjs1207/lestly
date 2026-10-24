@@ -15,6 +15,7 @@ function handler({
   error?: boolean;
 } = {}) {
   let deletes = 0;
+  const pushes: unknown[][] = [];
   const filters: any[] = [];
   const client = {
     from(table: string) {
@@ -54,6 +55,11 @@ function handler({
       import.meta.url,
     ),
     {
+      "~/features/notifications/push/dispatch.server": {
+        dispatchSchedulePush: async (...args: unknown[]) => {
+          pushes.push(args);
+        },
+      },
       "react-router": {
         data: (body: unknown, init: unknown) => ({ body, init }),
         redirect: (url: string) => ({ url }),
@@ -77,6 +83,7 @@ function handler({
         params: { scheduleId: id },
       }),
     deletes: () => deletes,
+    pushes,
     filters,
   };
 }
@@ -102,6 +109,7 @@ test("cancel failures and RLS no-row results are returned inline rather than rep
   const success = handler();
   assert.equal((await success.run()).body.success, true);
   assert.equal(success.deletes(), 1);
+  assert.deepEqual(success.pushes, [[1, "stable-student"]]);
   assert.equal(
     success.filters.filter(
       (f) => f.key === "student_id" && f.value === "stable-student",

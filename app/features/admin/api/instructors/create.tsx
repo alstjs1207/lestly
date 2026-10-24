@@ -9,6 +9,7 @@ import { requireMethod } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { createInstructor } from "~/features/instructors/queries";
+import { isInstructorPushAccount } from "~/features/notifications/push/store.server";
 
 import { requireAdminRole } from "../../guards.server";
 import {
@@ -36,11 +37,18 @@ export async function action({ request }: Route.ActionArgs) {
   }
   const {
     name,
+    push_profile_id: pushProfileId,
     info,
     career,
     sns_instagram: snsInstagram,
     sns_youtube: snsYoutube,
   } = parsed.data;
+  if (!(await isInstructorPushAccount(organizationId, pushProfileId))) {
+    return data(
+      { error: "같은 학원의 활성 관리자 계정을 선택해 주세요." },
+      { status: 400, headers },
+    );
+  }
   const image = await validateCatalogImage(formData.get("photo"));
   if (!image.success) {
     return data({ error: image.error }, { status: 400, headers });
@@ -56,6 +64,7 @@ export async function action({ request }: Route.ActionArgs) {
     instructor = await createInstructor(client, {
       organization_id: organizationId,
       name,
+      push_profile_id: pushProfileId,
       info: info || null,
       photo_url: null, // 파일 업로드 후 업데이트
       career,

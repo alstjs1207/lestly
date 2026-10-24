@@ -144,7 +144,7 @@ export default async function handleRequest(
           );
           responseHeaders.set(
             "Content-Security-Policy",
-            `base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ${nonce ? `'nonce-${nonce}' 'strict-dynamic'` : ""} https://www.googletagmanager.com https://cdn.channel.io https://challenges.cloudflare.com https://*.hcaptcha.com https://js.tosspayments.com${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
+            `base-uri 'self'; object-src 'none'; frame-ancestors 'none'; worker-src 'self'; script-src 'self' ${nonce ? `'nonce-${nonce}' 'strict-dynamic'` : ""} https://www.googletagmanager.com https://cdn.channel.io https://challenges.cloudflare.com https://*.hcaptcha.com https://js.tosspayments.com${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
           );
           responseHeaders.set("X-Content-Type-Options", "nosniff");
           responseHeaders.set(
