@@ -113,8 +113,8 @@ export default function AdminDashboardScreen({
 
       <AdminSetupChecklist
         hasStudent={stats.totalStudents > 0}
-        hasProgram={stats.activeProgramCount > 0}
-        hasSchedule={stats.totalScheduleCount > 0}
+        hasProgram={stats.hasActiveProgram}
+        hasSchedule={stats.hasSchedule}
       />
 
       <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">

@@ -296,31 +296,28 @@ export async function getDashboardStats(
   const monthStart = fromKST(now.year, now.month, 1);
   const monthEnd = fromKST(now.year, now.month + 1, 1);
 
-  // Run dashboard queries in parallel so the initial setup checklist does not
-  // add extra round trips for new organizations.
+  // Only count values displayed on the home cards. The setup checklist needs
+  // existence checks; counting all historical schedules makes every home visit
+  // evaluate RLS across the entire history (twice for PostgREST exact counts).
   const [
     { count: totalStudents, error: memberError },
     { count: activeStudents, error: activeMemberError },
-    { count: graduatedStudents, error: graduatedMemberError },
-    { count: deletedStudents, error: deletedMemberError },
     { count: todayScheduleCount, error: scheduleError },
     { count: monthlyScheduleCount, error: monthlyError },
-    { count: totalScheduleCount, error: totalScheduleError },
-    { count: activeProgramCount, error: programError },
+    { data: existingSchedule, error: existingScheduleError },
+    { data: activeProgram, error: programError },
   ] = await Promise.all([
     client
       .from("organization_members")
       .select("profile_id", { count: "exact", head: true })
       .eq("organization_id", organizationId)
       .eq("role", "STUDENT"),
-    ...(["NORMAL", "GRADUATE", "DELETED"] as const).map((state) =>
-      client
-        .from("organization_members")
-        .select("profile_id", { count: "exact", head: true })
-        .eq("organization_id", organizationId)
-        .eq("role", "STUDENT")
-        .eq("state", state),
-    ),
+    client
+      .from("organization_members")
+      .select("profile_id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("role", "STUDENT")
+      .eq("state", "NORMAL"),
     client
       .from("schedules")
       .select("*", { count: "exact", head: true })
@@ -335,29 +332,31 @@ export async function getDashboardStats(
       .lt("start_time", monthEnd.toISOString()),
     client
       .from("schedules")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", organizationId),
+      .select("schedule_id")
+      .eq("organization_id", organizationId)
+      .limit(1)
+      .maybeSingle(),
     client
       .from("programs")
-      .select("*", { count: "exact", head: true })
+      .select("program_id")
       .eq("organization_id", organizationId)
-      .eq("status", "ACTIVE"),
+      .eq("status", "ACTIVE")
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (memberError) {
     throw memberError;
   }
   if (activeMemberError) throw activeMemberError;
-  if (graduatedMemberError) throw graduatedMemberError;
-  if (deletedMemberError) throw deletedMemberError;
   if (scheduleError) {
     throw scheduleError;
   }
   if (monthlyError) {
     throw monthlyError;
   }
-  if (totalScheduleError) {
-    throw totalScheduleError;
+  if (existingScheduleError) {
+    throw existingScheduleError;
   }
   if (programError) {
     throw programError;
@@ -366,11 +365,9 @@ export async function getDashboardStats(
   return {
     totalStudents: totalStudents ?? 0,
     activeStudents: activeStudents ?? 0,
-    graduatedStudents: graduatedStudents ?? 0,
-    deletedStudents: deletedStudents ?? 0,
     todayScheduleCount: todayScheduleCount ?? 0,
     monthlyScheduleCount: monthlyScheduleCount ?? 0,
-    totalScheduleCount: totalScheduleCount ?? 0,
-    activeProgramCount: activeProgramCount ?? 0,
+    hasSchedule: existingSchedule !== null,
+    hasActiveProgram: activeProgram !== null,
   };
 }

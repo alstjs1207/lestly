@@ -118,26 +118,87 @@ test("student detail joins its scoped membership and profile in one request", as
 });
 
 test("dashboard student counts remain correct above the API row cap without downloading member rows", async () => {
+  const requests: { url: URL; method: string | undefined }[] = [];
   const client = mockClient(async (input, init) => {
     const url = new URL(String(input));
-    assert.equal(init?.method, "HEAD");
+    requests.push({ url, method: init?.method });
     assert.equal(url.searchParams.get("organization_id"), "eq.org-a");
+    if (init?.method !== "HEAD") {
+      assert.equal(url.searchParams.get("limit"), "1");
+      assert.equal(
+        url.searchParams.get("select"),
+        url.pathname.endsWith("/schedules") ? "schedule_id" : "program_id",
+      );
+      assert.ok(!new Headers(init?.headers).get("Prefer")?.includes("count="));
+      if (url.pathname.endsWith("/programs"))
+        assert.equal(url.searchParams.get("status"), "eq.ACTIVE");
+      const row = url.pathname.endsWith("/schedules")
+        ? { schedule_id: 1 }
+        : { program_id: "program-a" };
+      return new Response(JSON.stringify([row]), {
+        headers: { "content-type": "application/json" },
+      });
+    }
+    // A schedule count must always have a date range, never scan all history.
+    if (url.pathname.endsWith("/schedules")) {
+      assert.ok(
+        url.searchParams.getAll("start_time").some((v) => v.startsWith("gte.")),
+      );
+      assert.ok(
+        url.searchParams.getAll("start_time").some((v) => v.startsWith("lt.")),
+      );
+    }
+    const isSchedule = url.pathname.endsWith("/schedules");
     const state = url.searchParams.get("state");
-    const count =
-      state === "eq.NORMAL"
-        ? 1200
-        : state === "eq.GRADUATE"
-          ? 100
-          : state === "eq.DELETED"
-            ? 200
-            : 1500;
+    assert.ok(state === null || state === "eq.NORMAL");
+    const count = isSchedule ? 1300 : state === "eq.NORMAL" ? 1200 : 1500;
     return new Response(null, { headers: { "content-range": `*/${count}` } });
   });
   const stats = await getDashboardStats(client, { organizationId: "org-a" });
   assert.equal(stats.totalStudents, 1500);
   assert.equal(stats.activeStudents, 1200);
-  assert.equal(stats.graduatedStudents, 100);
-  assert.equal(stats.deletedStudents, 200);
+  assert.equal(stats.todayScheduleCount, 1300);
+  assert.equal(stats.monthlyScheduleCount, 1300);
+  assert.equal(stats.hasSchedule, true);
+  assert.equal(stats.hasActiveProgram, true);
+  assert.equal(requests.length, 6);
+  assert.equal(requests.filter((r) => r.method === "HEAD").length, 4);
+});
+
+test("dashboard setup checklist handles an organization with no schedules or active programs", async () => {
+  const client = mockClient(async (_input, init) =>
+    init?.method === "HEAD"
+      ? new Response(null, { headers: { "content-range": "*/0" } })
+      : new Response("[]", { headers: { "content-type": "application/json" } }),
+  );
+  const stats = await getDashboardStats(client, { organizationId: "org-a" });
+  assert.equal(stats.totalStudents, 0);
+  assert.equal(stats.activeStudents, 0);
+  assert.equal(stats.todayScheduleCount, 0);
+  assert.equal(stats.monthlyScheduleCount, 0);
+  assert.equal(stats.hasSchedule, false);
+  assert.equal(stats.hasActiveProgram, false);
+});
+
+test("dashboard existence checks propagate database errors instead of showing incomplete setup", async () => {
+  for (const table of ["schedules", "programs"]) {
+    const client = mockClient(async (input, init) => {
+      if (init?.method === "HEAD")
+        return new Response(null, { headers: { "content-range": "*/0" } });
+      return String(input).includes(`/rest/v1/${table}`)
+        ? new Response('{"code":"42501","message":"permission denied"}', {
+            status: 403,
+            headers: { "content-type": "application/json" },
+          })
+        : new Response("[]", {
+            headers: { "content-type": "application/json" },
+          });
+    });
+    await assert.rejects(
+      getDashboardStats(client, { organizationId: "org-a" }),
+      (error: unknown) => (error as { code: string }).code === "42501",
+    );
+  }
 });
 
 test("hours aggregate receives the organization and returns totals without fetching history", async () => {
