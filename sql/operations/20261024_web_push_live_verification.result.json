@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-24T00:45:49.021Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "verification": {
+    "bookingEvent": true,
+    "cancellationSnapshot": true,
+    "onlyAssignedTeacher": true,
+    "twoDevices": true,
+    "claimedOnce": true,
+    "reassignedTeacherBlocked": true,
+    "legacyNotificationsCreated": 0,
+    "externalMessagesSent": 0
+  },
+  "allVerificationWritesRolledBack": true,
+  "temporaryTenantRemaining": false
+}
