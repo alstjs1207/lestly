@@ -1,0 +1,18 @@
+{
+  "mode": "preflight",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "appUrl": "https://lestly.io",
+  "at": "2026-10-24T00:41:17.707Z",
+  "migration": "0023_instructor_web_push",
+  "hash": "d8dbd2d4e09e8569630cc7155398bc2865d3f8fe5801c3c7ec83c9b93cf864ea",
+  "alreadyApplied": false,
+  "applied": false,
+  "businessDataUnchanged": true,
+  "existingCronJobsUnchanged": true,
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1452
+  },
+  "verification": null
+}

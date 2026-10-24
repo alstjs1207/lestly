@@ -87,6 +87,7 @@ export type Database = {
           instructor_id: number
           name: string
           organization_id: string
+          push_profile_id: string | null
           photo_url: string | null
           sns: Json | null
           updated_at: string
@@ -98,6 +99,7 @@ export type Database = {
           instructor_id?: never
           name: string
           organization_id: string
+          push_profile_id?: string | null
           photo_url?: string | null
           sns?: Json | null
           updated_at?: string
@@ -109,11 +111,19 @@ export type Database = {
           instructor_id?: never
           name?: string
           organization_id?: string
+          push_profile_id?: string | null
           photo_url?: string | null
           sns?: Json | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "instructors_push_profile_id_fkey"
+            columns: ["push_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
           {
             foreignKeyName: "instructors_organization_id_organizations_organization_id_fk"
             columns: ["organization_id"]
@@ -679,6 +689,168 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["organization_id"]
+          },
+        ]
+      }
+      push_deliveries: {
+        Row: {
+          attempts: number
+          claim_token: string | null
+          delivery_id: string
+          event_id: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          sent_at: string | null
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          attempts?: number
+          claim_token?: string | null
+          delivery_id?: string
+          event_id: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          status?: string
+          subscription_id: string
+        }
+        Update: {
+          attempts?: number
+          claim_token?: string | null
+          delivery_id?: string
+          event_id?: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_deliveries_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "push_events"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "push_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
+            referencedColumns: ["subscription_id"]
+          },
+        ]
+      }
+      push_events: {
+        Row: {
+          actor_profile_id: string
+          body: string
+          created_at: string
+          event_id: string
+          event_type: string
+          instructor_id: number
+          organization_id: string
+          recipient_profile_id: string
+          schedule_id: number
+          title: string
+        }
+        Insert: {
+          actor_profile_id: string
+          body: string
+          created_at?: string
+          event_id?: string
+          event_type: string
+          instructor_id: number
+          organization_id: string
+          recipient_profile_id: string
+          schedule_id: number
+          title: string
+        }
+        Update: {
+          actor_profile_id?: string
+          body?: string
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          instructor_id?: number
+          organization_id?: string
+          recipient_profile_id?: string
+          schedule_id?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_events_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "push_events_instructor_id_organization_id_fkey"
+            columns: ["instructor_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["instructor_id", "organization_id"]
+          },
+          {
+            foreignKeyName: "push_events_organization_id_recipient_profile_id_fkey"
+            columns: ["organization_id", "recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "profile_id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          device_id: string
+          endpoint: string
+          expires_at: string | null
+          organization_id: string
+          p256dh: string
+          profile_id: string
+          subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          device_id: string
+          endpoint: string
+          expires_at?: string | null
+          organization_id: string
+          p256dh: string
+          profile_id: string
+          subscription_id?: string
+          updated_at?: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          device_id?: string
+          endpoint?: string
+          expires_at?: string | null
+          organization_id?: string
+          p256dh?: string
+          profile_id?: string
+          subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_organization_id_profile_id_fkey"
+            columns: ["organization_id", "profile_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "profile_id"]
           },
         ]
       }

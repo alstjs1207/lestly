@@ -6,6 +6,7 @@ import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient, {
   getSessionUser,
 } from "~/core/lib/supa-client.server";
+import { dispatchSchedulePush } from "~/features/notifications/push/dispatch.server";
 import { canStudentCancelSchedule } from "~/features/schedules/utils/student-schedule-rules";
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -78,5 +79,6 @@ export async function action({ request, params }: Route.ActionArgs) {
       },
       { status: 400, headers },
     );
+  await dispatchSchedulePush(deleted.schedule_id, profile.profile_id);
   return data({ success: true }, { headers });
 }

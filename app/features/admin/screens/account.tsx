@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Await } from "react-router";
 
 import makeServerClient from "~/core/lib/supa-client.server";
+import { PushPreferences } from "~/features/notifications/components/push-preferences";
 import ChangeEmailForm from "~/features/users/components/forms/change-email-form";
 import ChangePasswordForm from "~/features/users/components/forms/change-password-form";
 import ConnectSocialAccountsForm from "~/features/users/components/forms/connect-social-accounts-form";
@@ -61,6 +62,7 @@ export default function AdminAccount({ loaderData }: Route.ComponentProps) {
           }}
         </Await>
       </Suspense>
+      <PushPreferences />
       <ChangeEmailForm email={user?.email ?? ""} />
       {user?.email && (
         <ChangePasswordForm hasPassword={hasEmailIdentity ?? false} />

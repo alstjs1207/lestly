@@ -46,9 +46,15 @@ export default [
       route("/mailer", "features/cron/api/mailer.tsx"),
       route("/alimtalk", "features/notifications/api/alimtalk-cron.tsx"),
       route("/email", "features/notifications/api/email-cron.tsx"),
+      route("/push", "features/notifications/api/push-cron.tsx"),
     ]),
     ...prefix("/notifications", [
       index("features/notifications/api/in-app-notifications.tsx"),
+      route(
+        "/push-subscription",
+        "features/notifications/api/push-subscription.tsx",
+      ),
+      route("/push-session", "features/notifications/api/push-session.tsx"),
       route("/test-send", "features/notifications/api/test-send.tsx"),
     ]),
   ]),

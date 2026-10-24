@@ -1,7 +1,7 @@
 import type { Route } from "./+types/edit";
 
-import { Link } from "react-router";
 import { ChevronLeftIcon } from "lucide-react";
+import { Link } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -13,13 +13,17 @@ import {
 } from "~/core/components/ui/card";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getInstructor } from "~/features/instructors/queries";
+import { getInstructorPushAccounts } from "~/features/notifications/push/store.server";
 
 import InstructorForm from "../../components/instructor-form";
 import { requireAdminRole } from "../../guards.server";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAdminRole(client);
+  const { organizationId } = await requireAdminRole(client);
+  const pushAccounts = Array.from(
+    await getInstructorPushAccounts(organizationId),
+  );
 
   const instructorId = parseInt(params.instructorId);
   const instructor = await getInstructor(client, { instructorId });
@@ -28,10 +32,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  return { instructor };
+  return { instructor, pushAccounts };
 }
 
-export default function InstructorEditScreen({ loaderData }: Route.ComponentProps) {
+export default function InstructorEditScreen({
+  loaderData,
+}: Route.ComponentProps) {
   const { instructor } = loaderData;
 
   return (
@@ -43,8 +49,10 @@ export default function InstructorEditScreen({ loaderData }: Route.ComponentProp
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">강사 수정</h1>
-          <p className="hidden md:block text-muted-foreground">{instructor.name}의 정보를 수정합니다.</p>
+          <h1 className="text-xl font-bold md:text-2xl">강사 수정</h1>
+          <p className="text-muted-foreground hidden md:block">
+            {instructor.name}의 정보를 수정합니다.
+          </p>
         </div>
       </div>
 
@@ -58,13 +66,17 @@ export default function InstructorEditScreen({ loaderData }: Route.ComponentProp
         <CardContent>
           <InstructorForm
             mode="edit"
+            pushAccounts={loaderData.pushAccounts}
             defaultValues={{
               instructor_id: instructor.instructor_id,
               name: instructor.name,
+              push_profile_id: instructor.push_profile_id ?? undefined,
               info: instructor.info || undefined,
               photo_url: instructor.photo_url || undefined,
               career: (instructor.career as string[]) || undefined,
-              sns: (instructor.sns as { instagram?: string; youtube?: string }) || undefined,
+              sns:
+                (instructor.sns as { instagram?: string; youtube?: string }) ||
+                undefined,
             }}
           />
         </CardContent>
