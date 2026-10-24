@@ -4,7 +4,7 @@ import test from "node:test";
 
 import {
   completedSchedules,
-  coursePeriodLabel,
+  coursePeriodSummary,
   learningHeatmap,
   scheduleTimeRange,
   sumScheduleHours,
@@ -102,12 +102,44 @@ test("same-day booking allows future slots but excludes past, conflicts and cour
 });
 
 test("course expiry and overnight end dates remain explicit", () => {
-  assert.match(coursePeriodLabel("2026-10-22", now)!, /기간 종료/);
-  assert.match(coursePeriodLabel("2026-10-23", now)!, /오늘/);
-  assert.match(coursePeriodLabel("2026-10-24", now)!, /1일 전/);
+  assert.equal(coursePeriodSummary(null, "2026-10-22", now)?.status, "expired");
+  assert.equal(
+    coursePeriodSummary(null, "2026-10-23", now)?.status,
+    "last-day",
+  );
+  assert.deepEqual(coursePeriodSummary(null, "2026-10-24", now), {
+    status: "ending",
+    days: 1,
+  });
   assert.match(
     scheduleTimeRange(row(1, "2026-10-23T11:00:00Z", "2026-10-23T20:00:00Z")),
     /20:00 — 10월 24일.*05:00/,
+  );
+});
+
+test("course period uses Korean calendar days and handles upcoming and missing dates", () => {
+  assert.deepEqual(
+    coursePeriodSummary(
+      "2026-02-01",
+      "2027-02-01",
+      new Date("2026-10-24T03:00:00Z"),
+    ),
+    { status: "active", days: 100 },
+  );
+  assert.deepEqual(coursePeriodSummary("2026-10-25", "2027-02-01", now), {
+    status: "upcoming",
+    days: 2,
+  });
+  assert.deepEqual(coursePeriodSummary("2026-02-01", null, now), {
+    status: "active",
+    days: null,
+  });
+  assert.equal(coursePeriodSummary(null, null, now), null);
+  assert.equal(coursePeriodSummary(null, "2026-11-22", now)?.status, "ending");
+  assert.equal(coursePeriodSummary(null, "2026-11-23", now)?.status, "active");
+  assert.deepEqual(
+    coursePeriodSummary(null, "2026-10-24", new Date("2026-10-23T15:00:00Z")),
+    { status: "last-day", days: 0 },
   );
 });
 

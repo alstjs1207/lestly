@@ -92,13 +92,23 @@ export function scheduleTimeRange(
   return `${formatLearningTime(schedule.start_time)} — ${overnight ? `${formatLearningDate(schedule.end_time)} ` : ""}${formatLearningTime(schedule.end_time)}`;
 }
 
-export function coursePeriodLabel(endDate: string | null, now: Date) {
-  if (!endDate) return null;
+export function coursePeriodSummary(
+  startDate: string | null,
+  endDate: string | null,
+  now: Date,
+) {
+  if (!startDate && !endDate) return null;
   const today = toKSTDateString(now);
-  const days = Math.round(
-    (Date.parse(endDate) - Date.parse(today)) / 86_400_000,
-  );
-  if (days < 0) return `수강 기간 종료 · ${endDate}까지`;
-  if (days === 0) return `오늘 수강 종료 · ${endDate}까지`;
-  return `수강 종료 ${days}일 전 · ${endDate}까지`;
+  const daysUntil = (date: string) =>
+    Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000);
+  if (endDate && endDate < today)
+    return { status: "expired", days: null } as const;
+  if (startDate && startDate > today)
+    return { status: "upcoming", days: daysUntil(startDate) } as const;
+  if (!endDate) return { status: "active", days: null } as const;
+  const days = daysUntil(endDate);
+  return {
+    status: days === 0 ? "last-day" : days <= 30 ? "ending" : "active",
+    days,
+  } as const;
 }

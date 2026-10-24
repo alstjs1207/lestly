@@ -13,11 +13,11 @@ import { Button } from "~/core/components/ui/button";
 import { toKST, toKSTDateString } from "~/features/schedules/utils/kst";
 import {
   type LearningSchedule,
-  coursePeriodLabel,
   formatLearningDate,
   scheduleTimeRange,
 } from "~/features/schedules/utils/learning-records";
 
+import { CoursePeriodCard } from "./course-period-card";
 import { ReflectionJournal } from "./reflection-journal";
 
 export interface LearningHomeProps {
@@ -46,7 +46,6 @@ export function LearningHome(props: LearningHomeProps) {
     chart,
   } = props;
   const now = new Date(props.now);
-  const periodLabel = coursePeriodLabel(props.classEndDate, now);
   const expired =
     !!props.classEndDate && props.classEndDate < toKSTDateString(now);
   const maximum = Math.max(1, ...chart.map((d) => d.hours));
@@ -79,6 +78,11 @@ export function LearningHome(props: LearningHomeProps) {
             : "배움의 첫걸음을 함께해요."}
         </h1>
       </header>
+      <CoursePeriodCard
+        startDate={props.classStartDate}
+        endDate={props.classEndDate}
+        now={now}
+      />
       <div className="grid items-start gap-5 lg:grid-cols-[1.05fr_1fr] lg:gap-6">
         <section className={card} aria-label="쌓여가는 배움">
           <div className="mb-5 flex items-center justify-between gap-2">
@@ -254,13 +258,6 @@ export function LearningHome(props: LearningHomeProps) {
           />
         </div>
       </div>
-      {(props.classStartDate || periodLabel) && (
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {props.classStartDate && `수강 시작 · ${props.classStartDate}`}
-          {props.classStartDate && periodLabel && " / "}
-          {periodLabel}
-        </p>
-      )}
     </main>
   );
 }
