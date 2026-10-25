@@ -638,6 +638,97 @@ export async function checkStudentLifecycle({
       );
     },
   );
+
+  for (const target of ["NORMAL", "GRADUATE", "DELETED"]) {
+    await check(
+      `editing without state preserves ${target}, its access rules and reservations`,
+      async () => {
+        await seedFuture(3);
+        const values = await editValues();
+        delete values.state;
+        await asRole("authenticated", adminA);
+        if (target !== "NORMAL") {
+          const i = await impact(target);
+          await change(target, i.token);
+        }
+        // A profile-only edit and a period edit must both preserve the current state.
+        await db.query("SELECT save_managed_student($1,$2,$3)", [
+          orgA,
+          values,
+          studentA,
+        ]);
+        assert.equal(await state(), target);
+        await db.query("SELECT save_managed_student($1,$2,$3)", [
+          orgA,
+          { ...values, class_end_date: "2099-01-01" },
+          studentA,
+        ]);
+        assert.equal(await state(), target);
+        const counts = (
+          await db.query(
+            "SELECT count(*) FILTER(WHERE start_time>now())::int future,count(*) FILTER(WHERE end_time<=now())::int past FROM schedules WHERE student_id=$1",
+            [studentA],
+          )
+        ).rows[0];
+        assert.equal(counts.future, target === "NORMAL" ? 1 : 0);
+        assert.equal(counts.past, 1);
+        await asRole("postgres");
+        const blocked =
+          (
+            await db.query(
+              "SELECT blocked FROM student_account_access WHERE profile_id=$1",
+              [studentA],
+            )
+          ).rows[0]?.blocked ?? false;
+        assert.equal(blocked, target === "DELETED");
+      },
+    );
+  }
+  for (const target of ["GRADUATE", "DELETED"]) {
+    await check(
+      `${target} returns to NORMAL without restoring bookings or changing course dates`,
+      async () => {
+        await seedFuture(3);
+        await asRole("authenticated", adminA);
+        const i = await impact(target);
+        await change(target, i.token);
+        const before = (
+          await db.query(
+            "SELECT class_start_date,class_end_date FROM profiles WHERE profile_id=$1",
+            [studentA],
+          )
+        ).rows;
+        await change("NORMAL", null);
+        assert.equal(await state(), "NORMAL");
+        assert.deepEqual(
+          (
+            await db.query(
+              "SELECT class_start_date,class_end_date FROM profiles WHERE profile_id=$1",
+              [studentA],
+            )
+          ).rows,
+          before,
+        );
+        assert.equal(
+          (
+            await db.query(
+              "SELECT count(*)::int n FROM schedules WHERE student_id=$1 AND start_time>now()",
+              [studentA],
+            )
+          ).rows[0].n,
+          0,
+        );
+        for (const user of [adminB, studentA]) {
+          await asRole("authenticated", user);
+          await blocked(
+            "SELECT set_student_state($1,$2,'NORMAL',NULL)",
+            [orgA, studentA],
+            /student_not_authorized/,
+          );
+        }
+      },
+    );
+  }
   await check(
     "ordinary edit benchmark compares the previous function on the same student",
     async () => {

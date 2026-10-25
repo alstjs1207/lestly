@@ -7,8 +7,6 @@ import { normalizePhone, requiredStudentFields } from "./student-fields.ts";
 
 export { normalizePhone } from "./student-fields.ts";
 
-const studentStateSchema = z.enum(["NORMAL", "GRADUATE", "DELETED"]);
-
 const optionalDate = z.preprocess(
   (value) => (String(value || "").trim() ? value : null),
   z.string().date().nullable(),
@@ -57,10 +55,6 @@ export type StudentFormValues = z.infer<typeof studentFormSchema>;
 
 export function parseStudentForm(formData: FormData) {
   return studentFormSchema.safeParse(Object.fromEntries(formData));
-}
-
-export function parseStudentState(value: FormDataEntryValue | null) {
-  return studentStateSchema.safeParse(value);
 }
 
 export async function findDuplicateStudentPhone(

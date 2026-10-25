@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import * as jsxRuntime from "react/jsx-runtime";
 
 import { getAuthenticatedProfile } from "../app/core/lib/authenticated-profile.server.ts";
 import { getAuthUser } from "../app/core/lib/supa-client.server.ts";
@@ -255,3 +258,140 @@ for (const [route, state] of [
     assert.equal(rpcCalls, 1);
   });
 }
+
+test("restore requires an admin POST and uses the existing atomic NORMAL transition regardless of submitted fields", async () => {
+  let code: string | undefined;
+  let calls = 0;
+  const client = {
+    rpc: async (name: string, args: unknown) => {
+      calls++;
+      assert.equal(name, "set_student_state");
+      assert.deepEqual(args, {
+        p_organization_id: "trusted-org",
+        p_student_id: "student",
+        p_state: "NORMAL",
+        p_confirmation: null,
+      });
+      return { error: code ? { code } : null };
+    },
+  };
+  const handler = loadMockedModule<{ action(args: unknown): Promise<any> }>(
+    new URL("../app/features/admin/api/students/restore.tsx", import.meta.url),
+    {
+      "react-router": {
+        data: (body: unknown, init: unknown) => ({ body, init }),
+        redirect: (url: string) => ({ redirect: url }),
+      },
+      "~/core/lib/guards.server": {
+        requireMethod: (method: string) => (request: Request) => {
+          assert.equal(method, "POST");
+          assert.equal(request.method, "POST");
+        },
+      },
+      "~/core/lib/supa-client.server": {
+        default: () => [client, new Headers()],
+      },
+      "../../guards.server": {
+        requireAdminRole: async () => ({ organizationId: "trusted-org" }),
+      },
+      "../../lib/student-lifecycle.server": {
+        changeStudentState,
+        studentLifecycleFailure,
+      },
+    },
+  );
+  const submit = () =>
+    handler.action({
+      request: new Request("https://lestly.test/restore", {
+        method: "POST",
+        body: new URLSearchParams({
+          state: "DELETED",
+          organization_id: "forged",
+        }),
+      }),
+      params: { studentId: "student" },
+    });
+  assert.equal((await submit()).redirect, "/admin/students/student");
+  for (const [value, status] of [
+    ["P0002", 404],
+    ["42501", 403],
+    ["unknown", 500],
+  ] as const) {
+    code = value;
+    assert.equal((await submit()).init.status, status);
+  }
+  assert.equal(calls, 4);
+});
+
+test("student detail exposes graduate/withdraw only where eligible and restore only for inactive students", () => {
+  const box = ({ children }: any) => React.createElement("div", null, children);
+  const names = (keys: string) =>
+    Object.fromEntries(keys.split(" ").map((k) => [k, box]));
+  const Screen = loadMockedModule<{ default: React.ComponentType<any> }>(
+    new URL(
+      "../app/features/admin/screens/students/detail.tsx",
+      import.meta.url,
+    ),
+    {
+      react: React,
+      "react/jsx-runtime": jsxRuntime,
+      "lucide-react": names(
+        "CheckIcon ChevronLeftIcon ClipboardIcon EditIcon LinkIcon PhoneIcon",
+      ),
+      "react-router": { Link: box },
+      "~/core/components/ui/badge": { Badge: box },
+      "~/core/components/ui/button": { Button: box },
+      "~/core/components/ui/card": names(
+        "Card CardContent CardDescription CardHeader CardTitle",
+      ),
+      "~/core/components/ui/table": names(
+        "Table TableBody TableCell TableHead TableHeader TableRow",
+      ),
+      "~/core/lib/supa-client.server": {},
+      "../../components/student-invite-dialog": { default: box },
+      "../../components/student-restore-dialog": {
+        default: ({ withdrawn }: any) =>
+          React.createElement(
+            "button",
+            null,
+            withdrawn ? "탈퇴자 재원 복귀" : "졸업생 재원 복귀",
+          ),
+      },
+      "../../components/student-state-dialog": {
+        default: ({ kind }: any) =>
+          React.createElement(
+            "button",
+            null,
+            kind === "graduate" ? "졸업 처리" : "탈퇴 처리",
+          ),
+      },
+      "../../components/student-total-hours": { StudentTotalHours: box },
+      "../../guards.server": {},
+      "../../lib/student-display": {},
+      "../../queries": {},
+      "../../utils/student-schedule-overview": {},
+    },
+  ).default;
+  for (const state of ["NORMAL", "GRADUATE", "DELETED"]) {
+    const html = renderToStaticMarkup(
+      React.createElement(Screen, {
+        loaderData: {
+          student: {
+            profile_id: "student",
+            name: "학생",
+            state,
+            auth_user_id: "linked",
+          },
+          weeklySchedules: [],
+          nextWeekSchedules: [],
+          monthlySchedules: [],
+          nextMonthSchedules: [],
+        },
+      }),
+    );
+    assert.equal(html.includes("졸업 처리"), state === "NORMAL");
+    assert.equal(html.includes("탈퇴 처리"), state !== "DELETED");
+    assert.equal(html.includes("재원 복귀"), state !== "NORMAL");
+    if (state === "DELETED") assert.ok(html.includes("탈퇴자 재원 복귀"));
+  }
+});

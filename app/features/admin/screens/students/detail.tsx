@@ -31,6 +31,7 @@ import {
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import StudentInviteDialog from "../../components/student-invite-dialog";
+import StudentRestoreDialog from "../../components/student-restore-dialog";
 import StudentStateDialog from "../../components/student-state-dialog";
 import { StudentTotalHours } from "../../components/student-total-hours";
 import { requireAdminRole } from "../../guards.server";
@@ -191,13 +192,23 @@ export default function StudentDetailScreen({
                 studentName={student.name}
                 kind="graduate"
               />
-              <StudentStateDialog
-                key={`${student.profile_id}-delete`}
-                studentId={student.profile_id}
-                studentName={student.name}
-                kind="delete"
-              />
             </>
+          )}
+          {(student.state === "NORMAL" || student.state === "GRADUATE") && (
+            <StudentStateDialog
+              key={`${student.profile_id}-delete`}
+              studentId={student.profile_id}
+              studentName={student.name}
+              kind="delete"
+            />
+          )}
+          {(student.state === "GRADUATE" || student.state === "DELETED") && (
+            <StudentRestoreDialog
+              key={`${student.profile_id}-restore`}
+              studentId={student.profile_id}
+              studentName={student.name}
+              withdrawn={student.state === "DELETED"}
+            />
           )}
         </div>
       </div>

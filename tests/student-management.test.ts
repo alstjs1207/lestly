@@ -13,7 +13,6 @@ import {
 import {
   findDuplicateStudentPhone,
   parseStudentForm,
-  parseStudentState,
 } from "../app/features/admin/lib/student-form.server.ts";
 import {
   saveManagedStudent,
@@ -95,7 +94,6 @@ test("transaction helper keeps edit dates empty and assigns create dates only", 
       ...values,
       class_start_date: null,
       class_end_date: null,
-      state: "GRADUATE",
     },
     "student-id",
   );
@@ -176,7 +174,7 @@ test("update API validates input and maps atomic RPC errors without separate wri
       "../../guards.server": {
         requireAdminRole: async () => ({ organizationId: "session-org" }),
       },
-      "../../lib/student-form.server": { parseStudentForm, parseStudentState },
+      "../../lib/student-form.server": { parseStudentForm },
       "../../lib/student-save.server": {
         studentSaveFailure,
         saveManagedStudent: async (
@@ -201,7 +199,6 @@ test("update API validates input and maps atomic RPC errors without separate wri
           method: "POST",
           body: new URLSearchParams({
             ...values,
-            state: "NORMAL",
             color: "#3B82F6",
             organization_id: "forged-org",
             ...change,
@@ -214,6 +211,15 @@ test("update API validates input and maps atomic RPC errors without separate wri
   assert.equal((await submit()).redirect, "/admin/students/target-student");
   assert.equal(calls[0].org, "session-org");
   assert.equal(calls[0].id, "target-student");
+  assert.equal(Object.hasOwn(calls[0].payload, "state"), false);
+  for (const state of ["NORMAL", "GRADUATE", "DELETED", "forged"]) {
+    assert.equal(
+      (await submit({ state })).redirect,
+      "/admin/students/target-student",
+    );
+    assert.equal(Object.hasOwn(calls.at(-1).payload, "state"), false);
+  }
+
   for (const [errorCode, status] of [
     ["23505", 409],
     ["P0002", 404],

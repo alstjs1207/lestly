@@ -37,8 +37,8 @@ export default function StudentStateDialog(props: Props) {
           aria-label={deleting ? "탈퇴 처리" : "졸업 처리"}
           variant={deleting ? "destructive" : "outline"}
         >
-          <Icon className="h-4 w-4 md:mr-2" />
-          <span className="hidden md:inline">{deleting ? "탈퇴" : "졸업"}</span>
+          <Icon className="mr-2 h-4 w-4" />
+          <span>{deleting ? "탈퇴 처리" : "졸업 처리"}</span>
         </Button>
       </DialogTrigger>
       {open && <StudentStateConfirmation {...props} />}

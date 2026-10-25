@@ -219,6 +219,7 @@ export default [
       route("/:studentId/update", "features/admin/api/students/update.tsx"),
       route("/:studentId/graduate", "features/admin/api/students/graduate.tsx"),
       route("/:studentId/delete", "features/admin/api/students/delete.tsx"),
+      route("/:studentId/restore", "features/admin/api/students/restore.tsx"),
       route("/:studentId/invite", "features/admin/api/students/invite.tsx"),
     ]),
     ...prefix("/schedules", [

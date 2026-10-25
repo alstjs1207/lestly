@@ -14,7 +14,6 @@ export async function saveManagedStudent(
   organizationId: string,
   values: Pick<StudentFormValues, "name" | "phone" | "region" | "type"> &
     Partial<StudentFormValues> & {
-      state?: "NORMAL" | "GRADUATE" | "DELETED";
       lifecycle_confirmation?: string;
     },
   studentId?: string,

@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-25T01:48:53.670Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0026_preserve_student_state_on_edit",
+  "hash": "a18b5a3024e95126b82de3e10a7960caa39e3aa0790f44408b2dea6891ce228d",
+  "applied": true,
+  "businessDataUnchanged": true,
+  "functionPermissionsUnchanged": true
+}

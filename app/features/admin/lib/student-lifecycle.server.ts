@@ -64,7 +64,7 @@ export async function changeStudentState(
   client: SupabaseClient<Database>,
   organizationId: string,
   studentId: string,
-  state: "GRADUATE" | "DELETED",
+  state: "NORMAL" | "GRADUATE" | "DELETED",
   confirmation: string | null,
 ) {
   const { error } = await client.rpc("set_student_state", {

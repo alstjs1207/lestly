@@ -6,10 +6,7 @@ import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import { requireAdminRole } from "../../guards.server";
-import {
-  parseStudentForm,
-  parseStudentState,
-} from "../../lib/student-form.server";
+import { parseStudentForm } from "../../lib/student-form.server";
 import {
   saveManagedStudent,
   studentSaveFailure,
@@ -34,16 +31,6 @@ export async function action({ request, params }: Route.ActionArgs) {
     );
   }
   const values = parsed.data;
-  const parsedState = parseStudentState(formData.get("state"));
-  if (!parsedState.success) {
-    return data(
-      {
-        success: false,
-        fieldErrors: { state: ["수강생 상태를 선택해 주세요."] },
-      },
-      { status: 400 },
-    );
-  }
 
   try {
     await saveManagedStudent(
@@ -51,7 +38,6 @@ export async function action({ request, params }: Route.ActionArgs) {
       organizationId,
       {
         ...values,
-        state: parsedState.data,
         lifecycle_confirmation: String(
           formData.get("lifecycle_confirmation") ?? "",
         ),

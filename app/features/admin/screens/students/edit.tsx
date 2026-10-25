@@ -64,7 +64,6 @@ export default function StudentEditScreen({
               profile_id: student.profile_id,
               email: student.contact_email || undefined,
               name: student.name,
-              state: student.state,
               type: student.type || undefined,
               region: student.region || undefined,
               birth_date: student.birth_date || undefined,

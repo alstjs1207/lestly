@@ -183,6 +183,13 @@
       "when": 1792972800000,
       "tag": "0025_student_edit_fast_path",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793059200000,
+      "tag": "0026_preserve_student_state_on_edit",
+      "breakpoints": true
     }
   ]
 }

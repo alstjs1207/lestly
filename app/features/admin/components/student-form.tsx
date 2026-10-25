@@ -27,7 +27,6 @@ interface StudentFormProps {
     profile_id?: string;
     email?: string;
     name?: string;
-    state?: string;
     type?: string;
     region?: string;
     birth_date?: string;
@@ -46,7 +45,6 @@ type StudentFormField =
   | "phone"
   | "email"
   | "type"
-  | "state"
   | "region"
   | "birth_date"
   | "class_start_date"
@@ -204,28 +202,6 @@ export default function StudentForm({ mode, defaultValues }: StudentFormProps) {
           </Select>
           <FieldError errors={fetcher.data?.fieldErrors?.type} />
         </div>
-
-        {mode === "edit" && (
-          <div className="space-y-2">
-            <Label htmlFor="state">상태</Label>
-            <Select
-              name="state"
-              defaultValue={defaultValues?.state || "NORMAL"}
-            >
-              <SelectTrigger
-                aria-invalid={Boolean(fetcher.data?.fieldErrors?.state?.length)}
-              >
-                <SelectValue placeholder="상태 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NORMAL">정상</SelectItem>
-                <SelectItem value="GRADUATE">졸업</SelectItem>
-                <SelectItem value="DELETED">탈퇴</SelectItem>
-              </SelectContent>
-            </Select>
-            <FieldError errors={fetcher.data?.fieldErrors?.state} />
-          </div>
-        )}
 
         <div className="space-y-2">
           <Label htmlFor="region">지역 *</Label>
