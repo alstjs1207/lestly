@@ -74,7 +74,7 @@ function mockClient(fetch: typeof globalThis.fetch) {
   }) as never;
 }
 
-test("daily attendance includes cancelled reservations, while pending view covers all past dates and pages safely", async () => {
+test("daily attendance keeps all states while pending filters current-organization active students before pagination", async () => {
   const urls: URL[] = [];
   const client = mockClient(async (input) => {
     urls.push(new URL(String(input)));
@@ -99,6 +99,32 @@ test("daily attendance includes cancelled reservations, while pending view cover
     "lt.2026-10-25T15:00:00.000Z",
   ]);
   assert.equal(urls[0].searchParams.has("cancelled_at"), false);
+  assert.doesNotMatch(urls[0].searchParams.get("select")!, /membership|!inner/);
+  for (const column of ["organization_id", "role", "state"])
+    assert.equal(
+      urls[0].searchParams.has(`student.membership.${column}`),
+      false,
+    );
+  assert.match(
+    urls[1].searchParams.get("select")!,
+    /profiles!schedules_student_id_profiles_profile_id_fk!inner/,
+  );
+  assert.match(
+    urls[1].searchParams.get("select")!,
+    /membership:organization_members!inner/,
+  );
+  assert.equal(
+    urls[1].searchParams.get("student.membership.organization_id"),
+    "eq.trusted",
+  );
+  assert.equal(
+    urls[1].searchParams.get("student.membership.role"),
+    "eq.STUDENT",
+  );
+  assert.equal(
+    urls[1].searchParams.get("student.membership.state"),
+    "eq.NORMAL",
+  );
   assert.equal(
     urls[1].searchParams.get("start_time"),
     `lte.${now.toISOString()}`,

@@ -27,16 +27,20 @@ export async function getAttendanceSchedules(
     .select(
       `schedule_id, student_id, program_id, start_time, end_time,
     attendance_status, attendance_version, attendance_updated_at, cancelled_at,
-    student:profiles!schedules_student_id_profiles_profile_id_fk(name),
+    student:profiles!schedules_student_id_profiles_profile_id_fk${pendingOnly ? "!inner" : ""}(name${pendingOnly ? ",membership:organization_members!inner(organization_id)" : ""}),
     program:programs!schedules_program_id_programs_program_id_fk(title,instructor:instructors!programs_instructor_id_instructors_instructor_id_fk(name))`,
       { count: "exact" },
     )
     .eq("organization_id", organizationId)
     .order("start_time")
     .order("schedule_id");
-  // Pending view deliberately searches all started lessons, not only today.
+  // Filter membership in SQL before counting/pagination. A shared profile may
+  // be enrolled elsewhere but graduated/withdrawn in this organization.
   if (pendingOnly)
     query = query
+      .eq("student.membership.organization_id", organizationId)
+      .eq("student.membership.role", "STUDENT")
+      .eq("student.membership.state", "NORMAL")
       .eq("attendance_status", "PENDING")
       .lte("start_time", now.toISOString());
   else
