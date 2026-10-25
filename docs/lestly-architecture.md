@@ -53,6 +53,8 @@ Organization ──┬── Programs (프로그램/클래스) [1:N]
 
 > `GRADUATE`, `DELETED` 상태의 수강생은 스케쥴 등록 시 선택 불가
 
+졸업·탈퇴의 이용 범위와 처리 기준은 [수강생 졸업과 학원 탈퇴 정책안](student-lifecycle-policy.md)에 정리한다. 앱·DB 기능 적용은 별도 작업이다.
+
 ### 사용자 유형 (type)
 
 - `EXAMINEE` : 입시생

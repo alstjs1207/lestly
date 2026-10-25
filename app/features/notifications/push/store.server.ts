@@ -132,7 +132,8 @@ export async function getPushDeliveryTarget(
         AND i.push_profile_id = e.recipient_profile_id
         AND m.role = 'ADMIN' AND m.state = 'NORMAL' AND p.auth_user_id IS NOT NULL
         AND (s.expires_at IS NULL OR s.expires_at > now())
-        AND e.created_at > now() - interval '24 hours') AS eligible
+        AND e.created_at > now() - interval '24 hours'
+        AND (e.event_type <> 'BOOKED' OR EXISTS (SELECT 1 FROM public.schedules booked WHERE booked.schedule_id=e.schedule_id))) AS eligible
     FROM public.push_deliveries d
     JOIN public.push_events e ON e.event_id = d.event_id
     JOIN public.push_subscriptions s ON s.subscription_id = d.subscription_id

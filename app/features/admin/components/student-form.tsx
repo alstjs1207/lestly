@@ -56,6 +56,7 @@ type StudentFormField =
 type StudentFormActionData = {
   success: false;
   error?: string;
+  confirmation?: { token: string; cancel_count: number };
   fieldErrors?: Partial<Record<StudentFormField, string[]>>;
 };
 
@@ -109,12 +110,30 @@ export default function StudentForm({ mode, defaultValues }: StudentFormProps) {
 
   return (
     <fetcher.Form method="post" action={actionUrl} className="space-y-6">
-      {fetcher.data?.error && (
+      {fetcher.data?.error && !fetcher.data.confirmation && (
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertTitle>저장하지 못했습니다</AlertTitle>
           <AlertDescription>{fetcher.data.error}</AlertDescription>
         </Alert>
+      )}
+
+      {fetcher.data?.confirmation && (
+        <>
+          <input
+            type="hidden"
+            name="lifecycle_confirmation"
+            value={fetcher.data.confirmation.token}
+          />
+          <Alert>
+            <AlertTitle>예약 자동 취소 확인</AlertTitle>
+            <AlertDescription>
+              예정 예약 {fetcher.data.confirmation.cancel_count}건이 취소됩니다.
+              완료된 수업은 유지됩니다. 아래 ‘확인하고 저장’을 누르면 변경과
+              취소를 함께 처리합니다.
+            </AlertDescription>
+          </Alert>
+        </>
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -341,7 +360,9 @@ export default function StudentForm({ mode, defaultValues }: StudentFormProps) {
             ? "저장 중..."
             : mode === "create"
               ? "수강생 등록"
-              : "수정 완료"}
+              : fetcher.data?.confirmation
+                ? "확인하고 저장"
+                : "수정 완료"}
         </Button>
       </div>
     </fetcher.Form>

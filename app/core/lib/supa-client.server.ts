@@ -23,6 +23,8 @@ import {
   serializeCookieHeader,
 } from "@supabase/ssr";
 
+import { cacheAuthenticatedProfile } from "./authenticated-profile.server.ts";
+
 const clientCache = new WeakMap<Request, [SupabaseClient<Database>, Headers]>();
 
 export default function makeServerClient(
@@ -61,9 +63,7 @@ export default function makeServerClient(
 
 const userCache = new WeakMap<SupabaseClient, Promise<User | null>>();
 
-async function loadVerifiedAuthUser(
-  client: SupabaseClient,
-): Promise<User | null> {
+async function verifyAuthUser(client: SupabaseClient): Promise<User | null> {
   const { data: claimsData, error: claimsError } =
     await client.auth.getClaims();
 
@@ -95,6 +95,25 @@ async function loadVerifiedAuthUser(
   const {
     data: { user },
   } = await client.auth.getUser();
+  return user;
+}
+
+async function loadVerifiedAuthUser(
+  client: SupabaseClient,
+): Promise<User | null> {
+  const user = await verifyAuthUser(client);
+  if (!user) return null;
+  const { data: context, error } = await client.rpc("get_account_auth_context");
+  if (error) throw error;
+  if (!context || context.allowed !== true) {
+    await client.auth.signOut({ scope: "local" });
+    return null;
+  }
+  cacheAuthenticatedProfile(
+    client as SupabaseClient<Database>,
+    user.id,
+    context.profile ?? null,
+  );
   return user;
 }
 

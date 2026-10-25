@@ -7,7 +7,7 @@ import { Outlet, redirect } from "react-router";
 import makeServerClient, { getAuthUser } from "../lib/supa-client.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const user = await getAuthUser(client);
   if (!user) {
     const url = new URL(request.url);
@@ -18,7 +18,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     const redirectParam = isAdminPath
       ? `?redirect=${encodeURIComponent(url.pathname)}`
       : "";
-    throw redirect(`/login${redirectParam}`);
+    throw redirect(`/login${redirectParam}`, { headers });
   }
 
   // Return an empty object to avoid the "Cannot read properties of undefined" error

@@ -25,6 +25,12 @@ export async function action({ request, params }: Route.ActionArgs) {
     studentId: params.studentId,
   });
 
+  if (student.state !== "NORMAL")
+    return data(
+      { success: false, error: "재원생에게만 초대 링크를 발급할 수 있습니다." },
+      { status: 409 },
+    );
+
   if (student.auth_user_id) {
     return data(
       { success: false, error: "이미 로그인 계정이 연결된 수강생입니다." },

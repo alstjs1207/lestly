@@ -35,3 +35,17 @@ export function getAuthenticatedProfile(
   clientCache.set(authUserId, result);
   return result;
 }
+
+/** Prime the same request cache from the authenticated context RPC. */
+export function cacheAuthenticatedProfile(
+  client: SupabaseClient<Database>,
+  authUserId: string,
+  profile: Profile | null,
+) {
+  let cache = profileCache.get(client);
+  if (!cache) {
+    cache = new Map();
+    profileCache.set(client, cache);
+  }
+  cache.set(authUserId, Promise.resolve(profile));
+}

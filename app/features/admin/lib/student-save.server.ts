@@ -7,12 +7,16 @@ import {
   addYearsToDateString,
   getDefaultStudentClassDates,
 } from "./student-class-dates.ts";
+import { studentLifecycleFailure } from "./student-lifecycle.server.ts";
 
 export async function saveManagedStudent(
   client: SupabaseClient<Database>,
   organizationId: string,
   values: Pick<StudentFormValues, "name" | "phone" | "region" | "type"> &
-    Partial<StudentFormValues> & { state?: "NORMAL" | "GRADUATE" | "DELETED" },
+    Partial<StudentFormValues> & {
+      state?: "NORMAL" | "GRADUATE" | "DELETED";
+      lifecycle_confirmation?: string;
+    },
   studentId?: string,
 ) {
   const payload = { ...values };
@@ -31,6 +35,8 @@ export async function saveManagedStudent(
 }
 
 export function studentSaveFailure(error: unknown) {
+  const lifecycle = studentLifecycleFailure(error);
+  if (lifecycle) return lifecycle;
   const code =
     error && typeof error === "object" && "code" in error
       ? error.code

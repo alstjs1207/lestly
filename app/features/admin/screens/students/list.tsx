@@ -85,7 +85,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     page,
     pageSize: 20,
     search,
-    stateFilter: stateFilter || undefined,
+    stateFilter: state === "all" ? undefined : stateFilter || "NORMAL",
     typeFilter: typeFilter || undefined,
   });
 
@@ -193,7 +193,7 @@ export default function StudentListScreen({
     if (value && value !== "all") {
       newParams.set("state", value);
     } else {
-      newParams.delete("state");
+      newParams.set("state", "all");
     }
     newParams.set("page", "1");
     setSearchParams(newParams);
@@ -266,7 +266,7 @@ export default function StudentListScreen({
 
         <div className="hidden gap-2 md:flex">
           <Select
-            value={searchParams.get("state") || "all"}
+            value={searchParams.get("state") || "NORMAL"}
             onValueChange={handleStateFilter}
           >
             <SelectTrigger className="h-11 w-full md:h-9 md:w-32">
@@ -323,7 +323,7 @@ export default function StudentListScreen({
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {mobileStateFilters.map((filter) => {
               const active =
-                (searchParams.get("state") || "all") === filter.value;
+                (searchParams.get("state") || "NORMAL") === filter.value;
               return (
                 <Button
                   key={filter.value}

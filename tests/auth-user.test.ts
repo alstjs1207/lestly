@@ -7,6 +7,7 @@ test("legacy session helper uses a locally verified asymmetric JWT", async () =>
   let getUserCalls = 0;
   const expectedUser = { id: "verified-user" };
   const client = {
+    rpc: async () => ({ data: { allowed: true, profile: null }, error: null }),
     auth: {
       getClaims: async () => ({
         data: {
@@ -41,6 +42,7 @@ test("auth helper falls back to auth.getUser when claims cannot be verified", as
   let getUserCalls = 0;
   const expectedUser = { id: "fallback-user" };
   const client = {
+    rpc: async () => ({ data: { allowed: true, profile: null }, error: null }),
     auth: {
       getClaims: async () => ({ data: null, error: new Error("no jwks") }),
       getUser: async () => {

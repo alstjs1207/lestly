@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -166,6 +167,7 @@ export const notifications = pgTable(
 
     // Email fields
     email_status: emailStatusEnum("email_status"),
+    delivery_cancelled_at: timestamp({ withTimezone: true }),
     email_sent_at: timestamp("email_sent_at"),
     email_error_message: text("email_error_message"),
 
@@ -200,6 +202,9 @@ export const notifications = pgTable(
     ...timestamps,
   },
   (table) => [
+    index("notifications_schedule_lifecycle_idx")
+      .on(table.schedule_id)
+      .where(sql`${table.schedule_id} IS NOT NULL`),
     // DEFERRABLE tenant FKs for program/schedule/parent are maintained in SQL.
     unique("notifications_id_org_unique").on(
       table.notification_id,

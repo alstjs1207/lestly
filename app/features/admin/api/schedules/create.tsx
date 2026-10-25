@@ -4,11 +4,7 @@ import { data, redirect } from "react-router";
 
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-import {
-  createSchedule,
-  createSchedules,
-  validateScheduleBatch,
-} from "~/features/schedules/queries";
+import { validateScheduleBatch } from "~/features/schedules/queries";
 import { fromKST, toKSTDateString } from "~/features/schedules/utils/kst";
 import { generateWeeklyDates } from "~/features/schedules/utils/rrule-helper";
 import {
@@ -126,47 +122,36 @@ export async function action({ request }: Route.ActionArgs) {
         continue;
       }
 
-      if (isRecurring && recurrenceEndDate) {
-        // Create main schedule
-        const mainSchedule = await createSchedule(client, {
-          organization_id: organizationId,
-          student_id: studentId,
-          program_id: programId,
-          start_time: candidates[0].startTime.toISOString(),
-          end_time: candidates[0].endTime.toISOString(),
-          rrule: `FREQ=WEEKLY;UNTIL=${recurrenceEndDate.toISOString()}`,
-        });
-
-        // Create recurring instances
-        if (candidates.length > 1) {
-          const recurringSchedules = candidates.slice(1).map((candidate) => ({
-            organization_id: organizationId,
-            student_id: studentId,
-            program_id: programId,
+      const { error: saveError } = await client.rpc(
+        "create_admin_schedule_series",
+        {
+          p_org: organizationId,
+          p_student: studentId,
+          p_program: programId,
+          p_rows: candidates.map((candidate) => ({
             start_time: candidate.startTime.toISOString(),
             end_time: candidate.endTime.toISOString(),
-            parent_schedule_id: mainSchedule.schedule_id,
-          }));
-
-          await createSchedules(client, recurringSchedules);
-        }
-      } else {
-        // Create single schedule
-        await createSchedule(client, {
-          organization_id: organizationId,
-          student_id: studentId,
-          program_id: programId,
-          start_time: candidates[0].startTime.toISOString(),
-          end_time: candidates[0].endTime.toISOString(),
-        });
-      }
+          })),
+          p_rrule:
+            isRecurring && recurrenceEndDate
+              ? `FREQ=WEEKLY;UNTIL=${recurrenceEndDate.toISOString()}`
+              : null,
+        },
+      );
+      if (saveError) throw saveError;
     } catch (e) {
       const student = await getStudentById(client, {
         organizationId,
         studentId,
       }).catch(() => null);
       const name = student?.name || studentId;
-      errors.push(`${name}: 등록 중 오류가 발생했습니다.`);
+      const message =
+        e && typeof e === "object" && "message" in e ? String(e.message) : "";
+      errors.push(
+        message === "schedule_outside_course"
+          ? `${name}: 수강 기간을 벗어나는 수업은 등록할 수 없습니다. 수강 기간을 먼저 확인해 주세요.`
+          : `${name}: 등록 중 오류가 발생했습니다.`,
+      );
     }
   }
 

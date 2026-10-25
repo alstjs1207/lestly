@@ -5,6 +5,7 @@ import { data } from "react-router";
 import makeServerClient, {
   getSessionUser,
 } from "~/core/lib/supa-client.server";
+import { getUserOrganizations } from "~/features/organizations/queries";
 import { getStudentLearningHome } from "~/features/schedules/utils/student-learning.server";
 import { LearningHome } from "~/features/users/components/coaching/learning-home";
 import { getUserProfile } from "~/features/users/queries";
@@ -20,6 +21,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   const profile = await getUserProfile(client, { userId: user.id });
   if (!profile) throw new Response(null, { status: 403 });
   const now = new Date();
+  const memberships = await getUserOrganizations(client, {
+    profileId: profile.profile_id,
+  });
+  const membership = memberships.find((member) => member.role === "STUDENT");
   const learning = await getStudentLearningHome(
     client,
     profile.profile_id,
@@ -28,6 +33,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return data(
     {
       ...learning,
+      graduated: membership?.state === "GRADUATE",
       profileId: profile.profile_id,
       name: profile.name,
       classStartDate: profile.class_start_date,

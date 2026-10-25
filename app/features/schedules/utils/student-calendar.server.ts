@@ -6,6 +6,7 @@ import makeServerClient, {
 import { getActivePrograms } from "../../programs/queries";
 import { getUserProfile } from "../../users/queries";
 import { getKSTMonthRange, parseCalendarMonth } from "./calendar-month";
+import { toKSTDateString } from "./kst";
 import { getLearningSchedules } from "./student-learning.server";
 import { getStudentAllowedDateRange } from "./student-schedule-rules";
 
@@ -51,7 +52,10 @@ export async function loadStudentCalendar(request: Request) {
       classEndDate: profile.class_end_date,
       allowedStartDate: allowed.startDate.toISOString(),
       allowedEndDate: allowed.endDate.toISOString(),
-      canBook: !!membership,
+      canBook:
+        !!membership &&
+        (!profile.class_end_date ||
+          profile.class_end_date >= toKSTDateString(now)),
     },
     { headers },
   );

@@ -6,33 +6,38 @@ import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import { requireAdminRole } from "../../guards.server";
+import {
+  changeStudentState,
+  studentLifecycleFailure,
+} from "../../lib/student-lifecycle.server";
 
 export async function action({ request, params }: Route.ActionArgs) {
   requireMethod("POST")(request);
-
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
-
-  const { studentId } = params;
-
-  // Update state in organization_members (N:N relationship)
-  const { error } = await client
-    .from("organization_members")
-    .update({ state: "GRADUATE" })
-    .eq("organization_id", organizationId)
-    .eq("profile_id", studentId)
-    .eq("role", "STUDENT");
-
-  if (error) {
-    console.error("Failed to graduate student", error);
+  const form = await request.formData();
+  try {
+    await changeStudentState(
+      client,
+      organizationId,
+      params.studentId,
+      "GRADUATE",
+      String(form.get("lifecycle_confirmation") ?? "") || null,
+    );
+  } catch (error) {
+    const failure = studentLifecycleFailure(error);
+    if (failure)
+      return data(
+        { success: false, ...failure },
+        { status: failure.status, headers },
+      );
     return data(
       {
         success: false,
-        error: "수강생을 졸업 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        error: "수강생 상태를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       },
-      { status: 500 },
+      { status: 500, headers },
     );
   }
-
-  return redirect("/admin/students");
+  return redirect("/admin/students", { headers });
 }

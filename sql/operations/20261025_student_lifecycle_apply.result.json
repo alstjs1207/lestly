@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-25T00:03:45.979Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0024_student_lifecycle",
+  "hash": "0303ca8c22b3f32580ff36619201e676c4d9d7094f241d4f4334cee4e267bcfd",
+  "applied": true,
+  "businessDataUnchanged": true,
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1452
+  },
+  "accountGuardPolicies": 17,
+  "functions": [
+    {
+      "proname": "can_deliver_student_notification",
+      "anon_execute": false,
+      "authenticated_execute": false
+    },
+    {
+      "proname": "create_admin_schedule_series",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "proname": "get_account_auth_context",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "proname": "get_student_change_impact",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "proname": "set_student_state",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "proname": "update_admin_schedule_batch",
+      "anon_execute": false,
+      "authenticated_execute": true
+    }
+  ]
+}

@@ -6,7 +6,6 @@ import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import {
   getScheduleById,
-  updateSchedule,
   validateScheduleBatch,
 } from "~/features/schedules/queries";
 import { nowKST, toKST } from "~/features/schedules/utils/kst";
@@ -142,27 +141,30 @@ export async function action({ request, params }: Route.ActionArgs) {
       return data({ success: false, error: errorMessage }, { status: 400 });
     }
 
-    const updateResults = await Promise.all(
-      shiftedSchedules.map((schedule) =>
-        client
-          .from("schedules")
-          .update({
-            student_id: studentId,
-            program_id: programId,
-            start_time: schedule.startTime.toISOString(),
-            end_time: schedule.endTime.toISOString(),
-          })
-          .eq("schedule_id", schedule.scheduleId),
-      ),
+    const { error: updateError } = await client.rpc(
+      "update_admin_schedule_batch",
+      {
+        p_org: organizationId,
+        p_student: studentId,
+        p_program: programId,
+        p_rows: shiftedSchedules.map((schedule) => ({
+          schedule_id: schedule.scheduleId,
+          start_time: schedule.startTime.toISOString(),
+          end_time: schedule.endTime.toISOString(),
+        })),
+      },
     );
-
-    const updateError = updateResults.find((result) => result.error)?.error;
-    if (updateError) {
+    if (updateError)
       return data(
-        { success: false, error: updateError.message },
+        {
+          success: false,
+          error:
+            updateError.message === "schedule_outside_course"
+              ? "수강 종료일 이후로 변경할 수 없습니다. 수강 기간을 먼저 확인해 주세요."
+              : "일정을 변경하지 못했습니다. 수강 기간과 겹치는 일정을 확인해 주세요.",
+        },
         { status: 400 },
       );
-    }
   } else {
     const validation = await validateScheduleBatch(client, {
       organizationId,
@@ -178,17 +180,33 @@ export async function action({ request, params }: Route.ActionArgs) {
       return data({ success: false, error: errorMessage }, { status: 400 });
     }
 
-    // Update single schedule
-    await updateSchedule(client, {
-      scheduleId: parseInt(scheduleId),
-      updates: {
-        student_id: studentId,
-        program_id: programId,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-        is_exception: !!currentSchedule.parent_schedule_id,
+    const { error: updateError } = await client.rpc(
+      "update_admin_schedule_batch",
+      {
+        p_org: organizationId,
+        p_student: studentId,
+        p_program: programId,
+        p_rows: [
+          {
+            schedule_id: parseInt(scheduleId),
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            is_exception: !!currentSchedule.parent_schedule_id,
+          },
+        ],
       },
-    });
+    );
+    if (updateError)
+      return data(
+        {
+          success: false,
+          error:
+            updateError.message === "schedule_outside_course"
+              ? "수강 종료일 이후로 변경할 수 없습니다. 수강 기간을 먼저 확인해 주세요."
+              : "일정을 변경하지 못했습니다. 수강 기간과 겹치는 일정을 확인해 주세요.",
+        },
+        { status: 400 },
+      );
   }
 
   return redirect("/admin/schedules");

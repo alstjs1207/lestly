@@ -124,8 +124,16 @@ export default function StudentDetailScreen({
     nextMonth,
     totalHours,
   } = loaderData;
-  const graduateFetcher = useFetcher<{ success: false; error?: string }>();
-  const deleteFetcher = useFetcher<{ success: false; error?: string }>();
+  const graduateFetcher = useFetcher<{
+    success: false;
+    error?: string;
+    confirmation?: { token: string; cancel_count: number };
+  }>();
+  const deleteFetcher = useFetcher<{
+    success: false;
+    error?: string;
+    confirmation?: { token: string; cancel_count: number };
+  }>();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copiedCurrent, setCopiedCurrent] = useState(false);
   const [copiedNext, setCopiedNext] = useState(false);
@@ -209,26 +217,42 @@ export default function StudentDetailScreen({
                     <DialogTitle>수강생 졸업 처리</DialogTitle>
                     <DialogDescription>
                       {student.name} 수강생을 졸업 처리하시겠습니까? 졸업 처리된
-                      수강생은 일정 등록 시 선택할 수 없습니다.
+                      수강생은 새 수업을 예약할 수 없습니다. 남은 예약은 자동
+                      취소됩니다.
                     </DialogDescription>
                   </DialogHeader>
-                  {graduateFetcher.data?.error && (
-                    <p className="text-destructive text-sm" role="alert">
-                      {graduateFetcher.data.error}
-                    </p>
-                  )}
+                  {graduateFetcher.data?.error &&
+                    !graduateFetcher.data.confirmation && (
+                      <p className="text-destructive text-sm" role="alert">
+                        {graduateFetcher.data.error}
+                      </p>
+                    )}
                   <DialogFooter>
+                    {graduateFetcher.data?.confirmation && (
+                      <p className="text-sm" role="status">
+                        예정 예약{" "}
+                        {graduateFetcher.data.confirmation.cancel_count}건이
+                        자동 취소됩니다. 확인 후 다시 처리해 주세요.
+                      </p>
+                    )}
                     <graduateFetcher.Form
                       method="post"
                       action={`/api/admin/students/${student.profile_id}/graduate`}
                     >
+                      <input
+                        type="hidden"
+                        name="lifecycle_confirmation"
+                        value={graduateFetcher.data?.confirmation?.token ?? ""}
+                      />
                       <Button
                         type="submit"
                         disabled={graduateFetcher.state !== "idle"}
                       >
                         {graduateFetcher.state !== "idle"
                           ? "처리 중..."
-                          : "졸업 처리"}
+                          : graduateFetcher.data?.confirmation
+                            ? "확인하고 졸업 처리"
+                            : "예약 확인"}
                       </Button>
                     </graduateFetcher.Form>
                   </DialogFooter>
@@ -247,19 +271,31 @@ export default function StudentDetailScreen({
                     <DialogTitle>수강생 탈퇴 처리</DialogTitle>
                     <DialogDescription>
                       {student.name} 수강생을 탈퇴 처리하시겠습니까? 탈퇴 처리된
-                      수강생은 관리자 전용 목록에서만 확인할 수 있습니다.
+                      수강생은 로그인할 수 없으며 남은 예약은 자동 취소됩니다.
                     </DialogDescription>
                   </DialogHeader>
-                  {deleteFetcher.data?.error && (
-                    <p className="text-destructive text-sm" role="alert">
-                      {deleteFetcher.data.error}
-                    </p>
-                  )}
+                  {deleteFetcher.data?.error &&
+                    !deleteFetcher.data.confirmation && (
+                      <p className="text-destructive text-sm" role="alert">
+                        {deleteFetcher.data.error}
+                      </p>
+                    )}
                   <DialogFooter>
+                    {deleteFetcher.data?.confirmation && (
+                      <p className="text-sm" role="status">
+                        예정 예약 {deleteFetcher.data.confirmation.cancel_count}
+                        건이 자동 취소됩니다. 확인 후 다시 처리해 주세요.
+                      </p>
+                    )}
                     <deleteFetcher.Form
                       method="post"
                       action={`/api/admin/students/${student.profile_id}/delete`}
                     >
+                      <input
+                        type="hidden"
+                        name="lifecycle_confirmation"
+                        value={deleteFetcher.data?.confirmation?.token ?? ""}
+                      />
                       <Button
                         type="submit"
                         variant="destructive"
@@ -267,7 +303,9 @@ export default function StudentDetailScreen({
                       >
                         {deleteFetcher.state !== "idle"
                           ? "처리 중..."
-                          : "탈퇴 처리"}
+                          : deleteFetcher.data?.confirmation
+                            ? "확인하고 탈퇴 처리"
+                            : "예약 확인"}
                       </Button>
                     </deleteFetcher.Form>
                   </DialogFooter>

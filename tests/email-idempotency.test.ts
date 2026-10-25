@@ -16,6 +16,7 @@ test("real email cron isolates actual SDK idempotency headers from other notific
     alimtalk_variables: { program_title: "Class" },
   }));
   const client = {
+    rpc: async () => ({ data: true, error: null }),
     from(table: string) {
       if (table === "notifications") {
         const query = {

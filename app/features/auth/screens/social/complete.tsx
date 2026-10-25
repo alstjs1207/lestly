@@ -16,7 +16,7 @@ import type { Route } from "./+types/complete";
 import { data, redirect } from "react-router";
 import { z } from "zod";
 
-import makeServerClient from "~/core/lib/supa-client.server";
+import makeServerClient, { getAuthUser } from "~/core/lib/supa-client.server";
 import { isAdmin } from "~/features/admin/guards.server";
 import { hashStudentInviteToken } from "~/features/admin/lib/student-invite.server";
 
@@ -119,7 +119,19 @@ export async function loader({ request }: Route.LoaderArgs) {
       );
     }
 
+    if (!(await getAuthUser(client)))
+      return data(
+        { error: "이 계정은 이용할 수 없습니다." },
+        { status: 403, headers },
+      );
     return redirect("/dashboard", { headers });
+  }
+
+  if (!(await getAuthUser(client))) {
+    return data(
+      { error: "탈퇴 처리된 계정입니다. 학원 관리자에게 문의해 주세요." },
+      { status: 403, headers },
+    );
   }
 
   // Redirect based on user role

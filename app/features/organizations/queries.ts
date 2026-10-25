@@ -5,7 +5,6 @@
  * Includes queries for organization_members junction table.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-
 import type { Database } from "database.types";
 
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
@@ -84,7 +83,28 @@ export async function updateOrganization(
 /**
  * Get user's organizations with role information
  */
-export async function getUserOrganizations(
+const userOrganizationsCache = new WeakMap<
+  SupabaseClient<Database>,
+  Map<string, ReturnType<typeof loadUserOrganizations>>
+>();
+export function getUserOrganizations(
+  client: SupabaseClient<Database>,
+  args: { profileId: string },
+) {
+  let cache = userOrganizationsCache.get(client);
+  if (!cache) {
+    cache = new Map();
+    userOrganizationsCache.set(client, cache);
+  }
+  let result = cache.get(args.profileId);
+  if (!result) {
+    result = loadUserOrganizations(client, args);
+    cache.set(args.profileId, result);
+  }
+  return result;
+}
+
+async function loadUserOrganizations(
   client: SupabaseClient<Database>,
   { profileId }: { profileId: string },
 ) {
@@ -104,7 +124,7 @@ export async function getUserOrganizations(
     `,
     )
     .eq("profile_id", profileId)
-    .eq("state", "NORMAL");
+    .in("state", ["NORMAL", "GRADUATE"]);
 
   if (error) {
     throw error;
@@ -202,10 +222,7 @@ export async function getOrganizationStudents(
  */
 export async function getMembership(
   client: SupabaseClient<Database>,
-  {
-    organizationId,
-    profileId,
-  }: { organizationId: string; profileId: string },
+  { organizationId, profileId }: { organizationId: string; profileId: string },
 ): Promise<OrganizationMember | null> {
   const { data, error } = await client
     .from("organization_members")
@@ -236,9 +253,7 @@ export async function updateMembership(
   }: {
     organizationId: string;
     profileId: string;
-    updates: Partial<
-      Pick<OrganizationMember, "role" | "state" | "type">
-    >;
+    updates: Partial<Pick<OrganizationMember, "role" | "state" | "type">>;
   },
 ): Promise<OrganizationMember> {
   const { data, error } = await client
@@ -297,10 +312,7 @@ export async function addMember(
  */
 export async function removeMember(
   client: SupabaseClient<Database>,
-  {
-    organizationId,
-    profileId,
-  }: { organizationId: string; profileId: string },
+  { organizationId, profileId }: { organizationId: string; profileId: string },
 ): Promise<OrganizationMember> {
   const { data, error } = await client
     .from("organization_members")
@@ -322,10 +334,7 @@ export async function removeMember(
  */
 export async function graduateStudent(
   client: SupabaseClient<Database>,
-  {
-    organizationId,
-    profileId,
-  }: { organizationId: string; profileId: string },
+  { organizationId, profileId }: { organizationId: string; profileId: string },
 ): Promise<OrganizationMember> {
   const { data, error } = await client
     .from("organization_members")

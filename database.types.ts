@@ -21,6 +21,13 @@ export type Database = {
   }
   public: {
     Tables: {
+      student_account_access: {
+        Row: { profile_id: string; blocked: boolean; valid_after: number }
+        Insert: { profile_id: string; blocked?: boolean; valid_after?: number }
+        Update: { profile_id?: string; blocked?: boolean; valid_after?: number }
+        Relationships: [{ foreignKeyName: "student_account_access_profile_id_fkey"; columns: ["profile_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["profile_id"] }]
+      }
+
       in_app_notifications: {
         Row: {
           created_at: string
@@ -135,6 +142,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          delivery_cancelled_at: string | null
           alimtalk_error_code: string | null
           alimtalk_error_message: string | null
           alimtalk_message_id: string | null
@@ -170,6 +178,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          delivery_cancelled_at?: string | null
           alimtalk_error_code?: string | null
           alimtalk_error_message?: string | null
           alimtalk_message_id?: string | null
@@ -207,6 +216,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          delivery_cancelled_at?: string | null
           alimtalk_error_code?: string | null
           alimtalk_error_message?: string | null
           alimtalk_message_id?: string | null
@@ -1059,6 +1069,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_admin_schedule_series: { Args: { p_org: string; p_student: string; p_program: number | null; p_rows: Json; p_rrule?: string | null }; Returns: undefined }
+      update_admin_schedule_batch: { Args: { p_org: string; p_student: string; p_program: number | null; p_rows: Json }; Returns: undefined }
+      get_account_auth_context: { Args: Record<string, never>; Returns: Json }
+      is_account_access_allowed: { Args: Record<string, never>; Returns: boolean }
+      can_deliver_student_notification: { Args: { p_notification_id: number }; Returns: boolean }
+      get_student_change_impact: { Args: { p_organization_id: string; p_student_id: string; p_state: "NORMAL" | "GRADUATE" | "DELETED"; p_end: string | null }; Returns: Json }
+      set_student_state: { Args: { p_organization_id: string; p_student_id: string; p_state: "NORMAL" | "GRADUATE" | "DELETED"; p_confirmation?: string | null }; Returns: undefined }
       book_student_schedule: {
         Args: { p_organization_id: string; p_program_id: number | null; p_start_time: string; p_end_time: string }
         Returns: number

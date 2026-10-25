@@ -9,6 +9,7 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   date,
@@ -182,3 +183,12 @@ export const studentInvites = pgTable(
     }),
   ],
 ).enableRLS();
+
+// Server-only revocation state. SQL migration 0024 manages grants and checks.
+export const studentAccountAccess = pgTable("student_account_access", {
+  profile_id: uuid()
+    .primaryKey()
+    .references(() => profiles.profile_id, { onDelete: "cascade" }),
+  blocked: boolean().notNull().default(false),
+  valid_after: bigint({ mode: "number" }).notNull().default(0),
+}).enableRLS();

@@ -192,6 +192,18 @@ export async function action({ request }: Route.ActionArgs) {
           ? subjectGenerator(variables)
           : `[${template.name}] 알림`;
 
+        const { data: eligible, error: eligibilityError } =
+          await adminClient.rpc("can_deliver_student_notification", {
+            p_notification_id: notification.notification_id,
+          });
+        if (eligibilityError) throw eligibilityError;
+        if (!eligible) {
+          await updateEmailStatus(notification.notification_id, "SKIPPED", {
+            email_error_message: "Student reservation cancelled or inactive",
+          });
+          continue;
+        }
+
         // Send email
         // This SDK version stores idempotency headers on its client instance.
         // Isolate each keyed send from other transactional email requests.

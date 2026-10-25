@@ -11,6 +11,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { loadMockedModule } from "../../tests/helpers/mocked-module.ts";
+import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
+import { checkStudentLifecycle } from "./student-lifecycle.mjs";
 
 const migrationRoot = new URL("../migrations/", import.meta.url);
 const db = new PGlite();
@@ -53,6 +55,7 @@ const claimant = "00000000-0000-0000-0000-000000000005";
 const secondClaimant = "00000000-0000-0000-0000-000000000006";
 const managedStudent = "00000000-0000-0000-0000-000000000099";
 let passed = 0;
+let lifecycleBaseline;
 
 async function asRole(role, id = "", claims = {}) {
   assert.match(role, /^(anon|authenticated|service_role|postgres)$/);
@@ -168,6 +171,21 @@ try {
     await readFile(new URL("meta/_journal.json", migrationRoot), "utf8"),
   );
   for (const entry of journal.entries) {
+    if (entry.idx === 24) {
+      lifecycleBaseline = {
+        policies: (
+          await db.query(
+            "SELECT tablename,policyname,qual,with_check FROM pg_policies WHERE schemaname='public' AND tablename IN ('schedules','profiles','organization_members','programs','instructors')",
+          )
+        ).rows,
+        functions: (
+          await db.query(
+            "SELECT pg_get_functiondef(oid) definition FROM pg_proc WHERE oid IN ('public.get_current_profile_id()'::regprocedure,'public.is_org_admin(uuid)'::regprocedure,'public.is_super_admin()'::regprocedure)",
+          )
+        ).rows.map((r) => r.definition),
+        scheduleReadPolicy: `ALTER POLICY "student-select-own-schedules-policy" ON schedules USING (student_id=public.get_current_profile_id() AND public.is_org_member(organization_id))`,
+      };
+    }
     const path = new URL(`${entry.tag}.sql`, migrationRoot);
     let sql = await readFile(path, "utf8");
     sql = sql.replace(
@@ -401,7 +419,7 @@ try {
       `INSERT INTO student_invites (organization_id,profile_id,token_hash,expires_at,created_by_profile_id)
       VALUES ($1,$2,'forged',now()+interval '1 day',$3)`,
       [orgA, studentB, adminA],
-      /row-level security|schedule_not_authorized/,
+      /row-level security|schedule_not_authorized|student_not_eligible/,
     );
     const changed = await db.query(
       "UPDATE student_invites SET profile_id=$1 WHERE token_hash='valid-invite' RETURNING invite_id",
@@ -971,6 +989,12 @@ try {
             ...studentValues,
             type: "ADULT",
             state: "GRADUATE",
+            lifecycle_confirmation: (
+              await db.query(
+                "SELECT get_student_change_impact($1,$2,'GRADUATE',NULL) impact",
+                [orgA, studentA],
+              )
+            ).rows[0].impact.token,
           }),
           studentA,
         ],
@@ -1842,6 +1866,28 @@ try {
       );
     },
   );
+
+  await checkStudentLifecyclePerformance({
+    db,
+    check,
+    asRole,
+    baseline: lifecycleBaseline,
+    orgA,
+    adminA,
+    studentA,
+  });
+  await checkStudentLifecycle({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+    studentB,
+  });
 
   console.log(
     `SQL security regression: ${passed} checks passed; migrations from ${fileURLToPath(migrationRoot)}`,

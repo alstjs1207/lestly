@@ -169,6 +169,13 @@
       "when": 1792814400000,
       "tag": "0023_instructor_web_push",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792886400000,
+      "tag": "0024_student_lifecycle",
+      "breakpoints": true
     }
   ]
 }

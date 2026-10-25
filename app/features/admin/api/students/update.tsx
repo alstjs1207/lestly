@@ -49,7 +49,13 @@ export async function action({ request, params }: Route.ActionArgs) {
     await saveManagedStudent(
       client,
       organizationId,
-      { ...values, state: parsedState.data },
+      {
+        ...values,
+        state: parsedState.data,
+        lifecycle_confirmation: String(
+          formData.get("lifecycle_confirmation") ?? "",
+        ),
+      },
       studentId,
     );
     return redirect(`/admin/students/${studentId}`);

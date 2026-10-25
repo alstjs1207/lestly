@@ -19,7 +19,7 @@ import { data, redirect } from "react-router";
 import { z } from "zod";
 
 import { getSafeRedirectPath } from "~/core/lib/request-security";
-import makeServerClient from "~/core/lib/supa-client.server";
+import makeServerClient, { getAuthUser } from "~/core/lib/supa-client.server";
 
 /**
  * Meta function for the confirmation page
@@ -92,6 +92,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Return error if verification fails
   if (error) {
     return data({ error: error.message }, { status: 400, headers });
+  }
+
+  if (!(await getAuthUser(client))) {
+    return data(
+      { error: "탈퇴 처리된 계정입니다. 학원 관리자에게 문의해 주세요." },
+      { status: 403, headers },
+    );
   }
 
   // Special handling for email change confirmations

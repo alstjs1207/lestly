@@ -21,6 +21,7 @@ import { CoursePeriodCard } from "./course-period-card";
 import { ReflectionJournal } from "./reflection-journal";
 
 export interface LearningHomeProps {
+  graduated?: boolean;
   profileId: string;
   name: string;
   now: string;
@@ -78,11 +79,19 @@ export function LearningHome(props: LearningHomeProps) {
             : "배움의 첫걸음을 함께해요."}
         </h1>
       </header>
-      <CoursePeriodCard
-        startDate={props.classStartDate}
-        endDate={props.classEndDate}
-        now={now}
-      />
+      {props.graduated && (
+        <p className="rounded-xl bg-violet-50 p-4 text-sm text-violet-900 dark:bg-violet-950 dark:text-violet-100">
+          졸업생입니다. 지난 수업 기록을 확인할 수 있으며 새 수업은 예약할 수
+          없습니다.
+        </p>
+      )}
+      {!props.graduated && (
+        <CoursePeriodCard
+          startDate={props.classStartDate}
+          endDate={props.classEndDate}
+          now={now}
+        />
+      )}
       <div className="grid items-start gap-5 lg:grid-cols-[1.05fr_1fr] lg:gap-6">
         <section className={card} aria-label="쌓여가는 배움">
           <div className="mb-5 flex items-center justify-between gap-2">
@@ -235,7 +244,7 @@ export function LearningHome(props: LearningHomeProps) {
                   일정 확인
                 </Link>
               </Button>
-              {!expired && (
+              {!expired && !props.graduated && (
                 <Button
                   asChild
                   className="flex-1 bg-violet-700 text-white hover:bg-violet-800 dark:bg-violet-500 dark:hover:bg-violet-600"

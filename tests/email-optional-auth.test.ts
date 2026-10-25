@@ -42,6 +42,7 @@ test("Kakao OAuth keeps preview callbacks on the cookie origin, omits email and 
           "~/core/lib/site-origin.server": { getSiteOrigin },
           "../../lib/social-oauth": { getSocialOAuthOptions },
           "~/core/lib/supa-client.server": {
+            getAuthUser: async () => ({ id: "auth-user" }),
             default: () => [
               {
                 auth: {
@@ -128,6 +129,7 @@ test("provider linking uses the existing PKCE completion route on the preview or
         requireAuthentication: async () => ({ id: "existing-user" }),
       },
       "~/core/lib/supa-client.server": {
+        getAuthUser: async () => ({ id: "auth-user" }),
         default: () => [
           {
             auth: {
@@ -194,6 +196,7 @@ test("OAuth callback completes a session and claims the managed student without 
       "react-router": router,
       zod: { z },
       "~/core/lib/supa-client.server": {
+        getAuthUser: async () => ({ id: "auth-user" }),
         default: () => [client, new Headers()],
       },
       "~/features/admin/guards.server": { isAdmin: async () => null },
@@ -228,6 +231,7 @@ test("password API rejects email-less accounts before attempting an Auth update"
         requireAuthentication: async () => ({ id: "kakao-id" }),
       },
       "~/core/lib/supa-client.server": {
+        getAuthUser: async () => ({ id: "auth-user" }),
         default: () => [
           {
             auth: {

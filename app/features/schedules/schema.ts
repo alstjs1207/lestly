@@ -73,6 +73,11 @@ export const schedules = pgTable(
       table.organization_id,
       table.start_time,
     ),
+    index("schedules_lifecycle_idx").on(
+      table.organization_id,
+      table.student_id,
+      table.start_time,
+    ),
     index("schedules_student_start_idx").on(table.student_id, table.start_time),
     index("schedules_parent_idx")
       .on(table.parent_schedule_id)
@@ -89,7 +94,9 @@ export const schedules = pgTable(
       for: "select",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id})`,
+      using: sql`${table.student_id} = (SELECT public.get_current_profile_id()) AND (
+        ${table.organization_id} = ANY ((SELECT public.get_account_org_ids('STUDENT', ARRAY['NORMAL']::public.user_state[]))::uuid[])
+        OR (${table.end_time} <= now() AND ${table.organization_id} = ANY ((SELECT public.get_account_org_ids('STUDENT', ARRAY['GRADUATE']::public.user_state[]))::uuid[]))`,
     }),
     // Student creation uses book_student_schedule; no direct INSERT policy.
     // RLS Policy: Students can delete their own schedules (not on the same day)
