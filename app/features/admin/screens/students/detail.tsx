@@ -5,13 +5,11 @@ import {
   ChevronLeftIcon,
   ClipboardIcon,
   EditIcon,
-  GraduationCapIcon,
   LinkIcon,
   PhoneIcon,
-  TrashIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, data, useFetcher } from "react-router";
+import { Link, data } from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -23,15 +21,6 @@ import {
   CardTitle,
 } from "~/core/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/core/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -42,6 +31,7 @@ import {
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import StudentInviteDialog from "../../components/student-invite-dialog";
+import StudentStateDialog from "../../components/student-state-dialog";
 import { StudentTotalHours } from "../../components/student-total-hours";
 import { requireAdminRole } from "../../guards.server";
 import {
@@ -124,16 +114,6 @@ export default function StudentDetailScreen({
     nextMonth,
     totalHours,
   } = loaderData;
-  const graduateFetcher = useFetcher<{
-    success: false;
-    error?: string;
-    confirmation?: { token: string; cancel_count: number };
-  }>();
-  const deleteFetcher = useFetcher<{
-    success: false;
-    error?: string;
-    confirmation?: { token: string; cancel_count: number };
-  }>();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copiedCurrent, setCopiedCurrent] = useState(false);
   const [copiedNext, setCopiedNext] = useState(false);
@@ -205,112 +185,18 @@ export default function StudentDetailScreen({
                 </>
               )}
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <GraduationCapIcon className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">졸업</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>수강생 졸업 처리</DialogTitle>
-                    <DialogDescription>
-                      {student.name} 수강생을 졸업 처리하시겠습니까? 졸업 처리된
-                      수강생은 새 수업을 예약할 수 없습니다. 남은 예약은 자동
-                      취소됩니다.
-                    </DialogDescription>
-                  </DialogHeader>
-                  {graduateFetcher.data?.error &&
-                    !graduateFetcher.data.confirmation && (
-                      <p className="text-destructive text-sm" role="alert">
-                        {graduateFetcher.data.error}
-                      </p>
-                    )}
-                  <DialogFooter>
-                    {graduateFetcher.data?.confirmation && (
-                      <p className="text-sm" role="status">
-                        예정 예약{" "}
-                        {graduateFetcher.data.confirmation.cancel_count}건이
-                        자동 취소됩니다. 확인 후 다시 처리해 주세요.
-                      </p>
-                    )}
-                    <graduateFetcher.Form
-                      method="post"
-                      action={`/api/admin/students/${student.profile_id}/graduate`}
-                    >
-                      <input
-                        type="hidden"
-                        name="lifecycle_confirmation"
-                        value={graduateFetcher.data?.confirmation?.token ?? ""}
-                      />
-                      <Button
-                        type="submit"
-                        disabled={graduateFetcher.state !== "idle"}
-                      >
-                        {graduateFetcher.state !== "idle"
-                          ? "처리 중..."
-                          : graduateFetcher.data?.confirmation
-                            ? "확인하고 졸업 처리"
-                            : "예약 확인"}
-                      </Button>
-                    </graduateFetcher.Form>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="destructive">
-                    <TrashIcon className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">탈퇴</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>수강생 탈퇴 처리</DialogTitle>
-                    <DialogDescription>
-                      {student.name} 수강생을 탈퇴 처리하시겠습니까? 탈퇴 처리된
-                      수강생은 로그인할 수 없으며 남은 예약은 자동 취소됩니다.
-                    </DialogDescription>
-                  </DialogHeader>
-                  {deleteFetcher.data?.error &&
-                    !deleteFetcher.data.confirmation && (
-                      <p className="text-destructive text-sm" role="alert">
-                        {deleteFetcher.data.error}
-                      </p>
-                    )}
-                  <DialogFooter>
-                    {deleteFetcher.data?.confirmation && (
-                      <p className="text-sm" role="status">
-                        예정 예약 {deleteFetcher.data.confirmation.cancel_count}
-                        건이 자동 취소됩니다. 확인 후 다시 처리해 주세요.
-                      </p>
-                    )}
-                    <deleteFetcher.Form
-                      method="post"
-                      action={`/api/admin/students/${student.profile_id}/delete`}
-                    >
-                      <input
-                        type="hidden"
-                        name="lifecycle_confirmation"
-                        value={deleteFetcher.data?.confirmation?.token ?? ""}
-                      />
-                      <Button
-                        type="submit"
-                        variant="destructive"
-                        disabled={deleteFetcher.state !== "idle"}
-                      >
-                        {deleteFetcher.state !== "idle"
-                          ? "처리 중..."
-                          : deleteFetcher.data?.confirmation
-                            ? "확인하고 탈퇴 처리"
-                            : "예약 확인"}
-                      </Button>
-                    </deleteFetcher.Form>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <StudentStateDialog
+                key={`${student.profile_id}-graduate`}
+                studentId={student.profile_id}
+                studentName={student.name}
+                kind="graduate"
+              />
+              <StudentStateDialog
+                key={`${student.profile_id}-delete`}
+                studentId={student.profile_id}
+                studentName={student.name}
+                kind="delete"
+              />
             </>
           )}
         </div>

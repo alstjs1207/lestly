@@ -5,6 +5,7 @@ import { getAuthenticatedProfile } from "../app/core/lib/authenticated-profile.s
 import { getAuthUser } from "../app/core/lib/supa-client.server.ts";
 import {
   changeStudentState,
+  getStudentStateChangeImpact,
   parseStudentChangeImpact,
   studentLifecycleFailure,
 } from "../app/features/admin/lib/student-lifecycle.server.ts";
@@ -170,5 +171,87 @@ for (const [route, state] of [
       "/admin/students",
     );
     assert.equal(confirmed, true);
+  });
+}
+
+for (const [route, state] of [
+  ["graduate", "GRADUATE"],
+  ["delete", "DELETED"],
+]) {
+  test(`${route} GET scopes the lookup, uses current end date, and never mutates state`, async () => {
+    const filters: unknown[] = [];
+    let rpcCalls = 0;
+    const query = {
+      select: (columns: string) => {
+        assert.equal(columns, "profiles!inner(class_end_date)");
+        return query;
+      },
+      eq: (key: string, value: string) => {
+        filters.push([key, value]);
+        return query;
+      },
+      maybeSingle: async () => ({
+        data: { profiles: { class_end_date: "2027-01-01" } },
+        error: null,
+      }),
+    };
+    const client = {
+      from: (table: string) => {
+        assert.equal(table, "organization_members");
+        return query;
+      },
+      rpc: async (name: string, args: unknown) => {
+        rpcCalls++;
+        assert.equal(name, "get_student_change_impact");
+        assert.deepEqual(args, {
+          p_organization_id: "trusted-org",
+          p_student_id: "student",
+          p_state: state,
+          p_end: "2027-01-01",
+        });
+        return { data: confirmation, error: null };
+      },
+    };
+    const handler = loadMockedModule<{ loader(args: unknown): Promise<any> }>(
+      new URL(
+        `../app/features/admin/api/students/${route}.tsx`,
+        import.meta.url,
+      ),
+      {
+        "react-router": {
+          data: (body: unknown, init: unknown) => ({ body, init }),
+        },
+        "~/core/lib/guards.server": {},
+        "~/core/lib/supa-client.server": {
+          default: () => [client, new Headers()],
+        },
+        "../../guards.server": {
+          requireAdminRole: async () => ({ organizationId: "trusted-org" }),
+        },
+        "../../lib/student-lifecycle.server": {
+          getStudentStateChangeImpact,
+          studentLifecycleFailure,
+        },
+      },
+    );
+    const result = await handler.loader({
+      request: new Request("https://lestly.test/impact"),
+      params: { studentId: "student" },
+    });
+    assert.deepEqual(result.body.impact, confirmation);
+    assert.equal(result.init.headers.get("Cache-Control"), "private, no-store");
+    assert.equal(rpcCalls, 1);
+    assert.deepEqual(filters, [
+      ["organization_id", "trusted-org"],
+      ["profile_id", "student"],
+      ["role", "STUDENT"],
+    ]);
+    query.maybeSingle = async () => ({ data: null, error: null }) as never;
+    const missing = await handler.loader({
+      request: new Request("https://lestly.test/impact"),
+      params: { studentId: "student" },
+    });
+    assert.equal(missing.init.status, 404);
+    assert.equal(rpcCalls, 1);
   });
 }

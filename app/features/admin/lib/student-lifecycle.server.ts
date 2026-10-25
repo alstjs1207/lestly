@@ -75,3 +75,33 @@ export async function changeStudentState(
   });
   if (error) throw error;
 }
+
+export async function getStudentStateChangeImpact(
+  client: SupabaseClient<Database>,
+  organizationId: string,
+  studentId: string,
+  state: "GRADUATE" | "DELETED",
+) {
+  const { data: member, error: memberError } = await client
+    .from("organization_members")
+    .select("profiles!inner(class_end_date)")
+    .eq("organization_id", organizationId)
+    .eq("profile_id", studentId)
+    .eq("role", "STUDENT")
+    .maybeSingle();
+  if (memberError) throw memberError;
+  if (!member) throw { code: "P0002" };
+  const { data: impact, error } = await client.rpc(
+    "get_student_change_impact",
+    {
+      p_organization_id: organizationId,
+      p_student_id: studentId,
+      p_state: state,
+      p_end: member.profiles.class_end_date,
+    },
+  );
+  if (error) throw error;
+  const parsed = parseStudentChangeImpact(impact);
+  if (!parsed) throw new Error("invalid_student_change_impact");
+  return parsed;
+}

@@ -56,6 +56,7 @@ const secondClaimant = "00000000-0000-0000-0000-000000000006";
 const managedStudent = "00000000-0000-0000-0000-000000000099";
 let passed = 0;
 let lifecycleBaseline;
+let studentEditBaseline;
 
 async function asRole(role, id = "", claims = {}) {
   assert.match(role, /^(anon|authenticated|service_role|postgres)$/);
@@ -186,6 +187,12 @@ try {
         scheduleReadPolicy: `ALTER POLICY "student-select-own-schedules-policy" ON schedules USING (student_id=public.get_current_profile_id() AND public.is_org_member(organization_id))`,
       };
     }
+    if (entry.idx === 25)
+      studentEditBaseline = (
+        await db.query(
+          "SELECT pg_get_functiondef('public.save_managed_student(uuid,jsonb,uuid)'::regprocedure) definition",
+        )
+      ).rows[0].definition;
     const path = new URL(`${entry.tag}.sql`, migrationRoot);
     let sql = await readFile(path, "utf8");
     sql = sql.replace(
@@ -1887,6 +1894,7 @@ try {
     adminB,
     studentA,
     studentB,
+    studentEditBaseline,
   });
 
   console.log(

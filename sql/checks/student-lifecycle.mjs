@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { mkdir, writeFile } from "node:fs/promises";
 
 export async function checkStudentLifecycle({
   db,
@@ -11,6 +12,7 @@ export async function checkStudentLifecycle({
   adminB,
   studentA,
   studentB,
+  studentEditBaseline,
 }) {
   const impact = async (state, end = null) =>
     (
@@ -533,6 +535,147 @@ export async function checkStudentLifecycle({
         [orgA, studentA, JSON.stringify(saved)],
         /schedule_not_authorized/,
       );
+    },
+  );
+  const editValues = async () => {
+    await db.query(
+      "UPDATE organization_members SET type='EXAMINEE' WHERE organization_id=$1 AND profile_id=$2",
+      [orgA, studentA],
+    );
+    return (
+      await db.query(
+        `SELECT jsonb_build_object(
+    'name','Edited name','phone','01033334444','region','Seoul','type',m.type,'state',m.state,
+    'class_start_date',p.class_start_date,'class_end_date',p.class_end_date) v
+    FROM profiles p JOIN organization_members m USING(profile_id)
+    WHERE p.profile_id=$1 AND m.organization_id=$2`,
+        [studentA, orgA],
+      )
+    ).rows[0].v;
+  };
+  await check(
+    "ordinary edits bypass cancellation checks while destructive edits still require them",
+    async () => {
+      const values = await editValues();
+      await db.exec(`CREATE OR REPLACE FUNCTION public.get_student_change_impact(p_organization_id uuid,p_student_id uuid,p_state public.user_state,p_end date)
+      RETURNS jsonb LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'unexpected_impact_check'; END $$`);
+      await asRole("authenticated", adminA);
+      await db.query("SELECT save_managed_student($1,$2,$3)", [
+        orgA,
+        values,
+        studentA,
+      ]);
+      assert.equal(
+        (
+          await db.query("SELECT name FROM profiles WHERE profile_id=$1", [
+            studentA,
+          ])
+        ).rows[0].name,
+        "Edited name",
+      );
+      // If the helper was bypassed for destructive changes, this sentinel would not fire.
+      await blocked(
+        "SELECT save_managed_student($1,$2,$3)",
+        [orgA, { ...values, state: "GRADUATE" }, studentA],
+        /unexpected_impact_check/,
+      );
+      await blocked(
+        "SELECT save_managed_student($1,$2,$3)",
+        [orgA, { ...values, class_end_date: "2098-01-01" }, studentA],
+        /unexpected_impact_check/,
+      );
+    },
+  );
+  await check(
+    "ordinary edits never overwrite a lifecycle change committed after their initial read",
+    async () => {
+      const values = await editValues();
+      // Change lifecycle fields between the initial read and ordinary profile UPDATE.
+      await db.exec(`CREATE FUNCTION public.simulate_concurrent_student_change() RETURNS trigger
+      LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
+        UPDATE public.organization_members SET state='GRADUATE' WHERE profile_id=NEW.profile_id AND role='STUDENT';
+        NEW.class_end_date := '2098-01-01';
+        RETURN NEW;
+      END $$;
+      CREATE TRIGGER simulate_concurrent_student_change BEFORE UPDATE OF name ON profiles
+        FOR EACH ROW EXECUTE FUNCTION public.simulate_concurrent_student_change()`);
+      await asRole("authenticated", adminA);
+      await db.query("SELECT save_managed_student($1,$2,$3)", [
+        orgA,
+        values,
+        studentA,
+      ]);
+      assert.equal(await state(), "GRADUATE");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT class_end_date::text e FROM profiles WHERE profile_id=$1",
+            [studentA],
+          )
+        ).rows[0].e,
+        "2098-01-01",
+      );
+    },
+  );
+  await check(
+    "ordinary edits on shared profiles remain allowed while date edits stay protected",
+    async () => {
+      const values = await editValues();
+      await db.query(
+        "INSERT INTO organization_members(organization_id,profile_id,role) VALUES($1,$2,'STUDENT')",
+        [orgB, studentA],
+      );
+      await asRole("authenticated", adminA);
+      await db.query("SELECT save_managed_student($1,$2,$3)", [
+        orgA,
+        values,
+        studentA,
+      ]);
+      await blocked(
+        "SELECT save_managed_student($1,$2,$3)",
+        [orgA, { ...values, class_start_date: "2020-01-01" }, studentA],
+        /course_period_shared_profile/,
+      );
+    },
+  );
+  await check(
+    "ordinary edit benchmark compares the previous function on the same student",
+    async () => {
+      const values = await editValues();
+      const current = (
+        await db.query(
+          "SELECT pg_get_functiondef('public.save_managed_student(uuid,jsonb,uuid)'::regprocedure) definition",
+        )
+      ).rows[0].definition;
+      const measurements = {};
+      for (const [label, definition] of [
+        ["before", studentEditBaseline],
+        ["after", current],
+      ]) {
+        await asRole("postgres");
+        await db.exec(definition);
+        await asRole("authenticated", adminA);
+        const times = [];
+        for (let i = 0; i < 8; i++) {
+          const plan = (
+            await db.query(
+              "EXPLAIN (ANALYZE,FORMAT JSON) SELECT save_managed_student($1,$2,$3)",
+              [orgA, values, studentA],
+            )
+          ).rows[0]["QUERY PLAN"][0];
+          if (i) times.push(plan["Execution Time"]);
+        }
+        measurements[label] = {
+          medianMs: [...times].sort((a, b) => a - b)[3],
+          samples: times,
+        };
+      }
+      await mkdir("test-results", { recursive: true });
+      await writeFile(
+        "test-results/student-edit-performance.json",
+        JSON.stringify({ runtime: "PGlite", ...measurements }, null, 2) + "\n",
+      );
+      console.log("Student edit benchmark:", JSON.stringify(measurements));
     },
   );
 }

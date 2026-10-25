@@ -8,8 +8,34 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import { requireAdminRole } from "../../guards.server";
 import {
   changeStudentState,
+  getStudentStateChangeImpact,
   studentLifecycleFailure,
 } from "../../lib/student-lifecycle.server";
+
+export async function loader({ request, params }: Route.LoaderArgs) {
+  const [client, headers] = makeServerClient(request);
+  const { organizationId } = await requireAdminRole(client);
+  headers.set("Cache-Control", "private, no-store");
+  try {
+    const impact = await getStudentStateChangeImpact(
+      client,
+      organizationId,
+      params.studentId,
+      "DELETED",
+    );
+    return data({ impact }, { headers });
+  } catch (error) {
+    const failure = studentLifecycleFailure(error);
+    return data(
+      {
+        error:
+          failure?.error ??
+          "예약 정보를 조회하지 못했습니다. 다시 시도해 주세요.",
+      },
+      { status: failure?.status ?? 500, headers },
+    );
+  }
+}
 
 export async function action({ request, params }: Route.ActionArgs) {
   requireMethod("POST")(request);

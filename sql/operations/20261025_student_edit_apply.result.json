@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-25T00:51:32.449Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0025_student_edit_fast_path",
+  "hash": "1bc600fcb029163a615445a908202c807ef7ef9e3f674bd99d7b122ee9f9a5a6",
+  "applied": true,
+  "businessDataUnchanged": true,
+  "functionPermissionsUnchanged": true
+}
