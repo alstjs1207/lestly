@@ -50,7 +50,7 @@ export default function AdminMobileNav() {
   return (
     <nav
       aria-label="관리자 주요 메뉴"
-      className="bg-background/95 fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-5 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="bg-background/95 fixed inset-x-0 bottom-0 z-40 grid h-[calc(4rem+env(safe-area-inset-bottom,0px))] grid-cols-5 border-t pb-[env(safe-area-inset-bottom,0px)] backdrop-blur md:hidden"
     >
       {items.map((item) => (
         <Link

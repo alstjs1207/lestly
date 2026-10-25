@@ -93,7 +93,7 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             <LangSwitcher disabled />
           </div>
         </header>
-        <main className="bg-muted/20 flex-1 overflow-auto p-4 pb-24 md:p-6">
+        <main className="bg-muted/20 flex-1 overflow-auto p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:p-6">
           <Outlet />
         </main>
       </SidebarInset>

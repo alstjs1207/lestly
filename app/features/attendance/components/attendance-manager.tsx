@@ -462,7 +462,7 @@ function AttendanceEditor({
           </Button>
         </div>
       )}
-      <div className="bg-background sticky bottom-16 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 shadow-sm md:bottom-3">
+      <div className="bg-background flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 shadow-sm md:sticky md:bottom-3 md:z-20">
         <div>
           <p className="text-sm font-medium">
             {changes.length
