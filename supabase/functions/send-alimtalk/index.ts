@@ -165,10 +165,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: eligible, error: eligibilityError } = await adminClient.rpc("can_deliver_student_notification", { p_notification_id: notification_id });
-    if (eligibilityError) throw eligibilityError;
-    if (!eligible) return new Response(JSON.stringify({ skipped: true, reason: "Student reservation cancelled or inactive" }), { status: 200, headers: { "Content-Type": "application/json" } });
-
     // 2. Get template info (include content for SMS mode)
     const { data: template } = await adminClient
       .from("super_templates")

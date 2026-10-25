@@ -42,6 +42,6 @@
   "deploymentId": "BGonA5CXyDjqZjTQLfj2GmLCErBt",
   "status": "Ready",
   "productionSourceCommit": "98131dd81fcd6b22972edbec733017112bbef6ef",
-  "edgePatchStatus": "awaiting_separate_approval",
+  "edgePatchStatus": "removed_not_deployed",
   "newDatabaseCreated": false
 }
