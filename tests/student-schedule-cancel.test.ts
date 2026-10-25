@@ -24,6 +24,11 @@ function handler({
         select() {
           return builder;
         },
+        is(key: string, value: unknown) {
+          assert.equal(key, "cancelled_at");
+          assert.equal(value, null);
+          return this;
+        },
         eq(key: string, value: unknown) {
           filters.push({ table, key, value });
           return builder;

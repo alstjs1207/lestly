@@ -12,7 +12,7 @@ export async function getStudentHoursTotals(
 ): Promise<Record<string, number>> {
   if (studentIds.length === 0) return {};
 
-  const { data, error } = await client.rpc("get_student_completed_hours", {
+  const { data, error } = await client.rpc("get_student_attended_hours", {
     p_student_ids: studentIds,
     ...(organizationId && { p_organization_id: organizationId }),
   });
@@ -23,14 +23,15 @@ export async function getStudentHoursTotals(
     );
   }
 
-  // Rolling deployments may serve the application before the completed-hours RPC exists.
-  // Retain the same RLS-filtered result until migration 0021 is applied.
+  // Only confirmed attendance may be counted, including the paginated fallback.
   if (error.code !== "PGRST202" && error.code !== "42883") throw error;
   const now = new Date().toISOString();
   const schedules = await fetchAllRows((from, to) => {
     let query = client
       .from("schedules")
       .select("student_id, start_time, end_time")
+      .is("cancelled_at", null)
+      .eq("attendance_status", "PRESENT")
       .in("student_id", studentIds)
       .lte("end_time", now)
       .order("schedule_id", { ascending: true });

@@ -1,6 +1,7 @@
 import {
   CalendarIcon,
   CalendarPlusIcon,
+  ClipboardCheckIcon,
   HomeIcon,
   UsersIcon,
 } from "lucide-react";
@@ -24,6 +25,12 @@ const items = [
       pathname !== "/admin/schedules/new",
   },
   {
+    label: "출결",
+    to: "/admin/attendance",
+    icon: ClipboardCheckIcon,
+    isActive: (pathname: string) => pathname.startsWith("/admin/attendance"),
+  },
+  {
     label: "등록",
     to: "/admin/schedules/new",
     icon: CalendarPlusIcon,
@@ -43,7 +50,7 @@ export default function AdminMobileNav() {
   return (
     <nav
       aria-label="관리자 주요 메뉴"
-      className="bg-background/95 fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="bg-background/95 fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-5 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
       {items.map((item) => (
         <Link

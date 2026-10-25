@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-25T15:16:30.884Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0027_attendance",
+  "hash": "7ea89b2020eb04fbda2a46d6dbd7270b834d20960fed2062309847cd36009206",
+  "applied": true,
+  "businessDataUnchanged": true,
+  "legacyProductionTotalsUnchanged": true,
+  "legacyCompletedHours": 3780,
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1110
+  },
+  "pendingReservations": 1110,
+  "attendanceEvents": 0,
+  "functions": [
+    {
+      "proname": "get_student_attended_hours",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "proname": "save_attendance",
+      "anon_execute": false,
+      "authenticated_execute": true
+    }
+  ],
+  "eventPrivileges": {
+    "can_read": true,
+    "can_insert": false,
+    "can_update": false,
+    "can_delete": false
+  }
+}

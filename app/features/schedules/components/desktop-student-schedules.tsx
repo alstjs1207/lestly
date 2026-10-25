@@ -209,7 +209,13 @@ export function DesktopStudentSchedules({
                     </span>
                   </div>
                   <span className="shrink-0 rounded-lg bg-violet-50 px-2 py-1 text-xs text-violet-800 dark:bg-violet-950/60 dark:text-violet-200">
-                    {ended ? "일정 종료" : running ? "진행 중" : "예약 확정"}
+                    {ended
+                      ? s.attendance_status === "PRESENT"
+                        ? "출석 확인"
+                        : "출결 미확인"
+                      : running
+                        ? "진행 중"
+                        : "예약 확정"}
                   </span>
                 </button>
               );

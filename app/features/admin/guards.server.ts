@@ -400,7 +400,8 @@ export async function getGlobalStats() {
       .select("profile_id", { count: "exact", head: true }),
     adminClient
       .from("schedules")
-      .select("schedule_id", { count: "exact", head: true }),
+      .select("schedule_id", { count: "exact", head: true })
+      .is("cancelled_at", null),
   ]);
 
   return {

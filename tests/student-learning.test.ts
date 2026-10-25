@@ -27,6 +27,7 @@ const row = (id: number, start: string, end: string) => ({
   schedule_id: id,
   start_time: start,
   end_time: end,
+  attendance_status: "PRESENT",
   program: null,
 });
 const ended = row(1, "2026-10-12T01:00:00Z", "2026-10-12T04:00:00Z");

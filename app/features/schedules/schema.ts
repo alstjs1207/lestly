@@ -10,6 +10,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   pgPolicy,
   pgTable,
   text,
@@ -56,9 +57,31 @@ export const schedules = pgTable(
     parent_schedule_id: bigint("parent_schedule_id", { mode: "number" }),
     // Whether this is an exception to a recurring schedule
     is_exception: boolean("is_exception").notNull().default(false),
+    attendance_status: text("attendance_status").notNull().default("PENDING"),
+    attendance_version: integer("attendance_version").notNull().default(0),
+    attendance_updated_at: timestamp("attendance_updated_at", {
+      withTimezone: true,
+    }),
+    attendance_updated_by: uuid("attendance_updated_by"),
+    cancelled_at: timestamp("cancelled_at", { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
+    index("schedules_attendance_pending_idx")
+      .on(table.organization_id, table.start_time, table.schedule_id)
+      .where(sql`${table.attendance_status} = 'PENDING'`),
+    check(
+      "schedules_attendance_status_check",
+      sql`${table.attendance_status} IN ('PENDING', 'PRESENT', 'ABSENT')`,
+    ),
+    check(
+      "schedules_attendance_cancellation_check",
+      sql`(${table.attendance_status} = 'ABSENT') = (${table.cancelled_at} IS NOT NULL)`,
+    ),
+    check(
+      "schedules_attendance_version_check",
+      sql`${table.attendance_version} >= 0`,
+    ),
     // DEFERRABLE schedules_program_tenant_fk and eligibility triggers are
     // maintained in SQL; Drizzle cannot express deferred FK timing.
     unique("schedules_id_org_unique").on(

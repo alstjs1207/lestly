@@ -53,6 +53,7 @@ export async function getNextScheduleForProgram(
   const { data, error } = await client
     .from("schedules")
     .select("schedule_id, start_time, end_time")
+    .is("cancelled_at", null)
     .eq("program_id", programId)
     .gte("start_time", now)
     .order("start_time", { ascending: true })

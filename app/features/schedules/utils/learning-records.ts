@@ -4,6 +4,7 @@ export interface LearningSchedule {
   schedule_id: number;
   start_time: string;
   end_time: string;
+  attendance_status?: string;
   program: {
     program_id: number;
     title: string;
@@ -22,15 +23,24 @@ export function scheduleHours(
 }
 
 export function completedSchedules<
-  T extends Pick<LearningSchedule, "start_time" | "end_time">,
+  T extends Pick<
+    LearningSchedule,
+    "start_time" | "end_time" | "attendance_status"
+  >,
 >(schedules: T[], now: Date) {
   return schedules.filter(
-    (s) => Date.parse(s.end_time) <= now.getTime() && scheduleHours(s) > 0,
+    (s) =>
+      s.attendance_status === "PRESENT" &&
+      Date.parse(s.end_time) <= now.getTime() &&
+      scheduleHours(s) > 0,
   );
 }
 
 export function sumScheduleHours(
-  schedules: Pick<LearningSchedule, "start_time" | "end_time">[],
+  schedules: Pick<
+    LearningSchedule,
+    "start_time" | "end_time" | "attendance_status"
+  >[],
 ) {
   return (
     Math.round(schedules.reduce((sum, s) => sum + scheduleHours(s), 0) * 10) /
@@ -39,7 +49,10 @@ export function sumScheduleHours(
 }
 
 export function learningHeatmap(
-  schedules: Pick<LearningSchedule, "start_time" | "end_time">[],
+  schedules: Pick<
+    LearningSchedule,
+    "start_time" | "end_time" | "attendance_status"
+  >[],
   now: Date,
 ) {
   const kst = toKST(now);

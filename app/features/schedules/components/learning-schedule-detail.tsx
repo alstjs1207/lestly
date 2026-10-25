@@ -79,7 +79,7 @@ export function LearningScheduleDetail({
         <DialogHeader>
           <DialogTitle>수업 기록 상세</DialogTitle>
           <DialogDescription>
-            종료된 수업 일정에 등록된 정보예요. 출석 여부와는 별개예요.
+            출석으로 확인된 수업 기록이에요.
           </DialogDescription>
         </DialogHeader>
         {schedule && <ScheduleInformation schedule={schedule} />}

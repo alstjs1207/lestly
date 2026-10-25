@@ -141,6 +141,7 @@ export async function action({ request }: Route.ActionArgs) {
             organizations(name)
           `,
           )
+          .is("cancelled_at", null)
           .eq("organization_id", orgTemplate.organization_id)
           .gte("start_time", targetStartMin.toISOString())
           .lt("start_time", targetStartMax.toISOString());
@@ -262,6 +263,7 @@ export async function action({ request }: Route.ActionArgs) {
           organizations(name)
         `,
         )
+        .is("cancelled_at", null)
         .gte("start_time", targetStartMin.toISOString())
         .lt("start_time", targetStartMax.toISOString());
 

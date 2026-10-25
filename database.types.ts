@@ -21,6 +21,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance_events: {
+        Row: { event_id: number; organization_id: string; schedule_id: number; version: number; previous_status: string; status: string; actor_profile_id: string; actor_name: string; recorded_at: string; snapshot: Json }
+        Insert: { event_id?: never; organization_id: string; schedule_id: number; version: number; previous_status: string; status: string; actor_profile_id: string; actor_name: string; recorded_at?: string; snapshot: Json }
+        Update: { event_id?: never; organization_id?: string; schedule_id?: number; version?: number; previous_status?: string; status?: string; actor_profile_id?: string; actor_name?: string; recorded_at?: string; snapshot?: Json }
+        Relationships: []
+      }
       student_account_access: {
         Row: { profile_id: string; blocked: boolean; valid_after: number }
         Insert: { profile_id: string; blocked?: boolean; valid_after?: number }
@@ -866,6 +872,11 @@ export type Database = {
       }
       schedules: {
         Row: {
+          attendance_status: string
+          attendance_version: number
+          attendance_updated_at: string | null
+          attendance_updated_by: string | null
+          cancelled_at: string | null
           created_at: string
           end_time: string
           is_exception: boolean
@@ -879,6 +890,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attendance_status?: string
+          attendance_version?: number
+          attendance_updated_at?: string | null
+          attendance_updated_by?: string | null
+          cancelled_at?: string | null
           created_at?: string
           end_time: string
           is_exception?: boolean
@@ -892,6 +908,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attendance_status?: string
+          attendance_version?: number
+          attendance_updated_at?: string | null
+          attendance_updated_by?: string | null
+          cancelled_at?: string | null
           created_at?: string
           end_time?: string
           is_exception?: boolean
@@ -1069,6 +1090,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      save_attendance: { Args: { p_organization_id: string; p_changes: Json }; Returns: number }
       create_admin_schedule_series: { Args: { p_org: string; p_student: string; p_program: number | null; p_rows: Json; p_rrule?: string | null }; Returns: undefined }
       update_admin_schedule_batch: { Args: { p_org: string; p_student: string; p_program: number | null; p_rows: Json }; Returns: undefined }
       get_account_auth_context: { Args: Record<string, never>; Returns: Json }
@@ -1098,6 +1120,10 @@ export type Database = {
         Returns: { start_time: string; available: boolean; reason: string | null }[]
       }
       get_student_completed_hours: {
+        Args: { p_student_ids: string[]; p_organization_id?: string | null }
+        Returns: { student_id: string; total_hours: number }[]
+      }
+      get_student_attended_hours: {
         Args: { p_student_ids: string[]; p_organization_id?: string | null }
         Returns: { student_id: string; total_hours: number }[]
       }

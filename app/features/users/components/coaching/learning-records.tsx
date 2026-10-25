@@ -146,7 +146,9 @@ export function LearningRecords({
           {schedules.length === 0 ? (
             <div className="rounded-2xl border border-violet-100 bg-white px-5 py-10 text-center dark:border-violet-900/40 dark:bg-[#191723]">
               <BookOpen className="mx-auto mb-3 size-7 text-violet-500" />
-              <p className="font-medium">이 기간에 종료된 수업이 없어요.</p>
+              <p className="font-medium">
+                이 기간에 출석 확인된 수업이 없어요.
+              </p>
               <p className="text-muted-foreground mt-2 text-sm">
                 다른 기간을 살펴보거나 다음 수업을 확인해보세요.
               </p>
@@ -186,7 +188,7 @@ export function LearningRecords({
               </div>
               <div className="hidden overflow-hidden rounded-2xl border border-violet-100 bg-white xl:block dark:border-violet-900/40 dark:bg-[#191723]">
                 <table className="w-full text-left text-sm">
-                  <caption className="sr-only">종료된 수업 기록</caption>
+                  <caption className="sr-only">출석 확인된 수업 기록</caption>
                   <thead className="text-muted-foreground bg-violet-50 dark:bg-violet-950/30">
                     <tr>
                       {["날짜", "클래스", "시간", "총 시간", "상세"].map(
@@ -234,7 +236,8 @@ export function LearningRecords({
             </>
           )}
           <p className="text-muted-foreground text-xs leading-relaxed">
-            종료된 수업 일정 기준으로 집계해요. 출석 여부와는 별개예요.
+            출석으로 확인하고 종료된 수업만 집계해요. 미확인·결석 수업은
+            제외해요.
             <br />
             예정된 수업은 ‘나의 일정’에서 확인할 수 있어요.
           </p>

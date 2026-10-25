@@ -155,6 +155,7 @@ export default [
       ...prefix("/admin", [
         index("features/admin/screens/dashboard.tsx"),
         route("/today", "features/admin/screens/today.tsx"),
+        route("/attendance", "features/attendance/screens/attendance.tsx"),
         ...prefix("/students", [
           index("features/admin/screens/students/list.tsx"),
           route("/new", "features/admin/screens/students/create.tsx"),
@@ -213,6 +214,10 @@ export default [
 
   // Admin API Routes
   ...prefix("/api/admin", [
+    route(
+      "/attendance/:scheduleId/history",
+      "features/attendance/api/history.tsx",
+    ),
     ...prefix("/students", [
       route("/create", "features/admin/api/students/create.tsx"),
       route("/bulk-create", "features/admin/api/students/bulk-create.tsx"),

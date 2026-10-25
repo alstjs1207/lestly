@@ -200,8 +200,8 @@ export default function AdminDashboardScreen({
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" className="min-h-11" asChild>
-              <Link to="/admin/schedules">
-                전체 일정
+              <Link to="/admin/attendance">
+                출결 체크
                 <ArrowRightIcon className="size-4" />
               </Link>
             </Button>

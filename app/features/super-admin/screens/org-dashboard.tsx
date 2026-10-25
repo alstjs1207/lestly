@@ -70,6 +70,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         adminClient
           .from("schedules")
           .select("schedule_id", { count: "exact", head: true })
+          .is("cancelled_at", null)
           .eq("organization_id", orgId)
           .gte("start_time", today.toISOString())
           .lt("start_time", tomorrow.toISOString()),

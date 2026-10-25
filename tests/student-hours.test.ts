@@ -14,7 +14,7 @@ test("hours aggregate receives the organization and returns totals without fetch
   let calls = 0;
   const client = mockClient(async (input, init) => {
     calls += 1;
-    assert.match(String(input), /\/rpc\/get_student_completed_hours$/);
+    assert.match(String(input), /\/rpc\/get_student_attended_hours$/);
     assert.deepEqual(JSON.parse(String(init?.body)), {
       p_student_ids: ["student-a"],
       p_organization_id: "org-a",
@@ -46,6 +46,8 @@ test("hours fallback paginates legacy history and preserves org scope when migra
     requests.push(url);
     assert.equal(url.searchParams.get("organization_id"), "eq.org-a");
     assert.equal(url.searchParams.get("student_id"), "in.(student-a)");
+    assert.equal(url.searchParams.get("attendance_status"), "eq.PRESENT");
+    assert.equal(url.searchParams.get("cancelled_at"), "is.null");
     assert.equal(url.searchParams.get("order"), "schedule_id.asc");
     assert.match(url.searchParams.get("end_time")!, /^lte\./);
     assert.equal(url.searchParams.get("start_time"), null);

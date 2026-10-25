@@ -48,6 +48,7 @@ export async function getStudentScheduleOverview(
         `schedule_id, start_time, end_time,
         program:programs!schedules_program_id_programs_program_id_fk(program_id, title)`,
       )
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .eq("student_id", studentId)
       .gte("start_time", periods.queryStart.toISOString())

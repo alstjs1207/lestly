@@ -10,7 +10,7 @@ import {
 } from "./learning-records.ts";
 import { getStudentHoursTotals } from "./student-hours.ts";
 
-export const learningScheduleSelect = `schedule_id, start_time, end_time,
+export const learningScheduleSelect = `schedule_id, start_time, end_time, attendance_status,
   program:programs!schedules_program_id_programs_program_id_fk(
     program_id, title, location_address,
     instructor:instructors!programs_instructor_id_instructors_instructor_id_fk(name)
@@ -34,6 +34,7 @@ export async function getLearningSchedules(
     let query = client
       .from("schedules")
       .select(learningScheduleSelect)
+      .is("cancelled_at", null)
       .eq("student_id", studentId)
       .order("start_time", { ascending: false })
       .order("schedule_id", { ascending: false });
@@ -64,6 +65,7 @@ export async function getStudentLearningHome(
     client
       .from("schedules")
       .select(learningScheduleSelect)
+      .is("cancelled_at", null)
       .eq("student_id", studentId)
       .gt("end_time", now.toISOString())
       .order("start_time", { ascending: true })

@@ -125,7 +125,7 @@ export function LearningHome(props: LearningHomeProps) {
               </div>
               <figure
                 className="mt-6 flex items-end gap-4 border-b border-violet-100 px-3 pb-2 dark:border-violet-900/40"
-                aria-label="최근 3개월 종료된 수업 시간"
+                aria-label="최근 3개월 출석 확인된 수업 시간"
               >
                 {chart.map((d) => (
                   <div
@@ -153,7 +153,7 @@ export function LearningHome(props: LearningHomeProps) {
               <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-violet-50 p-4 dark:bg-violet-950/30">
                 <div>
                   <p className="text-muted-foreground text-sm">
-                    이번 달 종료된 수업
+                    이번 달 참여한 수업
                   </p>
                   <p className="mt-1 text-lg font-semibold">
                     {thisMonthCount}회
@@ -183,7 +183,7 @@ export function LearningHome(props: LearningHomeProps) {
             </div>
           )}
           <p className="text-muted-foreground mt-4 text-xs leading-relaxed">
-            종료된 수업 일정 기준 · 출석 여부와는 별개예요.
+            출석 확인된 종료 수업 기준 · 미확인·결석 제외
           </p>
         </section>
         <div className="space-y-5 lg:space-y-6">

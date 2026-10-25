@@ -91,6 +91,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     const { data: seriesSchedules, error: seriesError } = await client
       .from("schedules")
       .select("schedule_id, start_time, end_time")
+      .is("cancelled_at", null)
       .or(
         `schedule_id.eq.${rootScheduleId},parent_schedule_id.eq.${rootScheduleId}`,
       )

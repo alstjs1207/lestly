@@ -33,6 +33,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const { data: schedule, error: readError } = await client
     .from("schedules")
     .select("schedule_id,start_time")
+    .is("cancelled_at", null)
     .eq("schedule_id", id)
     .eq("student_id", profile.profile_id)
     .maybeSingle();
@@ -66,6 +67,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const { data: deleted, error: deleteError } = await client
     .from("schedules")
     .delete()
+    .is("cancelled_at", null)
     .eq("schedule_id", id)
     .eq("student_id", profile.profile_id)
     .select("schedule_id")

@@ -3,6 +3,7 @@ import {
   BookOpenIcon,
   BuildingIcon,
   CalendarIcon,
+  ClipboardCheckIcon,
   HomeIcon,
   SettingsIcon,
   UserIcon,
@@ -49,6 +50,11 @@ const menuItems = [
     title: "일정 관리",
     url: "/admin/schedules",
     icon: CalendarIcon,
+  },
+  {
+    title: "출결 관리",
+    url: "/admin/attendance",
+    icon: ClipboardCheckIcon,
   },
   {
     title: "수강생 관리",

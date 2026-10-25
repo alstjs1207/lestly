@@ -11,6 +11,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { loadMockedModule } from "../../tests/helpers/mocked-module.ts";
+import { checkAttendance } from "./attendance.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
 
@@ -78,7 +79,7 @@ async function blocked(sql, params, expected) {
   } finally {
     await db.exec("ROLLBACK TO SAVEPOINT expected_failure");
   }
-  assert.equal(rejected, true, "Expected SQL operation to be blocked");
+  assert.equal(rejected, true, `Expected SQL operation to be blocked: ${sql}`);
 }
 
 async function check(name, run) {
@@ -278,6 +279,7 @@ try {
         "SELECT * FROM get_student_total_hours($1)",
         [[studentA, studentB]],
       );
+      // The old RPC remains compatible while preview uses attended hours.
       assert.deepEqual(totals.rows, [{ student_id: studentA, total_hours: 1 }]);
       await blocked(
         `INSERT INTO schedules (organization_id,student_id,start_time,end_time)
@@ -754,6 +756,24 @@ try {
     `,
         [orgA, studentA],
       );
+      await asRole("authenticated", adminA);
+      const rows = (
+        await db.query(
+          "SELECT schedule_id,attendance_version FROM schedules WHERE organization_id=$1 AND student_id=$2 AND end_time<now()-interval '10 days'",
+          [orgA, studentA],
+        )
+      ).rows;
+      for (let i = 0; i < rows.length; i += 200)
+        await db.query("SELECT save_attendance($1,$2)", [
+          orgA,
+          JSON.stringify(
+            rows.slice(i, i + 200).map((s) => ({
+              schedule_id: s.schedule_id,
+              version: s.attendance_version,
+              status: "PRESENT",
+            })),
+          ),
+        ]);
       await asRole("authenticated", studentA);
       const row = (
         await db.query("SELECT * FROM get_student_total_hours($1,$2)", [
@@ -1365,6 +1385,23 @@ try {
         "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,now()-interval '1 hour',now()+interval '2 hours')",
         [orgA, studentA],
       );
+      await asRole("authenticated", adminA);
+      const attendanceRows = (
+        await db.query(
+          "SELECT schedule_id,attendance_version FROM schedules WHERE organization_id=$1 AND student_id=$2",
+          [orgA, studentA],
+        )
+      ).rows;
+      await db.query("SELECT save_attendance($1,$2)", [
+        orgA,
+        JSON.stringify(
+          attendanceRows.map((s) => ({
+            schedule_id: s.schedule_id,
+            version: s.attendance_version,
+            status: "PRESENT",
+          })),
+        ),
+      ]);
       await asRole("authenticated", studentA);
       for (const fn of [
         "get_student_completed_hours",
@@ -1874,6 +1911,18 @@ try {
     },
   );
 
+  await checkAttendance({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+    studentB,
+  });
   await checkStudentLifecyclePerformance({
     db,
     check,

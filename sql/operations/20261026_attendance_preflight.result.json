@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-25T15:15:16.913Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0027_attendance",
+  "hash": "7ea89b2020eb04fbda2a46d6dbd7270b834d20960fed2062309847cd36009206",
+  "readOnly": true,
+  "prerequisitesVerified": true,
+  "counts": {
+    "profiles": 36,
+    "memberships": 35,
+    "schedules": 1110
+  },
+  "legacyCompletedHours": 3780
+}

@@ -321,18 +321,21 @@ export async function getDashboardStats(
     client
       .from("schedules")
       .select("*", { count: "exact", head: true })
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .gte("start_time", today.toISOString())
       .lt("start_time", tomorrow.toISOString()),
     client
       .from("schedules")
       .select("*", { count: "exact", head: true })
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .gte("start_time", monthStart.toISOString())
       .lt("start_time", monthEnd.toISOString()),
     client
       .from("schedules")
       .select("schedule_id")
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .limit(1)
       .maybeSingle(),

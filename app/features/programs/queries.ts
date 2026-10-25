@@ -178,6 +178,7 @@ export async function countSchedulesByProgram(
   const { data, error } = await client
     .from("schedules")
     .select("program_id")
+    .is("cancelled_at", null)
     .eq("organization_id", organizationId)
     .not("program_id", "is", null);
 

@@ -52,6 +52,7 @@ export async function getMonthlySchedules(
       )
     `,
       )
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .gte("start_time", startDate.toISOString())
       .lt("start_time", endDate.toISOString())
@@ -91,6 +92,7 @@ export async function getDailySchedules(
       )
     `,
       )
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .gte("start_time", startOfDay.toISOString())
       .lt("start_time", endOfDay.toISOString())
@@ -130,6 +132,7 @@ export async function getUpcomingSchedules(
       )
     `,
       )
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .gte("start_time", startDate.toISOString())
       .lt("start_time", endDate.toISOString())
@@ -183,6 +186,7 @@ export async function getStudentSchedules(
       )
     `,
       )
+      .is("cancelled_at", null)
       .eq("student_id", params.studentId)
       .gte("start_time", queryStartDate.toISOString())
       .order("start_time", { ascending: true })
@@ -216,6 +220,7 @@ export async function getScheduleById(
       )
     `,
     )
+    .is("cancelled_at", null)
     .eq("schedule_id", scheduleId)
     .single();
 
@@ -250,6 +255,7 @@ export async function checkConcurrentLimit(
   let query = client
     .from("schedules")
     .select("schedule_id", { count: "exact", head: true })
+    .is("cancelled_at", null)
     .eq("organization_id", organizationId)
     .lt("start_time", endTime.toISOString())
     .gt("end_time", startTime.toISOString());
@@ -296,6 +302,7 @@ export async function validateScheduleCreation(
     client
       .from("schedules")
       .select("schedule_id, student_id")
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .lt("start_time", endTime.toISOString())
       .gt("end_time", startTime.toISOString())
@@ -347,6 +354,7 @@ export async function validateScheduleBatch(
     client
       .from("schedules")
       .select("schedule_id, student_id, start_time, end_time")
+      .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .lt("start_time", latestEnd.toISOString())
       .gt("end_time", earliestStart.toISOString())
@@ -420,6 +428,7 @@ export async function updateSchedule(
   const { data, error } = await client
     .from("schedules")
     .update(updates)
+    .is("cancelled_at", null)
     .eq("schedule_id", scheduleId)
     .select()
     .single();
@@ -441,6 +450,7 @@ export async function deleteSchedule(
   const { error } = await client
     .from("schedules")
     .delete()
+    .is("cancelled_at", null)
     .eq("schedule_id", scheduleId);
 
   if (error) {
@@ -460,6 +470,7 @@ export async function deleteFutureSchedules(
   const { error } = await client
     .from("schedules")
     .delete()
+    .is("cancelled_at", null)
     .eq("parent_schedule_id", parentScheduleId)
     .gte("start_time", fromDate.toISOString());
 
@@ -548,7 +559,9 @@ export async function getStudentYearlyStats(
     client
       .from("schedules")
       .select("start_time, end_time")
+      .is("cancelled_at", null)
       .eq("student_id", studentId)
+      .eq("attendance_status", "PRESENT")
       .gte("start_time", startDate.toISOString())
       .lt("start_time", endDate.toISOString())
       .lte("end_time", now)
@@ -598,7 +611,9 @@ export async function getStudentMonthlyStats(
     client
       .from("schedules")
       .select("start_time, end_time")
+      .is("cancelled_at", null)
       .eq("student_id", studentId)
+      .eq("attendance_status", "PRESENT")
       .gte("start_time", lastMonthStart.toISOString())
       .lte("end_time", currentTime)
       .order("schedule_id", { ascending: true })
@@ -641,7 +656,9 @@ export async function getStudentStreak(
     client
       .from("schedules")
       .select("start_time")
+      .is("cancelled_at", null)
       .eq("student_id", studentId)
+      .eq("attendance_status", "PRESENT")
       .lte("end_time", now)
       .order("start_time", { ascending: false })
       .order("schedule_id", { ascending: false })
@@ -702,7 +719,9 @@ export async function getStudentProgramHoursBreakdown(
       )
     `,
       )
+      .is("cancelled_at", null)
       .eq("student_id", studentId)
+      .eq("attendance_status", "PRESENT")
       .gte("start_time", startDate.toISOString())
       .lt("start_time", endDate.toISOString())
       .lte("end_time", now)
@@ -768,6 +787,7 @@ export async function checkStudentTimeConflict(
   let query = client
     .from("schedules")
     .select("schedule_id")
+    .is("cancelled_at", null)
     .eq("student_id", studentId)
     .lt("start_time", endTime.toISOString())
     .gt("end_time", startTime.toISOString());
