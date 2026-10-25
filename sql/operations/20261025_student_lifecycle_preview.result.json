@@ -1,0 +1,47 @@
+{
+  "base": "https://lestly-git-preview-alstjs1207s-projects.vercel.app",
+  "checks": [
+    {
+      "path": "/admin",
+      "status": 200,
+      "url": "https://lestly-git-preview-alstjs1207s-projects.vercel.app/admin",
+      "hasErrorBoundary": false
+    },
+    {
+      "path": "/admin/students",
+      "status": 200,
+      "url": "https://lestly-git-preview-alstjs1207s-projects.vercel.app/admin/students",
+      "hasErrorBoundary": false
+    },
+    {
+      "path": "/admin/schedules",
+      "status": 200,
+      "url": "https://lestly-git-preview-alstjs1207s-projects.vercel.app/admin/schedules",
+      "hasErrorBoundary": false
+    },
+    {
+      "path": "/admin/students/new",
+      "status": 200,
+      "url": "https://lestly-git-preview-alstjs1207s-projects.vercel.app/admin/students/new",
+      "hasErrorBoundary": false
+    },
+    {
+      "path": "/dashboard",
+      "status": 200,
+      "url": "https://lestly-git-preview-alstjs1207s-projects.vercel.app/dashboard",
+      "hasErrorBoundary": false
+    },
+    {
+      "path": "/learning-records",
+      "status": 200,
+      "url": "https://lestly-git-preview-alstjs1207s-projects.vercel.app/learning-records",
+      "hasErrorBoundary": false
+    }
+  ],
+  "sourceCommit": "6b13011bc34e58ca8bbf5817f8bb287124b2892a",
+  "deploymentId": "BGonA5CXyDjqZjTQLfj2GmLCErBt",
+  "status": "Ready",
+  "productionSourceCommit": "98131dd81fcd6b22972edbec733017112bbef6ef",
+  "edgePatchStatus": "awaiting_separate_approval",
+  "newDatabaseCreated": false
+}

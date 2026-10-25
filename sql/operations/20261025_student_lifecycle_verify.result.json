@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-25T00:08:20.176Z",
+  "readOnly": true,
+  "roleChecks": [
+    {
+      "role": "STUDENT",
+      "state": "NORMAL",
+      "allowed": true,
+      "readable_profiles": 1,
+      "readable_schedules": 48,
+      "readable_programs": 3
+    },
+    {
+      "role": "STUDENT",
+      "state": "GRADUATE",
+      "allowed": true,
+      "readable_profiles": 1,
+      "readable_schedules": 7,
+      "readable_programs": 2
+    },
+    {
+      "role": "ADMIN",
+      "state": "NORMAL",
+      "allowed": true,
+      "readable_profiles": 1,
+      "readable_schedules": 0,
+      "readable_programs": 1
+    }
+  ],
+  "configuredAdminTestAccountUsable": true,
+  "twoConnectionAdvisoryLockVerified": true
+}
