@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as jsxRuntime from "react/jsx-runtime";
 
 import {
   RequestBodyError,
@@ -121,6 +122,7 @@ test("save endpoint uses the authenticated organization, bounds JSON and forward
       import.meta.url,
     ),
     {
+      "react/jsx-runtime": jsxRuntime,
       "react-router": {
         data: (body: unknown, init: unknown) => ({ body, init }),
       },

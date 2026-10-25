@@ -37,6 +37,7 @@
 ## 검증과 적용
 
 - `npm run test:unit`: 날짜/입력 제한, 참여 집계, 날짜·전체 미확인 조회 범위, 인증된 학원 범위, API 오류·요청 크기 검증.
+- `npm run build` 후 `npm run test:attendance:ssr`: 실제 빌드된 라우트를 StaticRouter로 렌더링하여 서버에서 loaderData와 명단이 전달되는지 확인한다. 화면을 별도 컴포넌트로 분리할 때 라우트 파일에는 로컬 default 컴포넌트를 두어 React Router의 props 주입 변환이 적용되게 한다.
 - `npm run test:db`: 격리된 PGlite에서 전체 migration 재실행과 권한·원자성·취소·정정·동일 결과 재시도·충돌 회귀 검사. 공용 DB에 연결하지 않는다.
 - 로컬 예시 데이터로 실제 출결 컴포넌트의 일괄 저장, 사후 정정, 이력, 미저장 이동 방지와 모바일 배치를 확인한다. 실제 계정/예약은 수정하지 않는다.
 - 배포 시 migration을 먼저 적용하고 앱을 배포해야 한다. 새 칼럼이 없는 DB에 새 앱만 배포하지 않는다. `database.types.ts`에는 이 migration에 대응하는 타입을 추가했다. 공용 DB의 자동 타입 생성으로 덮어쓰려면 migration 적용 후 수행한다.

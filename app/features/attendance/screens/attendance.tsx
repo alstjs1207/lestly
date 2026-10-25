@@ -7,6 +7,7 @@ import { RequestBodyError, readBoundedJson } from "~/core/lib/request-body";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { requireAdminRole } from "~/features/admin/guards.server";
 
+import AttendanceManager from "../components/attendance-manager";
 import {
   attendanceDate,
   attendanceFailure,
@@ -14,7 +15,11 @@ import {
 } from "../lib/attendance";
 import { getAttendanceSchedules, saveAttendance } from "../queries.server";
 
-export { default } from "../components/attendance-manager";
+// Keep a local route component so React Router's build transform supplies
+// loaderData through withComponentProps during both SSR and client navigation.
+export default function AttendanceScreen(props: Route.ComponentProps) {
+  return <AttendanceManager {...props} />;
+}
 
 export const meta: Route.MetaFunction = () => [{ title: "출결 관리 | Lestly" }];
 
