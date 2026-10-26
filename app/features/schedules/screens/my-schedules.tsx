@@ -7,7 +7,7 @@ export const meta: Route.MetaFunction = () => [
   { title: `나의 일정 목록 | ${import.meta.env.VITE_APP_NAME}` },
 ];
 export async function loader({ request }: Route.LoaderArgs) {
-  return loadStudentCalendar(request);
+  return loadStudentCalendar(request, { list: true });
 }
 export default function MySchedulesScreen({
   loaderData,

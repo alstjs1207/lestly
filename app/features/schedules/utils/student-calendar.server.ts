@@ -7,10 +7,17 @@ import { getActivePrograms } from "../../programs/queries";
 import { getUserProfile } from "../../users/queries";
 import { getKSTMonthRange, parseCalendarMonth } from "./calendar-month";
 import { toKSTDateString } from "./kst";
-import { getLearningSchedules } from "./student-learning.server";
+import {
+  getLearningSchedules,
+  learningScheduleSelect,
+} from "./student-learning.server";
 import { getStudentAllowedDateRange } from "./student-schedule-rules";
+import { parseStudentScheduleDate } from "./student-week";
 
-export async function loadStudentCalendar(request: Request) {
+export async function loadStudentCalendar(
+  request: Request,
+  { list = false } = {},
+) {
   const [client, headers] = makeServerClient(request);
   const user = await getSessionUser(client);
   if (!user) throw new Response(null, { status: 401 });
@@ -18,7 +25,18 @@ export async function loadStudentCalendar(request: Request) {
   if (!profile) throw new Response(null, { status: 403 });
   const now = new Date();
   const params = new URL(request.url).searchParams;
-  const { year, month } = parseCalendarMonth(params, now);
+  const dateParams = new URLSearchParams(params);
+  if (list) {
+    dateParams.delete("date");
+    dateParams.delete("book");
+  }
+  let selectedDate = parseStudentScheduleDate(dateParams, now);
+  const { year, month } = list
+    ? parseCalendarMonth(params, now)
+    : {
+        year: Number(selectedDate.slice(0, 4)),
+        month: Number(selectedDate.slice(5, 7)),
+      };
   const range = getKSTMonthRange(year, month);
   const allowed = getStudentAllowedDateRange();
   const { data: membership, error } = await client
@@ -29,7 +47,7 @@ export async function loadStudentCalendar(request: Request) {
     .eq("state", "NORMAL")
     .maybeSingle();
   if (error) throw error;
-  const [schedules, programs] = await Promise.all([
+  const [schedules, programs, upcoming] = await Promise.all([
     getLearningSchedules(client, {
       studentId: profile.profile_id,
       startDate: new Date(range.startDate.getTime() - 7 * 86_400_000),
@@ -40,7 +58,24 @@ export async function loadStudentCalendar(request: Request) {
           organizationId: membership.organization_id,
         })
       : Promise.resolve([]),
+    list
+      ? Promise.resolve({ data: [], error: null })
+      : client
+          .from("schedules")
+          .select(learningScheduleSelect)
+          .is("cancelled_at", null)
+          .eq("student_id", profile.profile_id)
+          .gt("end_time", now.toISOString())
+          .order("start_time", { ascending: true })
+          .order("schedule_id", { ascending: true })
+          .limit(1),
   ]);
+  if (upcoming.error) throw upcoming.error;
+  const requestedSchedule = schedules.find(
+    (schedule) => String(schedule.schedule_id) === params.get("schedule"),
+  );
+  if (!list && requestedSchedule)
+    selectedDate = toKSTDateString(new Date(requestedSchedule.start_time));
   return data(
     {
       schedules,
@@ -48,6 +83,8 @@ export async function loadStudentCalendar(request: Request) {
       year,
       month,
       now: now.toISOString(),
+      selectedDate,
+      nextSchedule: upcoming.data?.[0] ?? null,
       classStartDate: profile.class_start_date,
       classEndDate: profile.class_end_date,
       allowedStartDate: allowed.startDate.toISOString(),

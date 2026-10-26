@@ -3,6 +3,8 @@ import type { Route } from "./+types/calendar";
 import { StudentSchedulesView } from "../components/student-schedules-view";
 import { loadStudentCalendar } from "../utils/student-calendar.server";
 
+export { revalidateStudentCalendar as shouldRevalidate } from "../utils/student-week";
+
 export const meta: Route.MetaFunction = () => [
   { title: `나의 일정 | ${import.meta.env.VITE_APP_NAME}` },
 ];

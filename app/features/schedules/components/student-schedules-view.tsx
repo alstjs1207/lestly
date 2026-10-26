@@ -1,29 +1,21 @@
 import { CalendarDays, List, Plus } from "lucide-react";
-import { Suspense, lazy, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
-import { useIsMobile } from "~/core/hooks/use-mobile";
 
-import { toKST, toKSTDateString } from "../utils/kst";
+import { toKST } from "../utils/kst";
 import {
   type LearningSchedule,
   formatLearningDate,
   scheduleTimeRange,
 } from "../utils/learning-records";
-import {
-  bookingDateReason,
-  calendarDateString,
-} from "../utils/student-booking";
-import { MobileCalendar } from "./mobile-calendar";
+import { bookingDateReason } from "../utils/student-booking";
+import { isStudentScheduleDate } from "../utils/student-week";
 import { StudentBookingDialog } from "./student-booking-dialog";
 import { StudentScheduleManager } from "./student-schedule-manager";
+import { StudentWeeklySchedules } from "./student-weekly-schedules";
 
-const DesktopStudentSchedules = lazy(() =>
-  import("./desktop-student-schedules").then((module) => ({
-    default: module.DesktopStudentSchedules,
-  })),
-);
 export interface StudentSchedulesData {
   schedules: LearningSchedule[];
   programs: {
@@ -34,6 +26,8 @@ export interface StudentSchedulesData {
   year: number;
   month: number;
   now: string;
+  selectedDate: string;
+  nextSchedule: LearningSchedule | null;
   classStartDate: string | null;
   classEndDate: string | null;
   allowedStartDate: string;
@@ -57,16 +51,14 @@ export function StudentSchedulesView({
     canBook,
   } = data;
   const [params, setParams] = useSearchParams();
-  const isMobile = useIsMobile();
-  const initial = toKST(new Date(data.now));
-  const [selectedDate, setSelectedDate] = useState(
-    () =>
-      new Date(
-        year,
-        month - 1,
-        year === initial.year && month === initial.month + 1 ? initial.day : 1,
-      ),
-  );
+  const requestedDate = params.get("date");
+  const selectedDate =
+    !list &&
+    !params.has("schedule") &&
+    requestedDate &&
+    isStudentScheduleDate(requestedDate)
+      ? requestedDate
+      : data.selectedDate;
   const [selected, setSelected] = useState<LearningSchedule | null>(null);
   const [booking, setBooking] = useState<string | null>(null);
   const [status, setStatus] = useState("");
@@ -80,75 +72,55 @@ export function StudentSchedulesView({
     return () => clearInterval(timer);
   }, []);
   useEffect(() => {
-    setSelectedDate((previous) =>
-      previous.getFullYear() === year && previous.getMonth() === month - 1
-        ? previous
-        : new Date(year, month - 1, 1),
-    );
-  }, [year, month]);
-  const requestedSchedule = params.get("schedule");
+    const requested = params.get("schedule");
+    if (requested)
+      setSelected(
+        schedules.find(
+          (schedule) => String(schedule.schedule_id) === requested,
+        ) ?? null,
+      );
+  }, [params, schedules]);
   useEffect(() => {
-    if (requestedSchedule) {
-      const schedule =
-        schedules.find((s) => String(s.schedule_id) === requestedSchedule) ??
-        null;
-      setSelected(schedule);
-      if (schedule) {
-        const date = toKST(new Date(schedule.start_time));
-        setSelectedDate(new Date(date.year, date.month, date.day));
-      }
-    }
-  }, [requestedSchedule]);
-  const requestBook = params.get("book");
+    if (!list && params.get("book"))
+      document
+        .getElementById("student-booking-panel")
+        ?.scrollIntoView({ block: "start" });
+  }, [params.get("book"), list]);
   useEffect(() => {
-    if (requestBook && canBook) {
-      const date = toKSTDateString(new Date());
-      const reason = bookingDateReason(date, course);
-      if (reason) setStatus(reason);
-      else setBooking(date);
-    }
-  }, [requestBook]);
-  useEffect(() => {
-    // The home shortcut opens the inline panel on PC, and the existing dialog
-    // on mobile/list view. Preserve mobile selection behavior.
-    if (booking && !isMobile && !list) {
-      const [y, m, d] = booking.split("-").map(Number);
-      setSelectedDate(new Date(y, m - 1, d));
-      setBooking(null);
-      const next = new URLSearchParams(params);
-      next.set("year", String(y));
-      next.set("month", String(m));
-      next.delete("book");
-      next.delete("schedule");
-      setParams(next, { replace: true, preventScrollReset: true });
-    }
-  }, [booking, isMobile, list]);
+    if (!list || !params.get("book") || !canBook) return;
+    const reason = bookingDateReason(selectedDate, course, now);
+    if (reason) setStatus(reason);
+    else setBooking(selectedDate);
+  }, [params.get("book"), list]);
   const setMonth = (date: Date) => {
     const next = new URLSearchParams(params);
     next.set("year", String(date.getFullYear()));
     next.set("month", String(date.getMonth() + 1));
     next.delete("schedule");
     next.delete("book");
+    next.delete("date");
     setParams(next, { preventScrollReset: true });
   };
-  const chooseDate = (date: Date) => {
-    setSelectedDate(date);
-    if (date.getFullYear() !== year || date.getMonth() !== month - 1)
-      setMonth(date);
+  const chooseDate = (date: string) => {
+    const next = new URLSearchParams(params);
+    next.set("date", date);
+    next.delete("year");
+    next.delete("month");
+    next.delete("schedule");
+    next.delete("book");
+    setStatus("");
+    setParams(next, { preventScrollReset: true });
   };
-  const reason = canBook
-    ? bookingDateReason(calendarDateString(selectedDate), course, now)
-    : "예약 가능한 수강생 계정인지 학원에 확인해주세요.";
-  const openBooking = (date: Date) => {
+  const openBooking = () => {
     const message = canBook
-      ? bookingDateReason(calendarDateString(date), course, new Date())
+      ? bookingDateReason(selectedDate, course, now)
       : "예약 가능한 수강생 계정인지 학원에 확인해주세요.";
     if (message) {
       setStatus(message);
       return;
     }
     setStatus("");
-    setBooking(calendarDateString(date));
+    setBooking(selectedDate);
   };
   const closeSelected = () => {
     setSelected(null);
@@ -166,16 +138,6 @@ export function StudentSchedulesView({
       setParams(next, { replace: true, preventScrollReset: true });
     }
   };
-  const events = schedules.map((s) => ({
-    id: String(s.schedule_id),
-    title: s.program?.title || "내 수업",
-    start: s.start_time,
-    end: s.end_time,
-    extendedProps: {
-      scheduleId: s.schedule_id,
-      programTitle: s.program?.title || null,
-    },
-  }));
   const visible = schedules
     .filter((s) => {
       const date = toKST(new Date(s.start_time));
@@ -188,14 +150,9 @@ export function StudentSchedulesView({
         <div>
           <h1 className="text-2xl font-bold">나의 일정</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            <span className={list ? "" : "md:hidden"}>
-              수업을 확인하고 나에게 맞는 날에 예약해요.
-            </span>
-            {!list && (
-              <span className="hidden md:inline">
-                다음 배움을 이어갈 날을 골라보세요.
-              </span>
-            )}
+            {list
+              ? "등록된 수업을 월별로 확인하고 관리해요."
+              : "이번 주, 배움을 이어갈 시간을 골라요."}
           </p>
         </div>
         <div className="flex gap-2">
@@ -203,8 +160,8 @@ export function StudentSchedulesView({
             <Link
               to={
                 list
-                  ? `/my-schedules?year=${year}&month=${month}`
-                  : `/my-schedules/list?year=${year}&month=${month}`
+                  ? `/my-schedules?date=${selectedDate}`
+                  : `/my-schedules/list?year=${selectedDate.slice(0, 4)}&month=${Number(selectedDate.slice(5, 7))}`
               }
             >
               {list ? (
@@ -212,16 +169,15 @@ export function StudentSchedulesView({
               ) : (
                 <List className="size-4" />
               )}
-              {list ? "캘린더 보기" : "목록 보기"}
+              {list ? "주간 예약" : "월별 목록"}
             </Link>
           </Button>
-          <Button
-            className={list ? undefined : "md:hidden"}
-            onClick={() => openBooking(selectedDate)}
-          >
-            <Plus className="size-4" />
-            수업 예약
-          </Button>
+          {list && (
+            <Button onClick={openBooking}>
+              <Plus className="size-4" />
+              수업 예약
+            </Button>
+          )}
         </div>
       </header>
       {status && (
@@ -310,82 +266,44 @@ export function StudentSchedulesView({
           </section>
         </>
       ) : (
-        <>
-          <div className="md:hidden">
-            <MobileCalendar
-              events={events}
-              selectedDate={selectedDate}
-              displayedMonth={new Date(year, month - 1, 1)}
-              onMonthChange={setMonth}
-              onDateSelect={chooseDate}
-              onEventClick={(event) =>
-                setSelected(
-                  schedules.find((s) => s.schedule_id === event.scheduleId) ||
-                    null,
-                )
-              }
-              onAddClick={openBooking}
-              allowedStartDate={allowedStartDate}
-              allowedEndDate={allowedEndDate}
-              bookingDisabledReason={reason}
-            />
-          </div>
-          <div className="hidden md:block">
-            {!isMobile && (
-              <Suspense
-                fallback={
-                  <div
-                    role="status"
-                    className="bg-card min-h-96 animate-pulse rounded-2xl border p-6 text-sm"
-                  >
-                    캘린더를 불러오고 있어요…
-                  </div>
-                }
-              >
-                <DesktopStudentSchedules
-                  data={data}
-                  selectedDate={selectedDate}
-                  onSelectDate={chooseDate}
-                  onMonthChange={setMonth}
-                  onManage={setSelected}
-                  now={now}
-                />
-              </Suspense>
-            )}
-          </div>
-        </>
+        <StudentWeeklySchedules
+          data={{ ...data, selectedDate }}
+          onSelectDate={chooseDate}
+          onManage={setSelected}
+          now={now}
+        />
       )}
-      <div
-        className={`${list ? "" : "md:hidden"} text-muted-foreground space-y-2 rounded-xl border border-violet-100 bg-violet-50/60 p-4 text-sm leading-relaxed dark:border-violet-900/40 dark:bg-violet-950/20`}
-      >
-        <p>
-          신규 예약 가능 기간 · {formatLearningDate(allowedStartDate, true)} ~{" "}
-          {formatLearningDate(allowedEndDate, true)}
-        </p>
-        <p>
-          다음 달 신규 예약은 매월 25일에 열려요. 지난 수업과 미리 등록된 수업은
-          월을 바꿔 확인할 수 있어요.
-        </p>
-        {(data.classStartDate || data.classEndDate) && (
+      {list && (
+        <div className="text-muted-foreground space-y-2 rounded-xl border border-violet-100 bg-violet-50/60 p-4 text-sm leading-relaxed dark:border-violet-900/40 dark:bg-violet-950/20">
           <p>
-            나의 수강 기간 · {data.classStartDate || "시작일 미등록"} ~{" "}
-            {data.classEndDate || "종료일 미등록"}
+            신규 예약 가능 기간 · {formatLearningDate(allowedStartDate, true)} ~{" "}
+            {formatLearningDate(allowedEndDate, true)}
           </p>
-        )}
-        <Link
-          to="/learning-records"
-          className="inline-block font-medium text-violet-700 underline dark:text-violet-300"
-        >
-          배움 기록에서 지난 수업 돌아보기
-        </Link>
-      </div>
+          <p>
+            다음 달 신규 예약은 매월 25일에 열려요. 지난 수업과 미리 등록된
+            수업은 월을 바꿔 확인할 수 있어요.
+          </p>
+          {(data.classStartDate || data.classEndDate) && (
+            <p>
+              나의 수강 기간 · {data.classStartDate || "시작일 미등록"} ~{" "}
+              {data.classEndDate || "종료일 미등록"}
+            </p>
+          )}
+          <Link
+            to="/learning-records"
+            className="inline-block font-medium text-violet-700 underline dark:text-violet-300"
+          >
+            배움 기록에서 지난 수업 돌아보기
+          </Link>
+        </div>
+      )}
       <StudentScheduleManager
         schedule={selected}
         onClose={closeSelected}
         onCancelled={() => setStatus("수업 예약을 취소했어요.")}
       />
       <StudentBookingDialog
-        date={isMobile || list ? booking : null}
+        date={list ? booking : null}
         onClose={closeBooking}
         programs={programs}
         schedules={schedules}

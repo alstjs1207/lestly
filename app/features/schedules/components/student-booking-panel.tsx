@@ -23,7 +23,7 @@ export interface BookingProgram {
   location_address?: string | null;
 }
 
-export function DesktopStudentBookingPanel({
+export function StudentBookingPanel({
   date,
   programs,
   schedules,
@@ -31,6 +31,8 @@ export function DesktopStudentBookingPanel({
   canBook,
   now,
   onBusyChange,
+  refreshKey,
+  disabled = false,
 }: {
   date: string;
   programs: BookingProgram[];
@@ -39,6 +41,8 @@ export function DesktopStudentBookingPanel({
   canBook: boolean;
   now: Date;
   onBusyChange: (busy: boolean) => void;
+  refreshKey: string;
+  disabled?: boolean;
 }) {
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const availability = useFetcher<BookingAvailability>();
@@ -58,7 +62,8 @@ export function DesktopStudentBookingPanel({
   const handled = useRef(fetcher.data);
   const submitted = useRef<typeof confirmed>(null);
   const hours = DURATION_OPTIONS.find((d) => d.value === duration)!.hours;
-  const busy = fetcher.state !== "idle";
+  const submitting = fetcher.state !== "idle";
+  const busy = submitting || disabled;
   const dateReason = canBook
     ? bookingDateReason(date, course, now)
     : "예약 가능한 수강생 계정인지 학원에 확인해주세요.";
@@ -100,11 +105,11 @@ export function DesktopStudentBookingPanel({
       availability.load(
         `/api/schedules/availability?date=${date}&hours=${hours}`,
       );
-  }, [date, hours, dateReason, refresh]);
+  }, [date, hours, dateReason, refresh, refreshKey]);
   useEffect(() => {
-    onBusyChange(busy);
+    onBusyChange(submitting);
     return () => onBusyChange(false);
-  }, [busy, onBusyChange]);
+  }, [submitting, onBusyChange]);
   useEffect(() => {
     if (
       fetcher.state !== "idle" ||
@@ -127,9 +132,10 @@ export function DesktopStudentBookingPanel({
 
   return (
     <section
+      id="student-booking-panel"
       aria-label="수업 예약 패널"
       aria-busy={busy}
-      className="bg-card min-w-0 overflow-hidden rounded-2xl border border-violet-100 shadow-sm dark:border-violet-900/40"
+      className="bg-card min-w-0 scroll-mt-4 overflow-hidden rounded-2xl border border-violet-100 shadow-sm dark:border-violet-900/40"
     >
       <div className="space-y-5 p-4 xl:p-5">
         <div>
@@ -143,13 +149,13 @@ export function DesktopStudentBookingPanel({
           {programs.length > 1 && !confirmed ? (
             <div className="mt-4">
               <label
-                htmlFor="desktop-booking-program"
+                htmlFor="student-booking-program"
                 className="mb-2 block text-xs font-medium"
               >
                 클래스
               </label>
               <select
-                id="desktop-booking-program"
+                id="student-booking-program"
                 value={program}
                 disabled={busy}
                 onChange={(e) => {
@@ -198,13 +204,13 @@ export function DesktopStudentBookingPanel({
             <LockKeyhole className="mb-3 size-5 text-violet-600 dark:text-violet-300" />
             <p>{dateReason}</p>
             <p className="text-muted-foreground mt-2 text-xs">
-              이미 등록된 수업은 캘린더 아래에서 확인할 수 있어요.
+              이미 등록된 수업은 선택한 날짜의 내 수업에서 확인할 수 있어요.
             </p>
           </div>
         ) : (
           <>
             <fieldset disabled={busy}>
-              <legend className="mb-2 text-xs font-medium">수업 시간</legend>
+              <legend className="mb-2 text-xs font-medium">수업 길이</legend>
               <div className="grid grid-cols-3 gap-2">
                 {DURATION_OPTIONS.map((d) => (
                   <button
@@ -216,9 +222,12 @@ export function DesktopStudentBookingPanel({
                       setTime("");
                       setError("");
                     }}
-                    className="bg-background min-h-10 rounded-lg border text-sm disabled:opacity-50 aria-pressed:border-violet-600 aria-pressed:bg-violet-50 aria-pressed:font-semibold aria-pressed:text-violet-800 dark:aria-pressed:border-violet-400 dark:aria-pressed:bg-violet-950/50 dark:aria-pressed:text-violet-200"
+                    className="bg-background min-h-14 rounded-lg border py-2 text-sm disabled:opacity-50 aria-pressed:border-violet-600 aria-pressed:bg-violet-50 aria-pressed:font-semibold aria-pressed:text-violet-800 dark:aria-pressed:border-violet-400 dark:aria-pressed:bg-violet-950/50 dark:aria-pressed:text-violet-200"
                   >
-                    {d.hours}시간
+                    <span>{d.label.split(" ")[0]}</span>
+                    <span className="mt-1 block text-xs font-normal">
+                      {d.hours}시간
+                    </span>
                   </button>
                 ))}
               </div>
@@ -252,7 +261,7 @@ export function DesktopStudentBookingPanel({
                     >
                       {slot.time}
                       {slot.label && (
-                        <span className="mt-0.5 text-[10px] leading-tight">
+                        <span className="mt-0.5 text-[11px] leading-tight">
                           {slot.label}
                         </span>
                       )}
