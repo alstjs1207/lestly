@@ -166,12 +166,12 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
             </div>
 
             <BookingDaySettings
-              key={disabledBookingDays.join(",")}
+              key={`days:${disabledBookingDays.join(",")}`}
               disabledDays={disabledBookingDays}
               busy={isSubmitting}
             />
             <BookingTimeSettings
-              key={disabledBookingTimes.join(",")}
+              key={`times:${disabledBookingTimes.join(",")}`}
               disabledTimes={disabledBookingTimes}
               busy={isSubmitting}
             />
