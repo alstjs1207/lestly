@@ -5,6 +5,7 @@ import { generateTimeSlots } from "./student-schedule-rules.ts";
 export interface BookingAvailability {
   key: string;
   disabledTimes?: string[];
+  disabledDays?: number[];
   slots:
     | {
         start_time: string;
@@ -34,6 +35,10 @@ export function desktopBookingSlots(
   const current = availability?.key === `${date}:${hours}`;
   const slots = current ? availability.slots : null;
   const disabledTimes = current ? (availability.disabledTimes ?? []) : [];
+  const bookingCourse =
+    current && availability.disabledDays
+      ? { ...course, disabledBookingDays: availability.disabledDays }
+      : course;
   return generateTimeSlots(30)
     .filter(
       ({ value: time }) =>
@@ -45,7 +50,14 @@ export function desktopBookingSlots(
         ),
     )
     .map(({ value: time }) => {
-      let reason = bookingSlotReason(date, time, hours, course, schedules, now);
+      let reason = bookingSlotReason(
+        date,
+        time,
+        hours,
+        bookingCourse,
+        schedules,
+        now,
+      );
       let label = reason?.includes("지난")
         ? "지난 시간"
         : reason?.includes("겹")
@@ -61,6 +73,10 @@ export function desktopBookingSlots(
         label = "확인 불가";
       } else if (!reason && slot && !slot.available) {
         const reasons: Record<string, [string, string]> = {
+          day_disabled: [
+            "이 요일은 휴무일로 신규 예약을 받지 않아요.",
+            "휴무일",
+          ],
           past: ["이미 지난 시작 시각이에요.", "지난 시간"],
           outside_course: ["수강 기간 밖의 날짜예요.", "예약 불가"],
           student_conflict: ["내 다른 수업과 겹쳐요.", "내 수업"],

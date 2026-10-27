@@ -67,6 +67,7 @@ function fixture() {
         year: number;
         month: number;
         nextSchedule: typeof schedule | null;
+        disabledBookingDays: number[];
       };
     }>;
   }>(
@@ -81,6 +82,15 @@ function fixture() {
         getSessionUser: async () => ({ id: "user-a" }),
       },
       "../../programs/queries": { getActivePrograms: async () => [] },
+      "../../app-settings/queries": {
+        getDisabledBookingDays: async (
+          _: unknown,
+          { organizationId }: { organizationId: string },
+        ) => {
+          assert.equal(organizationId, "org-a");
+          return [6, 0];
+        },
+      },
       "../../users/queries": {
         getUserProfile: async () => ({
           profile_id: "student-a",
@@ -120,6 +130,7 @@ test("weekly loader honors date links and fetches the entire cross-month week wi
   assert.equal(body.month, 12);
   assert.ok(f.getRange().endDate > new Date("2027-01-04T00:00:00+09:00"));
   assert.equal(body.nextSchedule?.schedule_id, 5);
+  assert.deepEqual(body.disabledBookingDays, [6, 0]);
   assert.deepEqual(f.nextFilters, [
     ["cancelled_at", null],
     ["student_id", "student-a"],

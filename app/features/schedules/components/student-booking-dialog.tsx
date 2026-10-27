@@ -64,13 +64,23 @@ export function StudentBookingDialog({
     const timer = setInterval(() => setNow(new Date()), 15_000);
     return () => clearInterval(timer);
   }, [date]);
-  const dateReason = date ? bookingDateReason(date, course, now) : null;
+  const requestDateReason = date ? bookingDateReason(date, course, now) : null;
+  const dateReason = date
+    ? requestDateReason ||
+      bookingDateReason(
+        date,
+        availability.data?.key === key && availability.data.disabledDays
+          ? { ...course, disabledBookingDays: availability.data.disabledDays }
+          : course,
+        now,
+      )
+    : null;
   useEffect(() => {
-    if (date && !dateReason)
+    if (date && !requestDateReason)
       availability.load(
         `/api/schedules/availability?date=${date}&hours=${hours}`,
       );
-  }, [date, hours, dateReason]);
+  }, [date, hours, requestDateReason]);
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
     if (fetcher.data.success) {

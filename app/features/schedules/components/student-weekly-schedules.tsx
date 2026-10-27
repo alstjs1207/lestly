@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link, useNavigation } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
+import { isBookingDayDisabled } from "~/features/app-settings/booking-days";
 
 import { toKSTDateString } from "../utils/kst";
 import {
@@ -93,6 +94,7 @@ export function StudentWeeklySchedules({
   const course = {
     classStartDate: data.classStartDate,
     classEndDate: data.classEndDate,
+    disabledBookingDays: data.disabledBookingDays,
   };
   const sorted = [...schedules].sort((a, b) =>
     a.start_time.localeCompare(b.start_time),
@@ -235,15 +237,21 @@ export function StudentWeeklySchedules({
                 );
                 const blocked =
                   !data.canBook || !!bookingDateReason(day, course, now);
+                const closed = isBookingDayDisabled(
+                  day,
+                  data.disabledBookingDays ?? [],
+                );
                 const note = lessons.length
                   ? `${lessons.length}건`
-                  : day === today
-                    ? "오늘"
-                    : day < today
-                      ? "지난 날"
-                      : blocked
-                        ? "예약 불가"
-                        : "";
+                  : closed
+                    ? "휴무일"
+                    : day === today
+                      ? "오늘"
+                      : day < today
+                        ? "지난 날"
+                        : blocked
+                          ? "예약 불가"
+                          : "";
                 return (
                   <button
                     key={day}

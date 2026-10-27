@@ -46,7 +46,7 @@ export const settings = pgTable(
       for: "select",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`is_org_member(${table.organization_id}) AND ${table.setting_key} IN ('max_concurrent_students', 'schedule_duration_hours', 'time_slot_interval_minutes', 'disabled_booking_start_times')`,
+      using: sql`is_org_member(${table.organization_id}) AND ${table.setting_key} IN ('max_concurrent_students', 'schedule_duration_hours', 'time_slot_interval_minutes', 'disabled_booking_start_times', 'disabled_booking_weekdays')`,
     }),
     // RLS Policy: ADMIN can read all settings in their organization
     pgPolicy("admin-select-org-settings-policy", {

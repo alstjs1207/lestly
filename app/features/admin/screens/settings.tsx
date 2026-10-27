@@ -14,12 +14,17 @@ import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import makeServerClient from "~/core/lib/supa-client.server";
 import {
+  DISABLED_BOOKING_DAYS_KEY,
+  parseDisabledBookingDays,
+} from "~/features/app-settings/booking-days";
+import {
   DISABLED_BOOKING_TIMES_KEY,
   parseDisabledBookingTimes,
 } from "~/features/app-settings/booking-times";
 import { getAllSettings } from "~/features/app-settings/queries";
 import { DEFAULT_SETTINGS, SETTING_KEYS } from "~/features/app-settings/schema";
 
+import { BookingDaySettings } from "../components/booking-day-settings";
 import { BookingTimeSettings } from "../components/booking-time-settings";
 import { requireAdminRole } from "../guards.server";
 
@@ -46,7 +51,16 @@ export async function loader({ request }: Route.LoaderArgs) {
         (bookingSetting.setting_value as { value: unknown }).value,
       )
     : [];
+  const daySetting = settings.find(
+    (setting) => setting.setting_key === DISABLED_BOOKING_DAYS_KEY,
+  );
+  const disabledBookingDays = daySetting
+    ? parseDisabledBookingDays(
+        (daySetting.setting_value as { value: unknown }).value,
+      )
+    : [];
   return {
+    disabledBookingDays,
     disabledBookingTimes,
     maxConcurrentStudents:
       settingsMap[SETTING_KEYS.MAX_CONCURRENT_STUDENTS] ??
@@ -66,6 +80,7 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
     scheduleDurationHours,
     timeSlotIntervalMinutes,
     disabledBookingTimes,
+    disabledBookingDays,
   } = loaderData;
   const fetcher = useFetcher<{ error?: string }>();
   const isSubmitting = fetcher.state !== "idle";
@@ -150,6 +165,11 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
               </div>
             </div>
 
+            <BookingDaySettings
+              key={disabledBookingDays.join(",")}
+              disabledDays={disabledBookingDays}
+              busy={isSubmitting}
+            />
             <BookingTimeSettings
               key={disabledBookingTimes.join(",")}
               disabledTimes={disabledBookingTimes}

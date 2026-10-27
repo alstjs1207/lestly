@@ -3,6 +3,7 @@ import { data } from "react-router";
 import makeServerClient, {
   getSessionUser,
 } from "../../../core/lib/supa-client.server";
+import { getDisabledBookingDays } from "../../app-settings/queries";
 import { getActivePrograms } from "../../programs/queries";
 import { getUserProfile } from "../../users/queries";
 import { getKSTMonthRange, parseCalendarMonth } from "./calendar-month";
@@ -47,29 +48,35 @@ export async function loadStudentCalendar(
     .eq("state", "NORMAL")
     .maybeSingle();
   if (error) throw error;
-  const [schedules, programs, upcoming] = await Promise.all([
-    getLearningSchedules(client, {
-      studentId: profile.profile_id,
-      startDate: new Date(range.startDate.getTime() - 7 * 86_400_000),
-      endDate: new Date(range.endDate.getTime() + 7 * 86_400_000),
-    }),
-    membership
-      ? getActivePrograms(client, {
-          organizationId: membership.organization_id,
-        })
-      : Promise.resolve([]),
-    list
-      ? Promise.resolve({ data: [], error: null })
-      : client
-          .from("schedules")
-          .select(learningScheduleSelect)
-          .is("cancelled_at", null)
-          .eq("student_id", profile.profile_id)
-          .gt("end_time", now.toISOString())
-          .order("start_time", { ascending: true })
-          .order("schedule_id", { ascending: true })
-          .limit(1),
-  ]);
+  const [schedules, programs, upcoming, disabledBookingDays] =
+    await Promise.all([
+      getLearningSchedules(client, {
+        studentId: profile.profile_id,
+        startDate: new Date(range.startDate.getTime() - 7 * 86_400_000),
+        endDate: new Date(range.endDate.getTime() + 7 * 86_400_000),
+      }),
+      membership
+        ? getActivePrograms(client, {
+            organizationId: membership.organization_id,
+          })
+        : Promise.resolve([]),
+      list
+        ? Promise.resolve({ data: [], error: null })
+        : client
+            .from("schedules")
+            .select(learningScheduleSelect)
+            .is("cancelled_at", null)
+            .eq("student_id", profile.profile_id)
+            .gt("end_time", now.toISOString())
+            .order("start_time", { ascending: true })
+            .order("schedule_id", { ascending: true })
+            .limit(1),
+      membership
+        ? getDisabledBookingDays(client, {
+            organizationId: membership.organization_id,
+          })
+        : Promise.resolve([]),
+    ]);
   if (upcoming.error) throw upcoming.error;
   const requestedSchedule = schedules.find(
     (schedule) => String(schedule.schedule_id) === params.get("schedule"),
@@ -79,6 +86,7 @@ export async function loadStudentCalendar(
   return data(
     {
       schedules,
+      disabledBookingDays,
       programs,
       year,
       month,

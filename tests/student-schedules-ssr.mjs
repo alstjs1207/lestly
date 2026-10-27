@@ -80,6 +80,14 @@ const readonly = await render("calendar", "/my-schedules", {
   canBook: false,
 });
 assert.match(readonly, /예약 가능한 수강생 계정인지/);
+const closed = await render("calendar", "/my-schedules", {
+  ...fixture,
+  disabledBookingDays: [1, 2],
+});
+assert.match(closed, /휴무일로 신규 예약을 받지 않아요/);
+assert.match(closed, /SSR 예약 검증 수업/); // Existing reservations stay visible.
+assert.match(closed, /휴무일/);
+assert.doesNotMatch(closed, /가능 시간 확인 중/);
 const list = await render("my-schedules", "/my-schedules/list", fixture);
 assert.match(list, /등록된 수업 목록/);
 assert.match(list, /조회 월/);
