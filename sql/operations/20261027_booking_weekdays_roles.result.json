@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-27T11:46:12.832Z",
+  "readOnly": true,
+  "privileges": {
+    "anon_availability": false,
+    "student_availability": true,
+    "student_guard": false
+  },
+  "studentRead": {
+    "availabilitySlotsPerDuration": 23,
+    "durations": [
+      3,
+      6,
+      9
+    ],
+    "weekdayReasonsMatch": true,
+    "settingsRead": true
+  },
+  "noBusinessWrites": true
+}
