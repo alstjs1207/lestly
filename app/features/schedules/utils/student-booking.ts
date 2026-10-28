@@ -1,10 +1,16 @@
 import { isBookingDayDisabled } from "../../app-settings/booking-days.ts";
+import {
+  type BookingPolicy,
+  DEFAULT_BOOKING_POLICY,
+  bookingStartTimes,
+} from "../../app-settings/booking-policy.ts";
 import { fromKST, toKST, toKSTDateString } from "./kst.ts";
 
 export interface CourseDates {
   classStartDate: string | null;
   classEndDate: string | null;
   disabledBookingDays?: number[];
+  bookingPolicy?: BookingPolicy;
 }
 export function bookingDateReason(
   date: string,
@@ -43,6 +49,14 @@ export function bookingSlotReason(
   const end = new Date(start.getTime() + hours * 3_600_000);
   if (!Number.isFinite(start.getTime()) || start <= now)
     return "이미 지난 시작 시각이에요.";
+  const policy = course.bookingPolicy ?? DEFAULT_BOOKING_POLICY;
+  if (
+    !policy.durationMinutes.includes(Math.round(hours * 60)) ||
+    !bookingStartTimes(policy).includes(time)
+  )
+    return "수업 길이와 시작 시간 설정을 다시 확인해주세요.";
+  if (+start < +now + policy.leadMinutes * 60_000)
+    return "이 수업의 예약 접수가 마감됐어요.";
   if (
     schedules.some(
       (s) => new Date(s.start_time) < end && new Date(s.end_time) > start,

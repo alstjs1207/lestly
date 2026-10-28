@@ -4,6 +4,12 @@ import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { useEffect, useRef } from "react";
 
+import {
+  type BookingPolicy,
+  DEFAULT_BOOKING_POLICY,
+  calendarTimeBounds,
+} from "../../app-settings/booking-policy";
+
 interface StudentCalendarInnerProps {
   events: Array<{
     id: string;
@@ -16,6 +22,7 @@ interface StudentCalendarInnerProps {
     };
   }>;
   initialDate?: string;
+  bookingPolicy?: BookingPolicy;
   onMonthChange?: (date: Date) => void;
   onDateClick: (arg: { date: Date }) => void;
   onEventClick: (arg: {
@@ -31,6 +38,7 @@ interface StudentCalendarInnerProps {
 
 export default function StudentCalendarInner({
   events,
+  bookingPolicy = DEFAULT_BOOKING_POLICY,
   initialDate,
   onMonthChange,
   onDateClick,
@@ -77,9 +85,7 @@ export default function StudentCalendarInner({
           today: "오늘로 이동",
         }}
         allDaySlot={false}
-        slotMinTime="09:00:00"
-        slotMaxTime="23:00:00"
-        slotDuration="00:30:00"
+        {...calendarTimeBounds(bookingPolicy, events)}
         height="auto"
         dayMaxEvents={3}
         eventTimeFormat={{

@@ -12,6 +12,7 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import { getMonthlySchedules } from "~/features/schedules/queries";
 import { parseCalendarMonth } from "~/features/schedules/utils/calendar-month";
 
+import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
 import AdminCalendar from "../../components/admin-calendar";
 import { AdminMobileCalendar } from "../../components/admin-mobile-calendar";
 import { requireAdminRole } from "../../guards.server";
@@ -23,6 +24,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const { year, month } = parseCalendarMonth(url.searchParams);
 
+  const bookingPolicy = await getBookingPolicy(client, { organizationId });
   const schedules = await getMonthlySchedules(client, {
     organizationId,
     year,
@@ -56,7 +58,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
   });
 
-  return data({ events, year, month }, { headers });
+  return data({ events, year, month, bookingPolicy }, { headers });
 }
 
 function DaySchedulePanel({
@@ -260,6 +262,7 @@ export default function ScheduleCalendarScreen({
       >
         <div className="bg-card rounded-xl border p-6 shadow-sm">
           <AdminCalendar
+            bookingPolicy={loaderData.bookingPolicy}
             events={events}
             initialDate={`${year}-${String(month).padStart(2, "0")}-01`}
             onDatesSet={handleDatesSet}

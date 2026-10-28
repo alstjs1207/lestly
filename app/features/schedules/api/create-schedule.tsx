@@ -6,13 +6,17 @@ import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { dispatchSchedulePush } from "~/features/notifications/push/dispatch.server";
 import {
-  DURATION_OPTIONS,
   applyTimeToDate,
   calculateEndTime,
   canStudentRegisterSchedule,
   parseDateString,
 } from "~/features/schedules/utils/student-schedule-rules";
 
+import {
+  bookingStartTimes,
+  submittedDuration,
+} from "../../app-settings/booking-policy";
+import { getBookingPolicy } from "../../app-settings/booking-policy.server";
 import { toKSTDateString } from "../utils/kst";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -62,14 +66,22 @@ export async function action({ request }: Route.ActionArgs) {
 
   const dateStr = formData.get("date") as string;
   const startTimeStr = formData.get("start_time") as string;
-  const durationValue = formData.get("duration") as string;
+  const policy = await getBookingPolicy(client, { organizationId });
+  let minutes: number;
+  try {
+    minutes = submittedDuration(formData, policy);
+  } catch {
+    return data(
+      { success: false, error: "허용된 수업 길이를 선택해주세요." },
+      { status: 400, headers },
+    );
+  }
   const programIdStr = formData.get("program_id") as string | null;
   const programId = programIdStr ? parseInt(programIdStr) : null;
 
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(dateStr || "") ||
-    !/^(09|1\d|20):(00|30)$/.test(startTimeStr || "") ||
-    !DURATION_OPTIONS.some((option) => option.value === durationValue) ||
+    !bookingStartTimes(policy).includes(startTimeStr) ||
     (programIdStr && !/^[1-9]\d*$/.test(programIdStr))
   ) {
     return data(
@@ -88,19 +100,19 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  // Get duration hours from form selection (1타임=3시간)
-  const selectedDuration = DURATION_OPTIONS.find(
-    (opt) => opt.value === durationValue,
-  );
-  const durationHours = selectedDuration?.hours || 3; // fallback to 3 hours
-
   const startTime = applyTimeToDate(date, startTimeStr);
-  const endTime = calculateEndTime(startTime, durationHours);
+  const endTime = calculateEndTime(startTime, minutes / 60);
 
   // Check if schedule is in the past
-  if (startTime <= new Date()) {
+  if (
+    startTime <= new Date() ||
+    +startTime < Date.now() + policy.leadMinutes * 60_000
+  ) {
     return data(
-      { success: false, error: "과거 날짜에는 스케쥴을 등록할 수 없습니다." },
+      {
+        success: false,
+        error: "예약 접수가 마감됐거나 이미 지난 시작 시각입니다.",
+      },
       { status: 400 },
     );
   }
@@ -116,6 +128,8 @@ export async function action({ request }: Route.ActionArgs) {
   );
   if (error) {
     const errors: Record<string, string> = {
+      schedule_booking_closed:
+        "예약 접수가 마감됐습니다. 다른 시간을 선택해주세요.",
       schedule_date_not_allowed:
         "예약 가능한 날짜와 시작 시각을 다시 확인해주세요.",
       schedule_time_disabled:
@@ -123,7 +137,7 @@ export async function action({ request }: Route.ActionArgs) {
       schedule_day_disabled:
         "이 요일은 휴무일로 신규 예약을 받지 않습니다. 다른 날짜를 선택해주세요.",
       schedule_time_not_allowed:
-        "시작 시간은 09:00~20:00, 수업 시간은 3·6·9시간 중 선택해주세요.",
+        "조직의 수업 길이와 시작 시간 설정이 변경됐습니다. 시간을 다시 선택해주세요.",
       schedule_student_conflict: "이미 같은 시간대에 등록한 일정이 있습니다.",
       schedule_capacity_exceeded: "동시간대 정원이 찼습니다.",
       schedule_outside_course: "수강 기간에 포함된 날짜를 선택해주세요.",

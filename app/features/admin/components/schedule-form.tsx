@@ -21,10 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/core/components/ui/select";
+
 import {
-  DURATION_OPTIONS,
-  generateTimeSlots,
-} from "~/features/schedules/utils/student-schedule-rules";
+  type BookingPolicy,
+  DEFAULT_BOOKING_POLICY,
+  bookingDurationOptions,
+  bookingStartTimes,
+  formatDuration,
+} from "../../app-settings/booking-policy";
 
 interface Student {
   profile_id: string;
@@ -42,6 +46,7 @@ interface Program {
 interface ScheduleFormProps {
   mode: "create" | "edit";
   students: Student[];
+  bookingPolicy?: BookingPolicy;
   programs?: Program[];
   defaultValues?: {
     schedule_id?: number;
@@ -58,6 +63,7 @@ export default function ScheduleForm({
   mode,
   students,
   programs = [],
+  bookingPolicy = DEFAULT_BOOKING_POLICY,
   defaultValues,
 }: ScheduleFormProps) {
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
@@ -74,7 +80,7 @@ export default function ScheduleForm({
   );
   const [selectedDate, setSelectedDate] = useState(defaultValues?.date || "");
   const [selectedDuration, setSelectedDuration] = useState(
-    defaultValues?.duration || "1",
+    defaultValues?.duration || String(bookingPolicy.defaultDurationMinutes),
   );
   const [selectedProgramId, setSelectedProgramId] = useState(
     defaultValues?.program_id?.toString() ||
@@ -126,7 +132,28 @@ export default function ScheduleForm({
       ? "/api/admin/schedules/create"
       : `/api/admin/schedules/${defaultValues?.schedule_id}/update`;
 
-  const timeSlots = generateTimeSlots(30);
+  const timeSlots = bookingStartTimes(bookingPolicy).map((value) => ({
+    label: value,
+    value,
+  }));
+  if (
+    defaultValues?.start_time &&
+    !timeSlots.some((s) => s.value === defaultValues.start_time)
+  )
+    timeSlots.push({
+      label: `${defaultValues.start_time} (기존)`,
+      value: defaultValues.start_time,
+    });
+  const DURATION_OPTIONS = bookingDurationOptions(bookingPolicy);
+  if (
+    defaultValues?.duration &&
+    !DURATION_OPTIONS.some((d) => d.value === defaultValues.duration)
+  )
+    DURATION_OPTIONS.push({
+      value: defaultValues.duration,
+      label: `${formatDuration(Number(defaultValues.duration))} (기존)`,
+      hours: Number(defaultValues.duration) / 60,
+    });
   const quickTimeSlots = timeSlots.filter((slot) => slot.value.endsWith(":00"));
   const selectedStudentNames = useMemo(
     () =>
@@ -246,7 +273,7 @@ export default function ScheduleForm({
                 defaultValue={defaultValues?.student_id}
                 required
               >
-                <SelectTrigger className="h-11 w-full md:h-9">
+                <SelectTrigger id="duration" className="h-11 w-full md:h-9">
                   <SelectValue placeholder="수강생 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -285,7 +312,7 @@ export default function ScheduleForm({
                 onValueChange={setSelectedProgramId}
                 required
               >
-                <SelectTrigger className="h-11 w-full md:h-9">
+                <SelectTrigger id="duration" className="h-11 w-full md:h-9">
                   <SelectValue placeholder="클래스 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -355,7 +382,7 @@ export default function ScheduleForm({
               <p className="text-muted-foreground text-center text-xs">또는</p>
               <Select value={selectedTime} onValueChange={setSelectedTime}>
                 <SelectTrigger className="h-11 w-full">
-                  <SelectValue placeholder="30분 단위 전체 시간 보기" />
+                  <SelectValue placeholder="전체 시작 시간 보기" />
                 </SelectTrigger>
                 <SelectContent>
                   {timeSlots.map((slot) => (
@@ -380,21 +407,22 @@ export default function ScheduleForm({
               ))}
             </div>
             <p className="text-muted-foreground text-xs">
-              시작 시간: 09:00 ~ 20:00
+              시작 시간: {bookingPolicy.firstStart} ~ {bookingPolicy.lastStart}{" "}
+              · {bookingPolicy.startIntervalMinutes}분 간격
             </p>
             <input type="hidden" name="start_time" value={selectedTime} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="duration">수업 타임 *</Label>
+            <Label htmlFor="duration">수업 길이 *</Label>
             <Select
-              name="duration"
+              name="duration_minutes"
               value={selectedDuration}
               onValueChange={setSelectedDuration}
               required
             >
-              <SelectTrigger className="h-11 w-full md:h-9">
-                <SelectValue placeholder="타임 선택" />
+              <SelectTrigger id="duration" className="h-11 w-full md:h-9">
+                <SelectValue placeholder="수업 길이 선택" />
               </SelectTrigger>
               <SelectContent>
                 {DURATION_OPTIONS.map((option) => (
@@ -405,7 +433,8 @@ export default function ScheduleForm({
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
-              1타임 = 3시간 (최대 3타임, 9시간)
+              허용된 수업 길이를 선택해 주세요. 기존 일정은 이전 길이를 유지할
+              수 있습니다.
             </p>
           </div>
 

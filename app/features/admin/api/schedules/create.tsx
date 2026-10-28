@@ -8,12 +8,13 @@ import { validateScheduleBatch } from "~/features/schedules/queries";
 import { fromKST, toKSTDateString } from "~/features/schedules/utils/kst";
 import { generateWeeklyDates } from "~/features/schedules/utils/rrule-helper";
 import {
-  DURATION_OPTIONS,
   applyTimeToDate,
   calculateEndTime,
   parseDateString,
 } from "~/features/schedules/utils/student-schedule-rules";
 
+import { submittedDuration } from "../../../app-settings/booking-policy";
+import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
 import { requireAdminRole } from "../../guards.server";
 import { getStudentById } from "../../queries";
 
@@ -45,18 +46,34 @@ export async function action({ request }: Route.ActionArgs) {
   const programId = programIdStr ? parseInt(programIdStr) : null;
   const dateStr = formData.get("date") as string;
   const startTimeStr = formData.get("start_time") as string;
-  const durationValue = formData.get("duration") as string;
+  const bookingPolicy = await getBookingPolicy(client, { organizationId });
   const isRecurring = formData.get("is_recurring") === "true";
 
-  // Get duration hours from form selection (1타임=3시간)
-  const selectedDuration = DURATION_OPTIONS.find(
-    (opt) => opt.value === durationValue,
-  );
-  const durationHours = selectedDuration?.hours || 3; // fallback to 3 hours
-
+  let durationMinutes: number;
+  try {
+    durationMinutes = submittedDuration(formData, bookingPolicy, undefined);
+  } catch {
+    return data(
+      { success: false, error: "허용된 수업 길이를 선택해 주세요." },
+      { status: 400 },
+    );
+  }
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(dateStr ?? "") ||
+    !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(startTimeStr ?? "")
+  )
+    return data(
+      { success: false, error: "날짜와 시간을 확인해 주세요." },
+      { status: 400 },
+    );
   // Parse date and time (use parseDateString to avoid UTC timezone issue)
   const date = parseDateString(dateStr);
   const startTime = applyTimeToDate(date, startTimeStr);
+  if (toKSTDateString(startTime) !== dateStr)
+    return data(
+      { success: false, error: "날짜를 확인해 주세요." },
+      { status: 400 },
+    );
 
   const errors: string[] = [];
 
@@ -94,7 +111,7 @@ export async function action({ request }: Route.ActionArgs) {
       const candidates = occurrenceStarts.map((occurrenceStart) => ({
         studentId,
         startTime: occurrenceStart,
-        endTime: calculateEndTime(occurrenceStart, durationHours),
+        endTime: calculateEndTime(occurrenceStart, durationMinutes / 60),
       }));
 
       // Validate every occurrence before inserting any row for this student.

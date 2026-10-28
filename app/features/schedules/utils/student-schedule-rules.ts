@@ -1,3 +1,7 @@
+import {
+  DEFAULT_BOOKING_POLICY,
+  bookingStartTimes,
+} from "../../app-settings/booking-policy.ts";
 /**
  * Student Schedule Rules
  *
@@ -89,26 +93,10 @@ export function getStudentAllowedDateRange(): {
 export function generateTimeSlots(
   intervalMinutes: number = 30,
 ): { label: string; value: string }[] {
-  const slots: { label: string; value: string }[] = [];
-  const startHour = 9; // 09:00 시작
-  const endHour = 20; // 20:00 까지 (마지막 시작 시간)
-
-  for (let hour = startHour; hour <= endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += intervalMinutes) {
-      // 20:00 이후는 제외 (20:00은 포함)
-      if (hour === endHour && minute > 0) break;
-
-      const hourStr = hour.toString().padStart(2, "0");
-      const minuteStr = minute.toString().padStart(2, "0");
-      const timeStr = `${hourStr}:${minuteStr}`;
-      slots.push({
-        label: timeStr,
-        value: timeStr,
-      });
-    }
-  }
-
-  return slots;
+  return bookingStartTimes({
+    ...DEFAULT_BOOKING_POLICY,
+    startIntervalMinutes: intervalMinutes,
+  }).map((time) => ({ label: time, value: time }));
 }
 
 /**

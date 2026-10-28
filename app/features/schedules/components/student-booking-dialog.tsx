@@ -12,6 +12,11 @@ import {
 } from "~/core/components/ui/dialog";
 
 import {
+  DEFAULT_BOOKING_POLICY,
+  bookingDurationOptions,
+  formatDuration,
+} from "../../app-settings/booking-policy";
+import {
   type BookingAvailability,
   desktopBookingSlots,
 } from "../utils/desktop-booking";
@@ -21,7 +26,6 @@ import {
   formatLearningTime,
 } from "../utils/learning-records";
 import { type CourseDates, bookingDateReason } from "../utils/student-booking";
-import { DURATION_OPTIONS } from "../utils/student-schedule-rules";
 
 export type AvailabilityData = BookingAvailability;
 export function StudentBookingDialog({
@@ -42,11 +46,29 @@ export function StudentBookingDialog({
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const availability = useFetcher<AvailabilityData>();
   const [time, setTime] = useState("");
-  const [duration, setDuration] = useState("1");
+  const policy =
+    availability.data?.bookingPolicy ??
+    course.bookingPolicy ??
+    DEFAULT_BOOKING_POLICY;
+  const DURATION_OPTIONS = bookingDurationOptions(policy);
+  const [duration, setDuration] = useState(
+    String(policy.defaultDurationMinutes),
+  );
   const [program, setProgram] = useState("");
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => new Date());
-  const hours = DURATION_OPTIONS.find((d) => d.value === duration)!.hours;
+  const hours = (
+    DURATION_OPTIONS.find((d) => d.value === duration) ??
+    DURATION_OPTIONS.find(
+      (d) => d.value === String(policy.defaultDurationMinutes),
+    )!
+  ).hours;
+  useEffect(() => {
+    if (!policy.durationMinutes.includes(Number(duration))) {
+      setDuration(String(policy.defaultDurationMinutes));
+      setTime("");
+    }
+  }, [JSON.stringify(policy)]);
   const busy = fetcher.state !== "idle";
   const key = `${date}:${hours}`;
   const slots = availability.data?.key === key ? availability.data.slots : null;
@@ -54,7 +76,7 @@ export function StudentBookingDialog({
     availability.state !== "idle" || (!!date && availability.data?.key !== key);
   useEffect(() => {
     setTime("");
-    setDuration("1");
+    setDuration(String(policy.defaultDurationMinutes));
     setError("");
     setProgram(programs.length === 1 ? String(programs[0].program_id) : "");
   }, [date]);
@@ -78,7 +100,7 @@ export function StudentBookingDialog({
   useEffect(() => {
     if (date && !requestDateReason)
       availability.load(
-        `/api/schedules/availability?date=${date}&hours=${hours}`,
+        `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
       );
   }, [date, hours, requestDateReason]);
   useEffect(() => {
@@ -205,9 +227,11 @@ export function StudentBookingDialog({
                           <span className="mt-1 text-xs leading-tight">
                             {reason.includes("정원")
                               ? "정원 마감"
-                              : reason.includes("겹")
-                                ? "시간 겹침"
-                                : "예약 불가"}
+                              : reason.includes("마감")
+                                ? "접수 마감"
+                                : reason.includes("겹")
+                                  ? "시간 겹침"
+                                  : "예약 불가"}
                           </span>
                         )}
                       </Button>
@@ -220,7 +244,8 @@ export function StudentBookingDialog({
                 </p>
               )}
               <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-                학원에서 허용한 시작 시간만 표시돼요. 1타임은 3시간이에요.
+                예약 가능한 시작 시간만 표시돼요. 선택한 수업 길이에 맞춰 종료
+                시각을 계산해요.
                 <br />
                 종료 시각이 다음 날이 될 수 있으니 아래 요약을 확인해주세요.
               </p>
@@ -252,7 +277,9 @@ export function StudentBookingDialog({
                     종료 · {formatLearningDate(end, true)}{" "}
                     {formatLearningTime(end)}
                   </p>
-                  <p className="mt-2 font-semibold">총 {hours}시간</p>
+                  <p className="mt-2 font-semibold">
+                    총 {formatDuration(Math.round(hours * 60))}
+                  </p>
                 </>
               ) : (
                 <p className="text-muted-foreground mt-2">
@@ -262,6 +289,22 @@ export function StudentBookingDialog({
             </section>
           </div>
         )}
+        {availability.data?.key === key &&
+          availability.data.slots === null &&
+          !requestDateReason && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={availability.state !== "idle"}
+              onClick={() =>
+                availability.load(
+                  `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
+                )
+              }
+            >
+              가능 시간 다시 불러오기
+            </Button>
+          )}
         {(error || selectedReason) && (
           <p role="alert" className="text-destructive text-sm">
             {error || selectedReason}
@@ -287,7 +330,7 @@ export function StudentBookingDialog({
                 {
                   date,
                   start_time: time,
-                  duration,
+                  duration_minutes: String(Math.round(hours * 60)),
                   ...(program ? { program_id: program } : {}),
                 },
                 { method: "post", action: "/api/schedules/create" },

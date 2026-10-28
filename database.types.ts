@@ -1139,6 +1139,10 @@ export type Database = {
         Returns: string
       }
       get_current_profile_id: { Args: never; Returns: string }
+      get_student_booking_availability_minutes: {
+        Args: { p_organization_id: string; p_date: string; p_minutes: number }
+        Returns: { start_time: string; available: boolean; reason: string | null }[]
+      }
       get_student_booking_availability: {
         Args: { p_organization_id: string; p_date: string; p_hours: number }
         Returns: { start_time: string; available: boolean; reason: string | null }[]

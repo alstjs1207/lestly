@@ -1,3 +1,5 @@
+import type { BookingPolicy } from "../../app-settings/booking-policy";
+
 import { CalendarDays, List, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -34,6 +36,7 @@ export interface StudentSchedulesData {
   allowedEndDate: string;
   canBook: boolean;
   disabledBookingDays?: number[];
+  bookingPolicy?: BookingPolicy;
 }
 export function StudentSchedulesView({
   data,
@@ -68,6 +71,7 @@ export function StudentSchedulesView({
     classStartDate: data.classStartDate,
     classEndDate: data.classEndDate,
     disabledBookingDays: data.disabledBookingDays,
+    bookingPolicy: data.bookingPolicy,
   };
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30_000);

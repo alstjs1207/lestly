@@ -3,6 +3,8 @@ import { data } from "react-router";
 import makeServerClient, {
   getSessionUser,
 } from "../../../core/lib/supa-client.server";
+import { DEFAULT_BOOKING_POLICY } from "../../app-settings/booking-policy";
+import { getBookingPolicy } from "../../app-settings/booking-policy.server";
 import { getDisabledBookingDays } from "../../app-settings/queries";
 import { getActivePrograms } from "../../programs/queries";
 import { getUserProfile } from "../../users/queries";
@@ -48,7 +50,7 @@ export async function loadStudentCalendar(
     .eq("state", "NORMAL")
     .maybeSingle();
   if (error) throw error;
-  const [schedules, programs, upcoming, disabledBookingDays] =
+  const [schedules, programs, upcoming, disabledBookingDays, bookingPolicy] =
     await Promise.all([
       getLearningSchedules(client, {
         studentId: profile.profile_id,
@@ -76,6 +78,11 @@ export async function loadStudentCalendar(
             organizationId: membership.organization_id,
           })
         : Promise.resolve([]),
+      membership
+        ? getBookingPolicy(client, {
+            organizationId: membership.organization_id,
+          })
+        : Promise.resolve(DEFAULT_BOOKING_POLICY),
     ]);
   if (upcoming.error) throw upcoming.error;
   const requestedSchedule = schedules.find(
@@ -87,6 +94,7 @@ export async function loadStudentCalendar(
     {
       schedules,
       disabledBookingDays,
+      bookingPolicy,
       programs,
       year,
       month,

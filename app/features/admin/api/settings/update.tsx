@@ -14,6 +14,10 @@ import {
 } from "~/features/app-settings/booking-times";
 import { SETTING_KEYS } from "~/features/app-settings/schema";
 
+import {
+  BOOKING_POLICY_KEY,
+  bookingPolicySchema,
+} from "../../../app-settings/booking-policy";
 import { requireAdminRole } from "../../guards.server";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -24,31 +28,36 @@ export async function action({ request }: Route.ActionArgs) {
 
   const formData = await request.formData();
 
-  const maxConcurrentStudents = parseInt(
-    formData.get("max_concurrent_students") as string,
-  );
-  const scheduleDurationHours = parseInt(
-    formData.get("schedule_duration_hours") as string,
-  );
-  const timeSlotIntervalMinutes = parseInt(
-    formData.get("time_slot_interval_minutes") as string,
-  );
-
+  const numberField = (key: string) => {
+    const raw = formData.get(key);
+    return typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : NaN;
+  };
+  const maxConcurrentStudents = numberField("max_concurrent_students");
+  const parsed = bookingPolicySchema.safeParse({
+    durationMinutes: String(formData.get("durationMinutes") ?? "")
+      .trim()
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map(Number),
+    defaultDurationMinutes: numberField("defaultDurationMinutes"),
+    firstStart: formData.get("firstStart"),
+    lastStart: formData.get("lastStart"),
+    startIntervalMinutes: numberField("startIntervalMinutes"),
+    leadMinutes: numberField("leadMinutes"),
+  });
   if (
+    !parsed.success ||
     !Number.isInteger(maxConcurrentStudents) ||
     maxConcurrentStudents < 1 ||
-    maxConcurrentStudents > 100 ||
-    !Number.isInteger(scheduleDurationHours) ||
-    scheduleDurationHours < 1 ||
-    scheduleDurationHours > 8 ||
-    ![15, 30, 45, 60].includes(timeSlotIntervalMinutes)
-  ) {
+    maxConcurrentStudents > 100
+  )
     return data(
-      { error: "설정값의 허용 범위를 확인해 주세요." },
+      {
+        error:
+          "수업 길이·기본값·시작 시각·간격·접수 마감·정원을 확인해 주세요.",
+      },
       { status: 400 },
     );
-  }
-
   let disabledTimes: string[];
   try {
     disabledTimes = disabledBookingTimesFromForm(formData);
@@ -73,13 +82,8 @@ export async function action({ request }: Route.ActionArgs) {
         },
         {
           organization_id: organizationId,
-          setting_key: SETTING_KEYS.SCHEDULE_DURATION_HOURS,
-          setting_value: { value: scheduleDurationHours },
-        },
-        {
-          organization_id: organizationId,
-          setting_key: SETTING_KEYS.TIME_SLOT_INTERVAL_MINUTES,
-          setting_value: { value: timeSlotIntervalMinutes },
+          setting_key: BOOKING_POLICY_KEY,
+          setting_value: parsed.data,
         },
         {
           organization_id: organizationId,

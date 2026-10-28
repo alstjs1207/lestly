@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import * as bookingPolicy from "../app/features/app-settings/booking-policy.ts";
+import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
+import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
 function setup(rejectBooking = false) {
@@ -35,6 +38,10 @@ function setup(rejectBooking = false) {
       import.meta.url,
     ),
     {
+      "../../app-settings/booking-policy.server": {
+        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      },
+      "../../app-settings/booking-policy": bookingPolicy,
       "react-router": {
         data: (data: unknown, init?: unknown) => ({ data, init }),
         redirect: (url: string) => ({ url }),
@@ -63,7 +70,7 @@ function setup(rejectBooking = false) {
   for (const [key, value] of Object.entries({
     date: "2099-01-01",
     start_time: "09:00",
-    duration: "3",
+    duration_minutes: "180",
     program_id: "1",
   }))
     form.set(key, value);

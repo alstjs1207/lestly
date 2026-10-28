@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import * as bookingPolicy from "../app/features/app-settings/booking-policy.ts";
 import {
   getKSTMonthRange,
   parseCalendarMonth,
 } from "../app/features/schedules/utils/calendar-month.ts";
+import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
 import { toKSTDateString } from "../app/features/schedules/utils/kst.ts";
+import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { parseStudentScheduleDate } from "../app/features/schedules/utils/student-week.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
@@ -76,6 +79,10 @@ function fixture() {
       import.meta.url,
     ),
     {
+      "../../app-settings/booking-policy.server": {
+        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      },
+      "../../app-settings/booking-policy": bookingPolicy,
       "react-router": { data: (body: unknown) => ({ body }) },
       "../../../core/lib/supa-client.server": {
         default: () => [client, new Headers()],

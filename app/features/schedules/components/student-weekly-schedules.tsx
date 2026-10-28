@@ -1,3 +1,4 @@
+import type { BookingPolicy } from "../../app-settings/booking-policy";
 import type { StudentSchedulesData } from "./student-schedules-view";
 
 import { CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
@@ -95,6 +96,7 @@ export function StudentWeeklySchedules({
     classStartDate: data.classStartDate,
     classEndDate: data.classEndDate,
     disabledBookingDays: data.disabledBookingDays,
+    bookingPolicy: data.bookingPolicy,
   };
   const sorted = [...schedules].sort((a, b) =>
     a.start_time.localeCompare(b.start_time),

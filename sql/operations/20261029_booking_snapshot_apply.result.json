@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-28T23:51:46.780Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0033_booking_policy_fresh_snapshot",
+  "hash": "f3ae0447de82ea5f4bccce9c61de615c4aab76a616f62e381c3f7bb75f9f778c",
+  "applied": true,
+  "alreadyApplied": false,
+  "dataUnchanged": true,
+  "functionBodiesAndPrivilegesUnchanged": true,
+  "helpersUseFreshSnapshots": true
+}

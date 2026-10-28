@@ -1,5 +1,7 @@
 import type { DatesSetArg } from "@fullcalendar/core";
 
+import type { BookingPolicy } from "../../app-settings/booking-policy";
+
 import { Suspense, lazy } from "react";
 
 import { CalendarSkeleton } from "~/core/components/calendar-skeleton";
@@ -29,6 +31,7 @@ interface AdminCalendarProps {
   events: CalendarEvent[];
   initialView?: "dayGridMonth" | "timeGridWeek" | "timeGridDay";
   initialDate?: string;
+  bookingPolicy?: BookingPolicy;
   onDateClick?: (date: Date) => void;
   onEventClick?: (scheduleId: number) => void;
   onDatesSet?: (dateInfo: DatesSetArg) => void;

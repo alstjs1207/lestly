@@ -1,11 +1,16 @@
+import {
+  type BookingPolicy,
+  DEFAULT_BOOKING_POLICY,
+  bookingStartTimes,
+} from "../../app-settings/booking-policy.ts";
 import { formatLearningTime } from "./learning-records.ts";
 import { type CourseDates, bookingSlotReason } from "./student-booking.ts";
-import { generateTimeSlots } from "./student-schedule-rules.ts";
 
 export interface BookingAvailability {
   key: string;
   disabledTimes?: string[];
   disabledDays?: number[];
+  bookingPolicy?: BookingPolicy;
   slots:
     | {
         start_time: string;
@@ -39,7 +44,12 @@ export function desktopBookingSlots(
     current && availability.disabledDays
       ? { ...course, disabledBookingDays: availability.disabledDays }
       : course;
-  return generateTimeSlots(30)
+  const policy =
+    current && availability.bookingPolicy
+      ? availability.bookingPolicy
+      : (course.bookingPolicy ?? DEFAULT_BOOKING_POLICY);
+  return bookingStartTimes(policy)
+    .map((value) => ({ value }))
     .filter(
       ({ value: time }) =>
         !disabledTimes.includes(time) &&
@@ -54,17 +64,22 @@ export function desktopBookingSlots(
         date,
         time,
         hours,
-        bookingCourse,
+        { ...bookingCourse, bookingPolicy: policy },
         schedules,
         now,
       );
+      if (!reason && current && slots === null)
+        reason =
+          "예약 가능 여부를 불러오지 못했어요. 잠시 후 다시 확인해주세요.";
       let label = reason?.includes("지난")
         ? "지난 시간"
-        : reason?.includes("겹")
-          ? "내 수업"
-          : reason
-            ? "예약 불가"
-            : null;
+        : reason?.includes("마감")
+          ? "접수 마감"
+          : reason?.includes("겹")
+            ? "내 수업"
+            : reason
+              ? "예약 불가"
+              : null;
       const slot = slots?.find(
         (s) => formatLearningTime(s.start_time) === time,
       );
@@ -77,6 +92,7 @@ export function desktopBookingSlots(
             "이 요일은 휴무일로 신규 예약을 받지 않아요.",
             "휴무일",
           ],
+          closed: ["이 수업의 예약 접수가 마감됐어요.", "접수 마감"],
           past: ["이미 지난 시작 시각이에요.", "지난 시간"],
           outside_course: ["수강 기간 밖의 날짜예요.", "예약 불가"],
           student_conflict: ["내 다른 수업과 겹쳐요.", "내 수업"],

@@ -11,6 +11,10 @@ import {
 } from "~/features/app-settings/queries";
 import { getUserProfile } from "~/features/users/queries";
 
+import { getBookingPolicy } from "../../app-settings/booking-policy.server";
+import { toKSTDateString } from "../utils/kst";
+import { parseDateString } from "../utils/student-schedule-rules";
+
 export async function loader({ request }: Route.LoaderArgs) {
   const [client, headers] = makeServerClient(request);
   headers.set("Cache-Control", "private, no-store");
@@ -28,29 +32,40 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (error || !member) throw new Response(null, { status: 403, headers });
   const params = new URL(request.url).searchParams;
   const date = params.get("date") ?? "";
-  const hours = Number(params.get("hours"));
+  const minutes = params.has("minutes")
+    ? Number(params.get("minutes"))
+    : Number(params.get("hours")) * 60;
+  const hours = minutes / 60;
+  const bookingPolicy = await getBookingPolicy(client, {
+    organizationId: member.organization_id,
+  });
   const key = `${date}:${hours}`;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || ![3, 6, 9].includes(hours))
-    return data({ key, slots: null }, { status: 400, headers });
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    !Number.isInteger(minutes) ||
+    !bookingPolicy.durationMinutes.includes(minutes) ||
+    toKSTDateString(parseDateString(date)) !== date
+  )
+    return data({ key, slots: null, bookingPolicy }, { status: 400, headers });
   const [disabledTimes, disabledDays] = await Promise.all([
     getDisabledBookingTimes(client, { organizationId: member.organization_id }),
     getDisabledBookingDays(client, { organizationId: member.organization_id }),
   ]);
   const { data: slots, error: availabilityError } = await client.rpc(
-    "get_student_booking_availability",
-    { p_organization_id: member.organization_id, p_date: date, p_hours: hours },
+    "get_student_booking_availability_minutes",
+    {
+      p_organization_id: member.organization_id,
+      p_date: date,
+      p_minutes: minutes,
+    },
   );
-  // A rolling deployment can still book safely through the existing INSERT guard.
-  if (availabilityError) {
-    if (["PGRST202", "42883"].includes(availabilityError.code))
-      return data(
-        { key, slots: null, disabledTimes, disabledDays },
-        { headers },
-      );
+  if (availabilityError)
     return data(
-      { key, slots: null, disabledTimes, disabledDays },
+      { key, slots: null, disabledTimes, disabledDays, bookingPolicy },
       { status: 400, headers },
     );
-  }
-  return data({ key, slots, disabledTimes, disabledDays }, { headers });
+  return data(
+    { key, slots, disabledTimes, disabledDays, bookingPolicy },
+    { headers },
+  );
 }

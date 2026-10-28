@@ -24,9 +24,14 @@ import {
 import { getAllSettings } from "~/features/app-settings/queries";
 import { DEFAULT_SETTINGS, SETTING_KEYS } from "~/features/app-settings/schema";
 
+import {
+  BOOKING_POLICY_KEY,
+  DEFAULT_BOOKING_POLICY,
+  parseBookingPolicy,
+} from "../../app-settings/booking-policy";
 import { getStudentTypes } from "../../organizations/student-types.server";
 import { BookingDaySettings } from "../components/booking-day-settings";
-import { BookingTimeSettings } from "../components/booking-time-settings";
+import { BookingPolicyFields } from "../components/booking-policy-fields";
 import { StudentTypeSettings } from "../components/student-type-settings";
 import { requireAdminRole } from "../guards.server";
 
@@ -65,29 +70,24 @@ export async function loader({ request }: Route.LoaderArgs) {
       )
     : [];
   return {
+    bookingPolicy: settings.some((s) => s.setting_key === BOOKING_POLICY_KEY)
+      ? parseBookingPolicy(
+          settings.find((s) => s.setting_key === BOOKING_POLICY_KEY)!
+            .setting_value,
+        )
+      : DEFAULT_BOOKING_POLICY,
     studentTypes,
     disabledBookingDays,
     disabledBookingTimes,
     maxConcurrentStudents:
       settingsMap[SETTING_KEYS.MAX_CONCURRENT_STUDENTS] ??
       DEFAULT_SETTINGS[SETTING_KEYS.MAX_CONCURRENT_STUDENTS].value,
-    scheduleDurationHours:
-      settingsMap[SETTING_KEYS.SCHEDULE_DURATION_HOURS] ??
-      DEFAULT_SETTINGS[SETTING_KEYS.SCHEDULE_DURATION_HOURS].value,
-    timeSlotIntervalMinutes:
-      settingsMap[SETTING_KEYS.TIME_SLOT_INTERVAL_MINUTES] ??
-      DEFAULT_SETTINGS[SETTING_KEYS.TIME_SLOT_INTERVAL_MINUTES].value,
   };
 }
 
 export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
-  const {
-    maxConcurrentStudents,
-    scheduleDurationHours,
-    timeSlotIntervalMinutes,
-    disabledBookingTimes,
-    disabledBookingDays,
-  } = loaderData;
+  const { maxConcurrentStudents, disabledBookingTimes, disabledBookingDays } =
+    loaderData;
   const fetcher = useFetcher<{ error?: string }>();
   const isSubmitting = fetcher.state !== "idle";
 
@@ -136,51 +136,20 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
                   같은 시간대에 등록 가능한 최대 수강생 수
                 </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="schedule_duration_hours">
-                  수업 시간 (시간)
-                </Label>
-                <Input
-                  id="schedule_duration_hours"
-                  name="schedule_duration_hours"
-                  type="number"
-                  min="1"
-                  max="8"
-                  defaultValue={scheduleDurationHours}
-                />
-                <p className="text-muted-foreground text-xs">
-                  각 수업의 기본 시간 (고정)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="time_slot_interval_minutes">
-                  시간 단위 (분)
-                </Label>
-                <Input
-                  id="time_slot_interval_minutes"
-                  name="time_slot_interval_minutes"
-                  type="number"
-                  min="15"
-                  max="60"
-                  step="15"
-                  defaultValue={timeSlotIntervalMinutes}
-                />
-                <p className="text-muted-foreground text-xs">
-                  일정 등록 시 선택 가능한 시간 단위
-                </p>
-              </div>
             </div>
+            <BookingPolicyFields
+              key={JSON.stringify([
+                loaderData.bookingPolicy,
+                disabledBookingTimes,
+              ])}
+              policy={loaderData.bookingPolicy}
+              disabledTimes={disabledBookingTimes}
+              busy={isSubmitting}
+            />
 
             <BookingDaySettings
               key={`days:${disabledBookingDays.join(",")}`}
               disabledDays={disabledBookingDays}
-              busy={isSubmitting}
-            />
-            <BookingTimeSettings
-              key={`times:${disabledBookingTimes.join(",")}`}
-              disabledTimes={disabledBookingTimes}
               busy={isSubmitting}
             />
 

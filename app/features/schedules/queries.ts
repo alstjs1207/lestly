@@ -12,6 +12,7 @@ import { getKSTMonthRange } from "~/features/schedules/utils/calendar-month";
 import { fromKST, nowKST, toKST } from "~/features/schedules/utils/kst";
 import {
   type ScheduleCandidate,
+  peakConcurrentCount,
   validateScheduleCandidatesAgainstExisting,
 } from "~/features/schedules/utils/schedule-validation";
 import { getStudentHoursTotals } from "~/features/schedules/utils/student-hours";
@@ -252,27 +253,29 @@ export async function checkConcurrentLimit(
     organizationId,
   });
 
-  let query = client
-    .from("schedules")
-    .select("schedule_id", { count: "exact", head: true })
-    .is("cancelled_at", null)
-    .eq("organization_id", organizationId)
-    .lt("start_time", endTime.toISOString())
-    .gt("end_time", startTime.toISOString());
-
-  if (excludeScheduleId) {
-    query = query.neq("schedule_id", excludeScheduleId);
-  }
-
-  const { count, error } = await query;
-
-  if (error) {
-    throw error;
-  }
-
+  const rows = await fetchAllRows((from, to) =>
+    client
+      .from("schedules")
+      .select("schedule_id,start_time,end_time")
+      .is("cancelled_at", null)
+      .eq("organization_id", organizationId)
+      .lt("start_time", endTime.toISOString())
+      .gt("end_time", startTime.toISOString())
+      .order("schedule_id")
+      .range(from, to),
+  );
+  const count = peakConcurrentCount(
+    { startTime, endTime },
+    rows
+      .filter((s) => s.schedule_id !== excludeScheduleId)
+      .map((s) => ({
+        startTime: new Date(s.start_time),
+        endTime: new Date(s.end_time),
+      })),
+  );
   return {
-    allowed: (count ?? 0) < maxConcurrent,
-    currentCount: count ?? 0,
+    allowed: count < maxConcurrent,
+    currentCount: count,
     maxCount: maxConcurrent,
   };
 }
@@ -301,7 +304,7 @@ export async function validateScheduleCreation(
   const data = await fetchAllRows((from, to) =>
     client
       .from("schedules")
-      .select("schedule_id, student_id")
+      .select("schedule_id, student_id, start_time, end_time")
       .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .lt("start_time", endTime.toISOString())
@@ -310,7 +313,13 @@ export async function validateScheduleCreation(
       .range(from, to),
   );
 
-  const currentCount = data?.length ?? 0;
+  const currentCount = peakConcurrentCount(
+    { startTime, endTime },
+    data.map((s) => ({
+      startTime: new Date(s.start_time),
+      endTime: new Date(s.end_time),
+    })),
+  );
   const hasConflict = data?.some((s) => s.student_id === studentId) ?? false;
 
   return {

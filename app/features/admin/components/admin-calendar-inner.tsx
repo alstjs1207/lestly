@@ -14,6 +14,12 @@ import { useNavigate } from "react-router";
 
 import { useIsMobile } from "~/core/hooks/use-mobile";
 
+import {
+  type BookingPolicy,
+  DEFAULT_BOOKING_POLICY,
+  calendarTimeBounds,
+} from "../../app-settings/booking-policy";
+
 interface CalendarEvent {
   id: string;
   title: string;
@@ -36,6 +42,7 @@ interface AdminCalendarInnerProps {
   events: CalendarEvent[];
   initialView?: "dayGridMonth" | "timeGridWeek" | "timeGridDay";
   initialDate?: string;
+  bookingPolicy?: BookingPolicy;
   onDateClick?: (date: Date) => void;
   onEventClick?: (scheduleId: number) => void;
   onDatesSet?: (dateInfo: DatesSetArg) => void;
@@ -45,6 +52,7 @@ interface AdminCalendarInnerProps {
 
 export default function AdminCalendarInner({
   events,
+  bookingPolicy = DEFAULT_BOOKING_POLICY,
   initialView = "dayGridMonth",
   initialDate,
   onDateClick,
@@ -200,9 +208,7 @@ export default function AdminCalendarInner({
           day: "일",
         }}
         allDaySlot={false}
-        slotMinTime="09:00:00"
-        slotMaxTime="23:00:00"
-        slotDuration="00:30:00"
+        {...calendarTimeBounds(bookingPolicy, events)}
         height="auto"
         dayMaxEvents={isMobile ? 2 : 3}
         eventTimeFormat={{

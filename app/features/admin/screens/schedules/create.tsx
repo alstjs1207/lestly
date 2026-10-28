@@ -16,6 +16,7 @@ import makeServerClient from "~/core/lib/supa-client.server";
 import { getActivePrograms } from "~/features/programs/queries";
 import { toKSTDateString } from "~/features/schedules/utils/kst";
 
+import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
 import ScheduleForm from "../../components/schedule-form";
 import { requireAdminRole } from "../../guards.server";
 import { getActiveStudents } from "../../queries";
@@ -23,13 +24,14 @@ import { getActiveStudents } from "../../queries";
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
+  const bookingPolicy = await getBookingPolicy(client, { organizationId });
 
   const [students, programs] = await Promise.all([
     getActiveStudents(client, { organizationId }),
     getActivePrograms(client, { organizationId }),
   ]);
 
-  return { students, programs };
+  return { students, programs, bookingPolicy };
 }
 
 export default function ScheduleCreateScreen({
@@ -60,8 +62,8 @@ export default function ScheduleCreateScreen({
         <CardHeader>
           <CardTitle>일정 정보</CardTitle>
           <CardDescription>
-            * 표시된 항목은 필수 입력 항목입니다. 1타임은 3시간이며 최대
-            3타임까지 등록할 수 있습니다.
+            * 표시된 항목은 필수 입력 항목입니다. 조직에 설정한 수업 길이를
+            선택할 수 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -78,6 +80,7 @@ export default function ScheduleCreateScreen({
             />
           ) : (
             <ScheduleForm
+              bookingPolicy={loaderData.bookingPolicy}
               mode="create"
               students={students}
               programs={programs}

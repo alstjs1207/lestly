@@ -5,6 +5,11 @@ import { useFetcher } from "react-router";
 import { Button } from "~/core/components/ui/button";
 
 import {
+  DEFAULT_BOOKING_POLICY,
+  bookingDurationOptions,
+  formatDuration,
+} from "../../app-settings/booking-policy";
+import {
   type BookingAvailability,
   desktopBookingSlots,
 } from "../utils/desktop-booking";
@@ -15,7 +20,6 @@ import {
   formatLearningTime,
 } from "../utils/learning-records";
 import { type CourseDates, bookingDateReason } from "../utils/student-booking";
-import { DURATION_OPTIONS } from "../utils/student-schedule-rules";
 
 export interface BookingProgram {
   program_id: number;
@@ -46,7 +50,14 @@ export function StudentBookingPanel({
 }) {
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const availability = useFetcher<BookingAvailability>();
-  const [duration, setDuration] = useState("1");
+  const policy =
+    availability.data?.bookingPolicy ??
+    course.bookingPolicy ??
+    DEFAULT_BOOKING_POLICY;
+  const DURATION_OPTIONS = bookingDurationOptions(policy);
+  const [duration, setDuration] = useState(
+    String(policy.defaultDurationMinutes),
+  );
   const [time, setTime] = useState("");
   const [program, setProgram] = useState(
     programs.length === 1 ? String(programs[0].program_id) : "",
@@ -61,7 +72,18 @@ export function StudentBookingPanel({
   } | null>(null);
   const handled = useRef(fetcher.data);
   const submitted = useRef<typeof confirmed>(null);
-  const hours = DURATION_OPTIONS.find((d) => d.value === duration)!.hours;
+  const hours = (
+    DURATION_OPTIONS.find((d) => d.value === duration) ??
+    DURATION_OPTIONS.find(
+      (d) => d.value === String(policy.defaultDurationMinutes),
+    )!
+  ).hours;
+  useEffect(() => {
+    if (!policy.durationMinutes.includes(Number(duration))) {
+      setDuration(String(policy.defaultDurationMinutes));
+      setTime("");
+    }
+  }, [JSON.stringify(policy)]);
   const submitting = fetcher.state !== "idle";
   const busy = submitting || disabled;
   const requestDateReason = canBook
@@ -112,7 +134,7 @@ export function StudentBookingPanel({
   useEffect(() => {
     if (!requestDateReason)
       availability.load(
-        `/api/schedules/availability?date=${date}&hours=${hours}`,
+        `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
       );
   }, [date, hours, requestDateReason, refresh, refreshKey]);
   useEffect(() => {
@@ -233,9 +255,11 @@ export function StudentBookingPanel({
                     }}
                     className="bg-background min-h-14 rounded-lg border py-2 text-sm disabled:opacity-50 aria-pressed:border-violet-600 aria-pressed:bg-violet-50 aria-pressed:font-semibold aria-pressed:text-violet-800 dark:aria-pressed:border-violet-400 dark:aria-pressed:bg-violet-950/50 dark:aria-pressed:text-violet-200"
                   >
-                    <span>{d.label.split(" ")[0]}</span>
+                    <span>{d.label}</span>
                     <span className="mt-1 block text-xs font-normal">
-                      {d.hours}시간
+                      {d.value === String(policy.defaultDurationMinutes)
+                        ? "기본"
+                        : "수업"}
                     </span>
                   </button>
                 ))}
@@ -249,7 +273,7 @@ export function StudentBookingPanel({
                     ? "가능 시간 확인 중…"
                     : knownCapacity
                       ? `${slots.filter((s) => !s.reason).length}개 선택 가능`
-                      : "정원은 예약 시 확인"}
+                      : "조회 실패"}
                 </span>
               </legend>
               <div className="grid grid-cols-4 gap-1.5">
@@ -292,7 +316,7 @@ export function StudentBookingPanel({
                   ? "예약 가능한 시간을 확인하고 있어요…"
                   : knownCapacity
                     ? "정원은 조회 시점 기준이며, 예약 시 최종 확인해요."
-                    : "정원 정보를 가져오지 못했어요. 예약 시 최종 확인해요."}
+                    : "정원 정보를 가져오지 못했어요. 가능 시간을 다시 불러와주세요."}
               </p>
             </fieldset>
           </>
@@ -311,7 +335,7 @@ export function StudentBookingPanel({
             <>
               <p className="text-xs font-medium">
                 {formatLearningDate(`${date}T00:00:00+09:00`, true)}
-                {!summary && ` · ${hours}시간`}
+                {!summary && ` · ${formatDuration(Math.round(hours * 60))}`}
               </p>
               {summary ? (
                 <>
@@ -325,7 +349,7 @@ export function StudentBookingPanel({
                       {formatLearningTime(summary.end)}
                     </span>
                     <span className="text-xs font-normal">
-                      총 {summary.hours}시간
+                      총 {formatDuration(Math.round(summary.hours * 60))}
                     </span>
                   </p>
                   {overnight && (
@@ -348,6 +372,22 @@ export function StudentBookingPanel({
             {error || selectedReason}
           </p>
         )}
+        {availability.data?.key === key &&
+          availability.data.slots === null &&
+          !requestDateReason && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={availability.state !== "idle"}
+              onClick={() =>
+                availability.load(
+                  `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
+                )
+              }
+            >
+              가능 시간 다시 불러오기
+            </Button>
+          )}
         {confirmed ? (
           <Button
             variant="outline"
@@ -393,14 +433,16 @@ export function StudentBookingPanel({
                 {
                   date,
                   start_time: time,
-                  duration,
+                  duration_minutes: String(Math.round(hours * 60)),
                   ...(selectedProgram ? { program_id: program } : {}),
                 },
                 { method: "post", action: "/api/schedules/create" },
               );
             }}
           >
-            {busy ? "예약 중…" : `${hours}시간 수업 예약하기`}
+            {busy
+              ? "예약 중…"
+              : `${formatDuration(Math.round(hours * 60))} 수업 예약하기`}
           </Button>
         )}
         <p className="text-muted-foreground text-center text-xs">

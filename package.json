@@ -26,7 +26,8 @@
     "test:db": "node sql/checks/security-regression.mjs",
     "postinstall": "node scripts/harden-braces.mjs",
     "verify:worker": "node scripts/verify-worker.mjs",
-    "verify:node": "node scripts/verify-node.mjs"
+    "verify:node": "node scripts/verify-node.mjs",
+    "test:booking-policy:ssr": "node tests/booking-policy-ssr.mjs"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",

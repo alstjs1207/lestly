@@ -251,6 +251,9 @@ status: pending (상담 대기)
 허용이다. 전체 요일 차단과 차단 해제도 가능하며, 변경 후 **설정 저장**을 누른다.
 
 배포 시 `0028_student_booking_weekdays.sql` 마이그레이션을 먼저 적용해야 한다.
+
+예약 규칙 공통화 Phase 3은 분 단위 수업 길이·시작 범위·간격·접수 마감과 최대 동시 인원 계산을 지원한다.
+실제 반영 전 `0032_booking_policy.sql`이 필요하며 구현·검증 상태는 [공통화 계획](docs/service-generalization-plan.md#phase-3)을 따른다.
 휴무일 표시는 예약 화면에 반영되고, 예약 RPC 및 직접 INSERT에도 DB 검증이
 적용된다. 로컬 검증: `npm run test:unit`, `npm run test:db`.
 
