@@ -8,6 +8,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
 import {
+  DISABLED_BOOKING_DAYS_KEY,
+  parseDisabledBookingDays,
+} from "./booking-days";
+import {
   DISABLED_BOOKING_TIMES_KEY,
   parseDisabledBookingTimes,
 } from "./booking-times";
@@ -186,4 +190,20 @@ export async function getDisabledBookingTimes(
   if (!data) return [];
   const setting = data.setting_value as { value?: unknown } | null;
   return parseDisabledBookingTimes(setting?.value);
+}
+
+export async function getDisabledBookingDays(
+  client: SupabaseClient<Database>,
+  { organizationId }: { organizationId: string },
+): Promise<number[]> {
+  const { data, error } = await client
+    .from("settings")
+    .select("setting_value")
+    .eq("organization_id", organizationId)
+    .eq("setting_key", DISABLED_BOOKING_DAYS_KEY)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return [];
+  const setting = data.setting_value as { value?: unknown } | null;
+  return parseDisabledBookingDays(setting?.value);
 }

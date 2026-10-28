@@ -62,6 +62,7 @@ export async function createBulkStudents(
         phone: row.phone,
         region: row.region,
         type: row.type,
+        ...(row.description ? { description: row.description } : {}),
       });
       return { id: row.id, success: true, profileId };
     } catch (error) {

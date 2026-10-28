@@ -5,6 +5,10 @@ import { data, redirect } from "react-router";
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import {
+  DISABLED_BOOKING_DAYS_KEY,
+  disabledBookingDaysFromForm,
+} from "~/features/app-settings/booking-days";
+import {
   DISABLED_BOOKING_TIMES_KEY,
   disabledBookingTimesFromForm,
 } from "~/features/app-settings/booking-times";
@@ -52,6 +56,13 @@ export async function action({ request }: Route.ActionArgs) {
     return data({ error: "신청 가능 시간을 확인해 주세요." }, { status: 400 });
   }
 
+  let disabledDays: number[];
+  try {
+    disabledDays = disabledBookingDaysFromForm(formData);
+  } catch {
+    return data({ error: "신청 차단 요일을 확인해 주세요." }, { status: 400 });
+  }
+
   try {
     const { error } = await client.from("settings").upsert(
       [
@@ -74,6 +85,11 @@ export async function action({ request }: Route.ActionArgs) {
           organization_id: organizationId,
           setting_key: DISABLED_BOOKING_TIMES_KEY,
           setting_value: { value: disabledTimes },
+        },
+        {
+          organization_id: organizationId,
+          setting_key: DISABLED_BOOKING_DAYS_KEY,
+          setting_value: { value: disabledDays },
         },
       ],
       { onConflict: "organization_id,setting_key" },

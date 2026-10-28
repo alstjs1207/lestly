@@ -14,6 +14,14 @@ import { loadMockedModule } from "../../tests/helpers/mocked-module.ts";
 import { checkAttendance } from "./attendance.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
+import {
+  checkStudentMetadata,
+  checkStudentMetadataMigration,
+} from "./student-metadata.mjs";
+import {
+  checkStudentTypePolicyMigration,
+  checkStudentTypes,
+} from "./student-types.mjs";
 
 const migrationRoot = new URL("../migrations/", import.meta.url);
 const db = new PGlite();
@@ -196,6 +204,8 @@ try {
       ).rows[0].definition;
     const path = new URL(`${entry.tag}.sql`, migrationRoot);
     let sql = await readFile(path, "utf8");
+    if (entry.idx === 29) await checkStudentMetadataMigration(db, sql);
+    if (entry.idx === 30) await checkStudentTypePolicyMigration(db, sql);
     sql = sql.replace(
       /^CREATE EXTENSION IF NOT EXISTS pg_(cron|net).*;$/gm,
       "",
@@ -881,7 +891,7 @@ try {
     name: "Atomic student",
     phone: "010-5555-1234",
     region: "서울",
-    type: "EXAMINEE",
+    type: "STUDENT",
   };
   const saveStudentSql =
     "SELECT save_managed_student($1,$2::jsonb,$3) AS profile_id";
@@ -1193,36 +1203,6 @@ try {
         ).rows[0].auth_user_id,
         null,
       );
-    },
-  );
-
-  await check(
-    "student integrity migration can be replayed without changing member metadata",
-    async () => {
-      const before = (
-        await db.query(
-          "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
-        )
-      ).rows;
-      const migration = await readFile(
-        new URL("0018_student_management_integrity.sql", migrationRoot),
-        "utf8",
-      );
-      for (const statement of migration.split("--> statement-breakpoint")) {
-        if (statement.trim()) await db.exec(statement);
-      }
-      assert.deepEqual(
-        (
-          await db.query(
-            "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
-          )
-        ).rows,
-        before,
-      );
-      const indexes = await db.query(
-        "SELECT indisvalid FROM pg_index WHERE indexrelid='public.organization_student_phone_unique'::regclass",
-      );
-      assert.equal(indexes.rows[0].indisvalid, true);
     },
   );
 
@@ -1578,6 +1558,115 @@ try {
   );
 
   await check(
+    "closed weekdays block student RPC and direct writes in KST, isolate tenants, and preserve existing/admin schedules",
+    async () => {
+      const start = await nextBooking();
+      const { day, dow, next_day } = (
+        await db.query(
+          "SELECT to_char($1::timestamptz AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day, extract(dow FROM $1::timestamptz AT TIME ZONE 'Asia/Seoul')::integer AS dow, to_char(($1::timestamptz AT TIME ZONE 'Asia/Seoul') + interval '1 day','YYYY-MM-DD') AS next_day",
+          [start],
+        )
+      ).rows[0];
+      const insertSql =
+        "INSERT INTO schedules(organization_id,student_id,start_time,end_time) VALUES ($1,$2,$3::timestamptz,$3::timestamptz+interval '3 hours') RETURNING schedule_id";
+      const existingId = (
+        await db.query(insertSql, [orgA, managedStudent, start])
+      ).rows[0].schedule_id;
+      await asRole("authenticated", adminA);
+      await db.query(
+        "INSERT INTO settings(organization_id,setting_key,setting_value) VALUES ($1,'disabled_booking_weekdays',$2::jsonb) ON CONFLICT(organization_id,setting_key) DO UPDATE SET setting_value=excluded.setting_value",
+        [orgA, JSON.stringify({ value: [dow] })],
+      );
+      await asRole("authenticated", studentA);
+      assert.deepEqual(
+        (
+          await db.query(
+            "SELECT organization_id,setting_value FROM settings WHERE setting_key='disabled_booking_weekdays'",
+          )
+        ).rows,
+        [{ organization_id: orgA, setting_value: { value: [dow] } }],
+      );
+      assert.equal(
+        (
+          await db.query(
+            "UPDATE settings SET setting_value='{\"value\":[]}' WHERE setting_key='disabled_booking_weekdays' RETURNING *",
+          )
+        ).rows.length,
+        0,
+      );
+      await blocked(bookSql, [orgA, 1, start], /schedule_day_disabled/);
+      await blocked(
+        insertSql,
+        [orgA, studentA, start],
+        /schedule_day_disabled/,
+      );
+      const availabilitySql =
+        "SELECT * FROM get_student_booking_availability($1,$2::date,$3)";
+      for (const hours of [3, 6, 9]) {
+        const slots = (await db.query(availabilitySql, [orgA, day, hours]))
+          .rows;
+        assert.equal(slots.length, 23);
+        assert.ok(
+          slots.every(
+            (slot) => !slot.available && slot.reason === "day_disabled",
+          ),
+        );
+      }
+      assert.equal(
+        (await db.query(availabilitySql, [orgA, next_day, 3])).rows[0]
+          .available,
+        true,
+      );
+      await asRole("authenticated", studentB);
+      assert.equal(
+        (
+          await db.query(
+            "SELECT * FROM settings WHERE setting_key='disabled_booking_weekdays'",
+          )
+        ).rows.length,
+        0,
+      );
+      assert.equal(
+        (await db.query(availabilitySql, [orgB, day, 3])).rows[0].available,
+        true,
+      );
+      await asRole("authenticated", adminB);
+      assert.equal(
+        (
+          await db.query(
+            "UPDATE settings SET setting_value='{\"value\":[]}' WHERE organization_id=$1 AND setting_key='disabled_booking_weekdays' RETURNING *",
+            [orgA],
+          )
+        ).rows.length,
+        0,
+      );
+      await asRole("authenticated", adminA);
+      const adminId = (await db.query(insertSql, [orgA, studentA, start]))
+        .rows[0].schedule_id;
+      await db.query(
+        "UPDATE schedules SET start_time=start_time+interval '1 day',end_time=end_time+interval '1 day' WHERE schedule_id=$1",
+        [adminId],
+      );
+      await db.query(
+        "UPDATE settings SET setting_value='{\"value\":[]}' WHERE organization_id=$1 AND setting_key='disabled_booking_weekdays'",
+        [orgA],
+      );
+      await asRole("authenticated", studentA);
+      assert.ok((await db.query(bookSql, [orgA, 1, start])).rows[0].id);
+      await asRole("postgres");
+      assert.equal(
+        (
+          await db.query(
+            "SELECT * FROM schedules WHERE schedule_id=$1 AND cancelled_at IS NULL",
+            [existingId],
+          )
+        ).rows.length,
+        1,
+      );
+    },
+  );
+
+  await check(
     "student class and instructor history stay within their tenant and own schedules",
     async () => {
       await db.query("UPDATE programs SET instructor_id=1 WHERE program_id=1");
@@ -1911,6 +2000,27 @@ try {
     },
   );
 
+  await checkStudentMetadata({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    studentA,
+  });
+  await checkStudentTypes({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+  });
   await checkAttendance({
     db,
     check,

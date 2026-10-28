@@ -14,20 +14,30 @@ import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import makeServerClient from "~/core/lib/supa-client.server";
 import {
+  DISABLED_BOOKING_DAYS_KEY,
+  parseDisabledBookingDays,
+} from "~/features/app-settings/booking-days";
+import {
   DISABLED_BOOKING_TIMES_KEY,
   parseDisabledBookingTimes,
 } from "~/features/app-settings/booking-times";
 import { getAllSettings } from "~/features/app-settings/queries";
 import { DEFAULT_SETTINGS, SETTING_KEYS } from "~/features/app-settings/schema";
 
+import { getStudentTypes } from "../../organizations/student-types.server";
+import { BookingDaySettings } from "../components/booking-day-settings";
 import { BookingTimeSettings } from "../components/booking-time-settings";
+import { StudentTypeSettings } from "../components/student-type-settings";
 import { requireAdminRole } from "../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
-  const settings = await getAllSettings(client, { organizationId });
+  const [settings, studentTypes] = await Promise.all([
+    getAllSettings(client, { organizationId }),
+    getStudentTypes(client, organizationId),
+  ]);
 
   // Convert to a map for easy access
   const settingsMap: Record<string, number> = {};
@@ -46,7 +56,17 @@ export async function loader({ request }: Route.LoaderArgs) {
         (bookingSetting.setting_value as { value: unknown }).value,
       )
     : [];
+  const daySetting = settings.find(
+    (setting) => setting.setting_key === DISABLED_BOOKING_DAYS_KEY,
+  );
+  const disabledBookingDays = daySetting
+    ? parseDisabledBookingDays(
+        (daySetting.setting_value as { value: unknown }).value,
+      )
+    : [];
   return {
+    studentTypes,
+    disabledBookingDays,
     disabledBookingTimes,
     maxConcurrentStudents:
       settingsMap[SETTING_KEYS.MAX_CONCURRENT_STUDENTS] ??
@@ -66,6 +86,7 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
     scheduleDurationHours,
     timeSlotIntervalMinutes,
     disabledBookingTimes,
+    disabledBookingDays,
   } = loaderData;
   const fetcher = useFetcher<{ error?: string }>();
   const isSubmitting = fetcher.state !== "idle";
@@ -76,6 +97,8 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
         <h1 className="text-2xl font-bold">설정</h1>
         <p className="text-muted-foreground">시스템 설정을 관리합니다.</p>
       </div>
+
+      <StudentTypeSettings types={loaderData.studentTypes} />
 
       <Card>
         <CardHeader>
@@ -150,8 +173,13 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
               </div>
             </div>
 
+            <BookingDaySettings
+              key={`days:${disabledBookingDays.join(",")}`}
+              disabledDays={disabledBookingDays}
+              busy={isSubmitting}
+            />
             <BookingTimeSettings
-              key={disabledBookingTimes.join(",")}
+              key={`times:${disabledBookingTimes.join(",")}`}
               disabledTimes={disabledBookingTimes}
               busy={isSubmitting}
             />

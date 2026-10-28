@@ -13,6 +13,7 @@ import {
 } from "~/core/components/ui/card";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import StudentForm from "../../components/student-form";
 import { requireAdminRole } from "../../guards.server";
 import { getStudentById } from "../../queries";
@@ -26,7 +27,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     studentId: params.studentId,
   });
 
-  return { student };
+  const studentTypes = await getStudentTypes(client, organizationId);
+  return { student, studentTypes };
 }
 
 export default function StudentEditScreen({
@@ -60,6 +62,7 @@ export default function StudentEditScreen({
         <CardContent>
           <StudentForm
             mode="edit"
+            studentTypes={loaderData.studentTypes}
             defaultValues={{
               profile_id: student.profile_id,
               email: student.contact_email || undefined,

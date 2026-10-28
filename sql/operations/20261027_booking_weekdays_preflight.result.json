@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-27T11:43:47.049Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0028_student_booking_weekdays",
+  "hash": "cafdda9145fa2afcf2dccf512e9e290ba60b8ac5c03aaea0f5f2ccad4e89e552",
+  "readOnly": true,
+  "alreadyApplied": false,
+  "applied": false,
+  "prerequisitesVerified": true,
+  "businessDataUnchanged": true,
+  "counts": {
+    "profiles": 36,
+    "organization_members": 35,
+    "schedules": 1112,
+    "programs": 5,
+    "instructors": 3,
+    "settings": 10,
+    "notifications": 575,
+    "student_invites": 0,
+    "attendance_events": 0
+  }
+}

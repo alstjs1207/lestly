@@ -12,6 +12,10 @@ import {
   parseBulkStudents,
   parseStudentClipboard,
 } from "../app/features/admin/lib/student-bulk.ts";
+import {
+  DEFAULT_STUDENT_TYPES,
+  studentTypeLabelMap,
+} from "../app/features/organizations/student-types.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
 const row = (index = 0): BulkStudentRow => ({
@@ -19,10 +23,10 @@ const row = (index = 0): BulkStudentRow => ({
   name: `수강생 ${index}`,
   phone: `0101234${String(index).padStart(4, "0")}`,
   region: "서울",
-  type: "EXAMINEE",
+  type: "STUDENT",
 });
 
-test("bulk registration accepts only the four required fields and trims values", () => {
+test("bulk registration requires name, phone and type while trimming optional region", () => {
   const result = parseBulkStudents([
     { ...row(), name: " 홍길동 ", region: " 서울 " },
   ]);
@@ -31,12 +35,7 @@ test("bulk registration accepts only the four required fields and trims values",
     assert.equal(result.data[0].name, "홍길동");
     assert.equal(result.data[0].region, "서울");
   }
-  for (const change of [
-    { name: " " },
-    { region: "" },
-    { phone: "010" },
-    { type: "UNKNOWN" },
-  ]) {
+  for (const change of [{ name: " " }, { phone: "010" }, { type: "UNKNOWN" }]) {
     assert.equal(parseBulkStudents([{ ...row(), ...change }]).success, false);
   }
 });
@@ -75,14 +74,48 @@ test("bulk registration rejects empty, oversized and duplicate row/phone submiss
   }
 });
 
-test("spreadsheet paste handles headers, blank lines, CRLF and optional Korean/enum types", () => {
+test("bulk registration accepts empty, whitespace, null and omitted region", () => {
+  for (const region of ["", "   ", null, undefined]) {
+    const result = parseBulkStudents([{ ...row(), region }]);
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.data[0].region, null);
+  }
+});
+
+test("legacy pasted classifications merge into student without losing retaker information", async () => {
+  const pasted = parseStudentClipboard("김하나\t01012345678\t\t재수생");
+  assert.equal(pasted[0].type, "STUDENT");
+  assert.equal(pasted[0].description, "[이전 유형: 재수생]");
+  const parsed = parseBulkStudents(
+    pasted.map((item) => ({ ...item, id: "0" })),
+  );
+  assert.equal(parsed.success, true);
+  if (!parsed.success) return;
+  let payload: any;
+  await createBulkStudents(
+    {
+      rpc: async (_name: string, args: any) => {
+        payload = args.p_values;
+        return { data: "saved", error: null };
+      },
+    } as any,
+    "org-a",
+    parsed.data,
+  );
+  assert.equal(payload.region, null);
+  assert.equal(payload.type, "STUDENT");
+  assert.equal(payload.description, "[이전 유형: 재수생]");
+});
+
+test("spreadsheet paste handles headers, legacy classifications and optional region/types", () => {
   const rows = parseStudentClipboard(
     "이름\t전화번호\t지역\t유형\r\n홍길동\t01012340000\t서울\t성인\r\n\r\n김하나\t01012340001\t경기\r\n이둘\t01012340002\t인천\tDROPPER\r\n",
   );
   assert.equal(rows.length, 3);
+  assert.match(rows[2].description ?? "", /재수생/);
   assert.deepEqual(
     rows.map((item) => item.type),
-    ["ADULT", "EXAMINEE", "DROPPER"],
+    ["ADULT", "STUDENT", "STUDENT"],
   );
   assert.deepEqual(parseStudentClipboard("\n  \n"), []);
   assert.equal(parseStudentClipboard("\t01012340000\t서울")[0].name, "");
@@ -102,7 +135,7 @@ test("spreadsheet paste handles headers, blank lines, CRLF and optional Korean/e
   );
 });
 
-test("bulk save calls the atomic RPC with scoped required fields and returns profile IDs", async () => {
+test("bulk save calls the atomic RPC with scoped fields and returns profile IDs", async () => {
   const calls: any[] = [];
   const client = {
     rpc: async (name: string, args: any) => {
@@ -232,6 +265,9 @@ test("bulk API authenticates before reading rows and never writes invalid or dup
           if (!allowed) throw new Response(null, { status: 403 });
           return { organizationId: "org-from-session" };
         },
+      },
+      "../../../organizations/student-types.server": {
+        getStudentTypes: async () => DEFAULT_STUDENT_TYPES,
       },
       "../../lib/student-bulk": { parseBulkStudents },
       "../../lib/student-bulk.server": {

@@ -1,17 +1,23 @@
 import { z } from "zod";
 
-import { normalizePhone, requiredStudentFields } from "./student-fields.ts";
+import {
+  DEFAULT_STUDENT_TYPES,
+  type StudentTypeOption,
+  getDefaultStudentType,
+  normalizeLegacyStudent,
+} from "../../organizations/student-types.ts";
+import {
+  normalizePhone,
+  studentFields,
+  studentTypeField,
+} from "./student-fields.ts";
 
 export const MAX_BULK_STUDENTS = 50;
-export const studentTypeLabels = {
-  EXAMINEE: "입시생",
-  DROPPER: "재수생",
-  ADULT: "성인",
-} as const;
 
 const rowSchema = z.object({
   id: z.string().min(1).max(100),
-  ...requiredStudentFields,
+  ...studentFields,
+  description: z.string().optional(),
 });
 export type BulkStudentRow = z.infer<typeof rowSchema>;
 export type BulkStudentResult = {
@@ -25,9 +31,12 @@ export type BulkStudentActionData = {
   results?: BulkStudentResult[];
 };
 
-export function parseBulkStudents(value: unknown) {
+export function parseBulkStudents(
+  value: unknown,
+  types: StudentTypeOption[] = DEFAULT_STUDENT_TYPES,
+) {
   return z
-    .array(rowSchema)
+    .array(rowSchema.extend({ type: studentTypeField(types) }))
     .min(1, "등록할 수강생을 입력해 주세요.")
     .max(
       MAX_BULK_STUDENTS,
@@ -65,7 +74,8 @@ export function parseBulkStudents(value: unknown) {
 // Excel / Google Sheets clipboard data uses tabs between cells.
 export function parseStudentClipboard(
   text: string,
-): Omit<BulkStudentRow, "id">[] {
+  types: StudentTypeOption[] = DEFAULT_STUDENT_TYPES,
+): (Omit<BulkStudentRow, "id" | "region"> & { region: string })[] {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (
     /^(이름|name)\t(전화번호|phone)\t(지역|region)(\t|$)/i.test(lines[0] ?? "")
@@ -80,10 +90,9 @@ export function parseStudentClipboard(
       .split("\t")
       .map((cell) => cell.trim());
     const type =
-      Object.entries(studentTypeLabels).find(
-        ([key, value]) => key === label || value === label,
-      )?.[0] ??
-      (label || "EXAMINEE");
-    return { name, phone, region, type: type as BulkStudentRow["type"] };
+      types.find((type) => type.code === label)?.code ??
+      types.find((type) => type.label === label)?.code ??
+      (label || getDefaultStudentType(types));
+    return normalizeLegacyStudent({ name, phone, region, type });
   });
 }

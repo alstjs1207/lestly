@@ -53,6 +53,13 @@ export function studentSaveFailure(error: unknown) {
     return { status: 404, error: "수정할 수강생을 찾을 수 없습니다." };
   if (code === "42501")
     return { status: 403, error: "수강생을 저장할 권한이 없습니다." };
+  if (code === "22023" || code === "23503")
+    return {
+      status: 400,
+      error:
+        "수강생 유형 설정이 변경되었을 수 있습니다. 사용 가능한 유형과 입력값을 확인해 주세요.",
+      fieldErrors: { type: ["사용 가능한 유형을 다시 선택해 주세요."] },
+    };
   return {
     status: 500,
     error:

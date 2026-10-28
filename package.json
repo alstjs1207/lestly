@@ -21,6 +21,7 @@
     "test:unit": "node --test --experimental-strip-types tests/*.test.ts",
     "test:attendance:ssr": "node tests/attendance-ssr.mjs",
     "test:schedules:ssr": "node tests/student-schedules-ssr.mjs",
+    "test:student-types:ssr": "node tests/student-types-ssr.mjs",
     "format": "prettier --write \"app/**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
     "test:db": "node sql/checks/security-regression.mjs",
     "postinstall": "node scripts/harden-braces.mjs",

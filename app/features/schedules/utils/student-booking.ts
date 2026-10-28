@@ -1,8 +1,10 @@
+import { isBookingDayDisabled } from "../../app-settings/booking-days.ts";
 import { fromKST, toKST, toKSTDateString } from "./kst.ts";
 
 export interface CourseDates {
   classStartDate: string | null;
   classEndDate: string | null;
+  disabledBookingDays?: number[];
 }
 export function bookingDateReason(
   date: string,
@@ -22,6 +24,8 @@ export function bookingDateReason(
     return "수강 기간에 포함된 날짜를 선택해주세요.";
   if (date > lastDay)
     return "다음 달 신규 예약은 매월 25일에 열려요. 이미 등록된 일정은 확인할 수 있어요.";
+  if (isBookingDayDisabled(date, course.disabledBookingDays ?? []))
+    return "이 요일은 휴무일로 신규 예약을 받지 않아요. 다른 날짜를 선택해주세요.";
   return null;
 }
 

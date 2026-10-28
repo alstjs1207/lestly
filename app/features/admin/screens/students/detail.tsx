@@ -30,6 +30,8 @@ import {
 } from "~/core/components/ui/table";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { studentTypeLabelMap } from "../../../organizations/student-types";
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import StudentInviteDialog from "../../components/student-invite-dialog";
 import StudentRestoreDialog from "../../components/student-restore-dialog";
 import StudentStateDialog from "../../components/student-state-dialog";
@@ -55,17 +57,19 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   // Keep early rejection handled until React Router attaches its stream reader.
   void totalHours.catch(() => {});
 
-  const [student, overview] = await Promise.all([
+  const [student, overview, studentTypes] = await Promise.all([
     getStudentById(client, { organizationId, studentId: params.studentId }),
     getStudentScheduleOverview(client, {
       studentId: params.studentId,
       organizationId,
     }),
+    getStudentTypes(client, organizationId),
   ]);
 
   return data(
     {
       student,
+      studentTypes,
       ...overview,
       totalHours,
     },
@@ -80,12 +84,6 @@ const stateLabels: Record<
   NORMAL: { label: "정상", variant: "default" },
   GRADUATE: { label: "졸업", variant: "secondary" },
   DELETED: { label: "탈퇴", variant: "destructive" },
-};
-
-const typeLabels: Record<string, string> = {
-  EXAMINEE: "입시생",
-  DROPPER: "재수생",
-  ADULT: "성인",
 };
 
 function formatPhoneNumber(value: string | null) {
@@ -115,6 +113,7 @@ export default function StudentDetailScreen({
     nextMonth,
     totalHours,
   } = loaderData;
+  const typeLabels = studentTypeLabelMap(loaderData.studentTypes);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copiedCurrent, setCopiedCurrent] = useState(false);
   const [copiedNext, setCopiedNext] = useState(false);

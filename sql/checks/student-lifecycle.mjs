@@ -318,7 +318,7 @@ export async function checkStudentLifecycle({
         name: "Student",
         phone: "01033334444",
         region: "Seoul",
-        type: "EXAMINEE",
+        type: "STUDENT",
         state: "NORMAL",
         class_end_date: end,
         lifecycle_confirmation: i.token,
@@ -403,7 +403,7 @@ export async function checkStudentLifecycle({
             name: "Student",
             phone: "01033334444",
             region: "Seoul",
-            type: "EXAMINEE",
+            type: "STUDENT",
             state: "NORMAL",
             class_end_date: "2099-01-01",
           }),
@@ -539,7 +539,7 @@ export async function checkStudentLifecycle({
   );
   const editValues = async () => {
     await db.query(
-      "UPDATE organization_members SET type='EXAMINEE' WHERE organization_id=$1 AND profile_id=$2",
+      "UPDATE organization_members SET type='STUDENT' WHERE organization_id=$1 AND profile_id=$2",
       [orgA, studentA],
     );
     return (
@@ -740,7 +740,14 @@ export async function checkStudentLifecycle({
       ).rows[0].definition;
       const measurements = {};
       for (const [label, definition] of [
-        ["before", studentEditBaseline],
+        // Compare the historical algorithm using today's text column representation.
+        [
+          "before",
+          studentEditBaseline.replace(
+            "v_type public.user_type := (p_values->>'type')::public.user_type;",
+            "v_type text := p_values->>'type';",
+          ),
+        ],
         ["after", current],
       ]) {
         await asRole("postgres");

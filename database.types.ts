@@ -319,7 +319,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           student_phone: string | null
           state: Database["public"]["Enums"]["user_state"]
-          type: Database["public"]["Enums"]["user_type"] | null
+          type: string | null
           updated_at: string
         }
         Insert: {
@@ -329,7 +329,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           student_phone?: string | null
           state?: Database["public"]["Enums"]["user_state"]
-          type?: Database["public"]["Enums"]["user_type"] | null
+          type?: string | null
           updated_at?: string
         }
         Update: {
@@ -339,10 +339,17 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           student_phone?: string | null
           state?: Database["public"]["Enums"]["user_state"]
-          type?: Database["public"]["Enums"]["user_type"] | null
+          type?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "organization_members_student_type_fk"
+            columns: ["organization_id", "type"]
+            isOneToOne: false
+            referencedRelation: "organization_student_types"
+            referencedColumns: ["organization_id", "code"]
+          },
           {
             foreignKeyName: "organization_members_organization_id_organizations_organization"
             columns: ["organization_id"]
@@ -421,6 +428,18 @@ export type Database = {
             referencedColumns: ["super_template_id"]
           },
         ]
+      }
+      organization_student_types: {
+        Row: { organization_id: string; code: string; label: string; sort_order: number; is_active: boolean; is_default: boolean }
+        Insert: { organization_id: string; code: string; label: string; sort_order?: number; is_active?: boolean; is_default?: boolean }
+        Update: { organization_id?: string; code?: string; label?: string; sort_order?: number; is_active?: boolean; is_default?: boolean }
+        Relationships: [{
+          foreignKeyName: "organization_student_types_organization_id_fkey"
+          columns: ["organization_id"]
+          isOneToOne: false
+          referencedRelation: "organizations"
+          referencedColumns: ["organization_id"]
+        }]
       }
       organizations: {
         Row: {
@@ -1090,6 +1109,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      save_student_types: {
+        Args: { p_org: string; p_types: Json; p_expected_types: Json }
+        Returns: undefined
+      }
+
       save_attendance: { Args: { p_organization_id: string; p_changes: Json }; Returns: number }
       create_admin_schedule_series: { Args: { p_org: string; p_student: string; p_program: number | null; p_rows: Json; p_rrule?: string | null }; Returns: undefined }
       update_admin_schedule_batch: { Args: { p_org: string; p_student: string; p_program: number | null; p_rows: Json }; Returns: undefined }
@@ -1150,7 +1174,6 @@ export type Database = {
       template_status: "ACTIVE" | "INACTIVE"
       user_role: "STUDENT" | "ADMIN"
       user_state: "NORMAL" | "GRADUATE" | "DELETED"
-      user_type: "EXAMINEE" | "DROPPER" | "ADULT"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1291,7 +1314,6 @@ export const Constants = {
       template_status: ["ACTIVE", "INACTIVE"],
       user_role: ["STUDENT", "ADMIN"],
       user_state: ["NORMAL", "GRADUATE", "DELETED"],
-      user_type: ["EXAMINEE", "DROPPER", "ADULT"],
     },
   },
 } as const

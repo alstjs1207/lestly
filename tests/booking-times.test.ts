@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  DISABLED_BOOKING_DAYS_KEY,
+  disabledBookingDaysFromForm,
+} from "../app/features/app-settings/booking-days.ts";
+import {
   BOOKING_START_TIMES,
   disabledBookingTimesFromForm,
   parseDisabledBookingTimes,
@@ -115,6 +119,10 @@ test("settings route validates all choices before one tenant-scoped atomic write
         DISABLED_BOOKING_TIMES_KEY: "disabled_booking_start_times",
         disabledBookingTimesFromForm,
       },
+      "~/features/app-settings/booking-days": {
+        DISABLED_BOOKING_DAYS_KEY,
+        disabledBookingDaysFromForm,
+      },
       "~/features/app-settings/schema": {
         SETTING_KEYS: {
           MAX_CONCURRENT_STUDENTS: "max_concurrent_students",
@@ -127,8 +135,12 @@ test("settings route validates all choices before one tenant-scoped atomic write
       },
     },
   );
-  const request = (allowed: string[]) => {
+  const request = (allowed: string[], days: string[] | null = ["6", "0"]) => {
     const body = form(allowed);
+    if (days !== null) {
+      body.set("booking_days_present", "1");
+      days.forEach((day) => body.append("disabled_weekdays", day));
+    }
     body.set("max_concurrent_students", "5");
     body.set("schedule_duration_hours", "3");
     body.set("time_slot_interval_minutes", "30");
@@ -142,12 +154,19 @@ test("settings route validates all choices before one tenant-scoped atomic write
     400,
   );
   assert.equal(writes.length, 0);
+  for (const days of [null, ["7"], ["-1"], ["1.5"], ["oops"]]) {
+    assert.equal(
+      (await action({ request: request([], days) })).init.status,
+      400,
+    );
+  }
+  assert.equal(writes.length, 0);
   assert.equal(
     (await action({ request: request([]) })).redirect,
     "/admin/settings",
   );
   assert.equal(writes.length, 1);
-  assert.equal(writes[0].rows.length, 4);
+  assert.equal(writes[0].rows.length, 5);
   assert.ok(
     writes[0].rows.every((row: any) => row.organization_id === "org-a"),
   );
@@ -155,6 +174,10 @@ test("settings route validates all choices before one tenant-scoped atomic write
     Array.from(writes[0].rows[3].setting_value.value),
     BOOKING_START_TIMES,
   );
+  assert.equal(writes[0].rows[4].setting_key, DISABLED_BOOKING_DAYS_KEY);
+  assert.deepEqual(Array.from(writes[0].rows[4].setting_value.value), [6, 0]);
+  await action({ request: request(BOOKING_START_TIMES, []) });
+  assert.deepEqual(Array.from(writes[1].rows[4].setting_value.value), []);
 });
 
 test("availability fallback retains closed starts and settings query failures never enable everything", async () => {
@@ -192,6 +215,14 @@ test("availability fallback retains closed starts and settings query failures ne
         getUserProfile: async () => ({ profile_id: "student-a" }),
       },
       "~/features/app-settings/queries": {
+        getDisabledBookingDays: async (
+          _client: unknown,
+          { organizationId }: { organizationId: string },
+        ) => {
+          assert.equal(organizationId, "org-a");
+          if (fail) throw new Error("query_failed");
+          return [6, 0];
+        },
         getDisabledBookingTimes: async (
           _client: unknown,
           { organizationId }: { organizationId: string },
@@ -210,6 +241,7 @@ test("availability fallback retains closed starts and settings query failures ne
   const result = await loader({ request });
   assert.equal(result.slots, null);
   assert.deepEqual(result.disabledTimes, ["09:00"]);
+  assert.deepEqual(result.disabledDays, [6, 0]);
   fail = true;
   await assert.rejects(loader({ request }), /query_failed/);
 });

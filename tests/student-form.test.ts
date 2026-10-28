@@ -16,7 +16,7 @@ function validStudentForm() {
     ["name", "홍길동"],
     ["phone", "010-1234-5678"],
     ["email", ""],
-    ["type", "EXAMINEE"],
+    ["type", "STUDENT"],
     ["region", "서울"],
     ["birth_date", ""],
     ["class_start_date", "2026-08-23"],
@@ -88,6 +88,29 @@ test("student form accepts empty class dates", () => {
   if (!result.success) return;
   assert.equal(result.data.class_start_date, null);
   assert.equal(result.data.class_end_date, null);
+});
+
+test("region is optional and blank or omitted values normalize to null", () => {
+  for (const region of [undefined, "", "   "]) {
+    const form = validStudentForm();
+    if (region === undefined) form.delete("region");
+    else form.set("region", region);
+    const result = parseStudentForm(form);
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.data.region, null);
+  }
+});
+
+test("student type remains required and rejects unconfigured text values", () => {
+  for (const type of [undefined, "", "UNKNOWN", "EXAMINEE", "DROPPER"]) {
+    const form = validStudentForm();
+    if (type === undefined) form.delete("type");
+    else form.set("type", type);
+    assert.equal(parseStudentForm(form).success, false);
+  }
+  const form = validStudentForm();
+  form.set("type", "ADULT");
+  assert.equal(parseStudentForm(form).success, true);
 });
 
 test("default class dates use the Korean registration date and one year", () => {

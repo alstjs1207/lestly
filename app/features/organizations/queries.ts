@@ -7,6 +7,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
+import { getStudentTypes } from "./student-types.server.ts";
+import { getDefaultStudentType } from "./student-types.ts";
+
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 type OrganizationUpdate =
   Database["public"]["Tables"]["organizations"]["Update"];
@@ -285,9 +288,14 @@ export async function addMember(
     organizationId: string;
     profileId: string;
     role: "STUDENT" | "ADMIN";
-    type?: "EXAMINEE" | "DROPPER" | "ADULT";
+    type?: string;
   },
 ): Promise<OrganizationMember> {
+  const selectedType =
+    role === "STUDENT"
+      ? (type ??
+        getDefaultStudentType(await getStudentTypes(client, organizationId)))
+      : type;
   const { data, error } = await client
     .from("organization_members")
     .insert({
@@ -295,7 +303,7 @@ export async function addMember(
       profile_id: profileId,
       role,
       state: "NORMAL",
-      type,
+      type: selectedType,
     })
     .select()
     .single();

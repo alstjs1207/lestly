@@ -19,10 +19,15 @@ import {
 } from "~/core/components/ui/select";
 import { Textarea } from "~/core/components/ui/textarea";
 
+import {
+  type StudentTypeOption,
+  getDefaultStudentType,
+} from "../../organizations/student-types";
 import { addYearsToDateString } from "../lib/student-class-dates";
 
 interface StudentFormProps {
   mode: "create" | "edit";
+  studentTypes: StudentTypeOption[];
   defaultValues?: {
     profile_id?: string;
     email?: string;
@@ -74,7 +79,15 @@ function FieldError({ errors }: { errors?: string[] }) {
   );
 }
 
-export default function StudentForm({ mode, defaultValues }: StudentFormProps) {
+export default function StudentForm({
+  mode,
+  defaultValues,
+  studentTypes,
+}: StudentFormProps) {
+  const availableTypes = studentTypes.filter(
+    (type) =>
+      type.is_active || (mode === "edit" && type.code === defaultValues?.type),
+  );
   const fetcher = useFetcher<StudentFormActionData>();
   const isSubmitting = fetcher.state !== "idle";
   const [classEndDate, setClassEndDate] = useState(
@@ -188,27 +201,31 @@ export default function StudentForm({ mode, defaultValues }: StudentFormProps) {
           <Label htmlFor="type">유형 *</Label>
           <Select
             name="type"
-            defaultValue={defaultValues?.type || "EXAMINEE"}
+            defaultValue={
+              defaultValues?.type || getDefaultStudentType(studentTypes)
+            }
             required
           >
-            <SelectTrigger>
+            <SelectTrigger id="type">
               <SelectValue placeholder="유형 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="EXAMINEE">입시생</SelectItem>
-              <SelectItem value="DROPPER">재수생</SelectItem>
-              <SelectItem value="ADULT">성인</SelectItem>
+              {availableTypes.map((type) => (
+                <SelectItem key={type.code} value={type.code}>
+                  {type.label}
+                  {!type.is_active ? " (현재 유형 · 사용 중지)" : ""}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <FieldError errors={fetcher.data?.fieldErrors?.type} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="region">지역 *</Label>
+          <Label htmlFor="region">지역</Label>
           <Input
             id="region"
             name="region"
-            required
             defaultValue={defaultValues?.region}
             placeholder="서울, 경기 등"
             aria-invalid={Boolean(fetcher.data?.fieldErrors?.region?.length)}

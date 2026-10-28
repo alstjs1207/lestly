@@ -33,6 +33,7 @@ export interface StudentSchedulesData {
   allowedStartDate: string;
   allowedEndDate: string;
   canBook: boolean;
+  disabledBookingDays?: number[];
 }
 export function StudentSchedulesView({
   data,
@@ -66,6 +67,7 @@ export function StudentSchedulesView({
   const course = {
     classStartDate: data.classStartDate,
     classEndDate: data.classEndDate,
+    disabledBookingDays: data.disabledBookingDays,
   };
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30_000);

@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-28T08:44:43.234Z",
+  "sourceCommit": "0aca6410ec51f8982af08f674c74af764b54624f",
+  "preview": "https://lestly-git-preview-alstjs1207s-projects.vercel.app",
+  "deployment": "https://vercel.com/alstjs1207s-projects/lestly/2CyTCFnanNivPWm5UUxuSeEbZxky",
+  "authenticatedTypesGet": 200,
+  "invalidPolicyPost": 400,
+  "stalePolicyPost": 409,
+  "settingsUiSave": true,
+  "newStudentDefault": "STUDENT",
+  "newStudentLabels": ["학생", "성인"],
+  "regionRequired": false,
+  "mobileWidth": 375,
+  "mobileOverflow": false,
+  "existingDataPreservedAfterPreviewSave": true,
+  "existingBookings": 1112,
+  "routes": [
+    {
+      "route": "/admin",
+      "status": 200
+    },
+    {
+      "route": "/admin/students",
+      "status": 200
+    },
+    {
+      "route": "/admin/students/new",
+      "status": 200
+    },
+    {
+      "route": "/admin/students/bulk",
+      "status": 200
+    },
+    {
+      "route": "/admin/schedules",
+      "status": 200
+    },
+    {
+      "route": "/admin/attendance",
+      "status": 200
+    }
+  ],
+  "conflictFixMigration": "0031_student_type_conflict_response"
+}

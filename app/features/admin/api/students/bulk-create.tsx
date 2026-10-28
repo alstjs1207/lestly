@@ -5,6 +5,7 @@ import { data } from "react-router";
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import { requireAdminRole } from "../../guards.server";
 import { parseBulkStudents } from "../../lib/student-bulk";
 import {
@@ -23,7 +24,8 @@ export async function action({ request }: Route.ActionArgs) {
   } catch {
     return data({ error: "수강생 명단을 확인해 주세요." }, { status: 400 });
   }
-  const parsed = parseBulkStudents(input);
+  const studentTypes = await getStudentTypes(client, organizationId);
+  const parsed = parseBulkStudents(input, studentTypes);
   if (!parsed.success) {
     return data(
       {
