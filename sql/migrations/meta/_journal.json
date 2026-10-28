@@ -218,6 +218,13 @@
       "when": 1793318400001,
       "tag": "0030_organization_student_types",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793318400002,
+      "tag": "0031_student_type_conflict_response",
+      "breakpoints": true
     }
   ]
 }

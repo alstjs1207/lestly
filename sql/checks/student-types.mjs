@@ -125,6 +125,17 @@ export async function checkStudentTypes({
       assert.deepEqual(await list(), before);
       await db.query(rpc, args(changed(before), before));
       await blocked(rpc, args(before, before), /student_types_conflict/);
+      await db.exec("SAVEPOINT conflict_code_probe");
+      try {
+        await assert.rejects(
+          db.query(rpc, args(before, before)),
+          (error) =>
+            error.code === "PT409" &&
+            /student_types_conflict/.test(error.message),
+        );
+      } finally {
+        await db.exec("ROLLBACK TO SAVEPOINT conflict_code_probe");
+      }
       assert.deepEqual(await list(), changed(before));
     },
   );

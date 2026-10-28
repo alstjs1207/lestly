@@ -76,10 +76,23 @@ try {
       migrations[0].hash,
       "0028 prerequisite mismatch",
     );
-    assert.ok(
-      ledger.every((r) => Number(r.created_at) <= migrations[2].when),
-      "Unknown newer migration",
-    );
+    for (const row of ledger.filter(
+      (r) => Number(r.created_at) > migrations[2].when,
+    )) {
+      const known = journal.entries.find(
+        (e) => e.when === Number(row.created_at),
+      );
+      assert.ok(known && known.idx === 31, "Unknown newer migration");
+      const followup = await fs.readFile(
+        new URL(`${known.tag}.sql`, root),
+        "utf8",
+      );
+      assert.equal(
+        row.hash,
+        createHash("sha256").update(followup).digest("hex"),
+        "Follow-up migration hash mismatch",
+      );
+    }
     const installed = migrations.slice(1).map((m) => {
       const row = ledger.find((r) => Number(r.created_at) === m.when);
       if (row) assert.equal(row.hash, m.hash, "Installed hash mismatch");

@@ -88,7 +88,9 @@ try {
       checks.push("admin_add_rename_order_default");
       await assert.rejects(
         q.savepoint((s) => saveTypes(s, org, before, before)),
-        /student_types_conflict/,
+        (error) =>
+          error.code === "PT409" &&
+          /student_types_conflict/.test(error.message),
       );
       checks.push("stale_snapshot_rejected");
       for (const invalid of [

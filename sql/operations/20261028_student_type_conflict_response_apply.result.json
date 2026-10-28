@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-28T08:43:54.580Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0031_student_type_conflict_response",
+  "hash": "7115068a7ea4b636bfd8ee30b105d933cb98fabb22f15c9cc89ef7bd1b1573d4",
+  "applied": true,
+  "alreadyApplied": false,
+  "dataUnchanged": true,
+  "privilegesUnchanged": true,
+  "conflictSqlstate": "PT409"
+}
