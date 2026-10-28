@@ -14,6 +14,14 @@ import { loadMockedModule } from "../../tests/helpers/mocked-module.ts";
 import { checkAttendance } from "./attendance.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
+import {
+  checkStudentMetadata,
+  checkStudentMetadataMigration,
+} from "./student-metadata.mjs";
+import {
+  checkStudentTypePolicyMigration,
+  checkStudentTypes,
+} from "./student-types.mjs";
 
 const migrationRoot = new URL("../migrations/", import.meta.url);
 const db = new PGlite();
@@ -196,6 +204,8 @@ try {
       ).rows[0].definition;
     const path = new URL(`${entry.tag}.sql`, migrationRoot);
     let sql = await readFile(path, "utf8");
+    if (entry.idx === 29) await checkStudentMetadataMigration(db, sql);
+    if (entry.idx === 30) await checkStudentTypePolicyMigration(db, sql);
     sql = sql.replace(
       /^CREATE EXTENSION IF NOT EXISTS pg_(cron|net).*;$/gm,
       "",
@@ -881,7 +891,7 @@ try {
     name: "Atomic student",
     phone: "010-5555-1234",
     region: "서울",
-    type: "EXAMINEE",
+    type: "STUDENT",
   };
   const saveStudentSql =
     "SELECT save_managed_student($1,$2::jsonb,$3) AS profile_id";
@@ -1193,36 +1203,6 @@ try {
         ).rows[0].auth_user_id,
         null,
       );
-    },
-  );
-
-  await check(
-    "student integrity migration can be replayed without changing member metadata",
-    async () => {
-      const before = (
-        await db.query(
-          "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
-        )
-      ).rows;
-      const migration = await readFile(
-        new URL("0018_student_management_integrity.sql", migrationRoot),
-        "utf8",
-      );
-      for (const statement of migration.split("--> statement-breakpoint")) {
-        if (statement.trim()) await db.exec(statement);
-      }
-      assert.deepEqual(
-        (
-          await db.query(
-            "SELECT profile_id,organization_id,updated_at FROM organization_members ORDER BY organization_id,profile_id",
-          )
-        ).rows,
-        before,
-      );
-      const indexes = await db.query(
-        "SELECT indisvalid FROM pg_index WHERE indexrelid='public.organization_student_phone_unique'::regclass",
-      );
-      assert.equal(indexes.rows[0].indisvalid, true);
     },
   );
 
@@ -2020,6 +2000,27 @@ try {
     },
   );
 
+  await checkStudentMetadata({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    studentA,
+  });
+  await checkStudentTypes({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+  });
   await checkAttendance({
     db,
     check,

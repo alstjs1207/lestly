@@ -11,13 +11,15 @@ import {
   buildStudentSearchFilter,
   normalizePagination,
 } from "../../core/lib/query-utils.ts";
+import { getStudentTypes } from "../organizations/student-types.server.ts";
+import { getDefaultStudentType } from "../organizations/student-types.ts";
 import { fromKST, nowKST } from "../schedules/utils/kst.ts";
 import { getStudentHoursTotals } from "../schedules/utils/student-hours.ts";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 type UserState = "NORMAL" | "GRADUATE" | "DELETED";
-type UserType = "EXAMINEE" | "DROPPER" | "ADULT";
+type UserType = string;
 
 /**
  * Get all students (members with STUDENT role) for an organization with pagination
@@ -197,6 +199,10 @@ export async function updateStudent(
 ) {
   const current = await getStudentById(client, { organizationId, studentId });
   const profile = { ...current, ...profileUpdates };
+  const type =
+    memberUpdates?.type ??
+    current.type ??
+    getDefaultStudentType(await getStudentTypes(client, organizationId));
   const { error } = await client.rpc("save_managed_student", {
     p_organization_id: organizationId,
     p_student_id: studentId,
@@ -212,7 +218,7 @@ export async function updateStudent(
       parent_phone: profile.parent_phone,
       description: profile.description,
       color: profile.color,
-      type: memberUpdates?.type ?? current.type ?? "EXAMINEE",
+      type,
       state: memberUpdates?.state ?? current.state,
     },
   });

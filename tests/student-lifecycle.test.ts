@@ -12,6 +12,10 @@ import {
   parseStudentChangeImpact,
   studentLifecycleFailure,
 } from "../app/features/admin/lib/student-lifecycle.server.ts";
+import {
+  DEFAULT_STUDENT_TYPES,
+  studentTypeLabelMap,
+} from "../app/features/organizations/student-types.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
 const confirmation = {
@@ -348,6 +352,8 @@ test("student detail exposes graduate/withdraw only where eligible and restore o
         "Table TableBody TableCell TableHead TableHeader TableRow",
       ),
       "~/core/lib/supa-client.server": {},
+      "../../../organizations/student-types": { studentTypeLabelMap },
+      "../../../organizations/student-types.server": {},
       "../../components/student-invite-dialog": { default: box },
       "../../components/student-restore-dialog": {
         default: ({ withdrawn }: any) =>
@@ -376,6 +382,7 @@ test("student detail exposes graduate/withdraw only where eligible and restore o
     const html = renderToStaticMarkup(
       React.createElement(Screen, {
         loaderData: {
+          studentTypes: DEFAULT_STUDENT_TYPES,
           student: {
             profile_id: "student",
             name: "학생",

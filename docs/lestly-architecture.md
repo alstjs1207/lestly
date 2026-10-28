@@ -57,9 +57,11 @@ Organization ──┬── Programs (프로그램/클래스) [1:N]
 
 ### 사용자 유형 (type)
 
-- `EXAMINEE` : 입시생
-- `DROPPER` : 재수생
+- `STUDENT` : 학생
 - `ADULT` : 성인 수강생
+
+유형은 `text`이며 조직별 `organization_student_types`의 코드를 참조한다. 기본 목록은 학생·성인이다.
+지역은 선택 입력이다. 전환 및 단계별 작업 범위는 [공통화 계획](service-generalization-plan.md)을 참고한다.
 
 ### 사용자 권한 (role)
 
@@ -105,7 +107,7 @@ CREATE TYPE member_role AS ENUM ('STUDENT', 'ADMIN');
 CREATE TYPE member_state AS ENUM ('NORMAL', 'GRADUATE', 'DELETED');
 
 -- 멤버 유형 (organization_members에서 사용, 학생 전용)
-CREATE TYPE member_type AS ENUM ('EXAMINEE', 'DROPPER', 'ADULT');
+-- 유형은 enum이 아닌 text다. 조직별 분류 테이블의 코드를 참조한다.
 
 -- 프로그램 상태
 CREATE TYPE program_status AS ENUM ('DRAFT', 'ACTIVE', 'ARCHIVED');
@@ -140,7 +142,7 @@ CREATE TYPE program_level AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED');
 │ profile_id          │ uuid (PK,FK) │ 프로필 ID                       │
 │ role                │ member_role  │ STUDENT / ADMIN                 │
 │ state               │ member_state │ NORMAL / GRADUATE / DELETED     │
-│ type                │ member_type  │ EXAMINEE / DROPPER / ADULT      │
+│ type                │ text         │ STUDENT / ADULT (조직별 분류 참조)      │
 │ created_at          │ timestamp    │ 생성일                          │
 │ updated_at          │ timestamp    │ 수정일                          │
 └─────────────────────┴──────────────┴─────────────────────────────────┘
@@ -288,7 +290,7 @@ CREATE TYPE program_level AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED');
 │ profile_id (PK, FK) ◄───────────────────────────────────────────│
 │ role (STUDENT / ADMIN)                                          │
 │ state (NORMAL / GRADUATE / DELETED)                             │
-│ type (EXAMINEE / DROPPER / ADULT)                               │
+│ type (STUDENT / ADULT)                               │
 └─────────────────────────────────────────────────────────────────┘
         │
         │

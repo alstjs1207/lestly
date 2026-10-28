@@ -249,6 +249,7 @@ export default [
       ),
     ]),
     route("/settings", "features/admin/api/settings/update.tsx"),
+    route("/student-types", "features/admin/api/student-types.tsx"),
     route("/organization", "features/admin/api/organization/update.tsx"),
   ]),
 

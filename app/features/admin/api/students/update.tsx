@@ -5,12 +5,14 @@ import { data, redirect } from "react-router";
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import { requireAdminRole } from "../../guards.server";
 import { parseStudentForm } from "../../lib/student-form.server";
 import {
   saveManagedStudent,
   studentSaveFailure,
 } from "../../lib/student-save.server";
+import { getStudentById } from "../../queries";
 
 export async function action({ request, params }: Route.ActionArgs) {
   requireMethod("POST")(request);
@@ -20,7 +22,11 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   const formData = await request.formData();
   const { studentId } = params;
-  const parsed = parseStudentForm(formData);
+  const [studentTypes, current] = await Promise.all([
+    getStudentTypes(client, organizationId),
+    getStudentById(client, { organizationId, studentId }),
+  ]);
+  const parsed = parseStudentForm(formData, studentTypes, current.type);
   if (!parsed.success) {
     return data(
       {

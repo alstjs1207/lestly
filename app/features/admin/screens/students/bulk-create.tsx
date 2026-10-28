@@ -35,13 +35,17 @@ import {
 import { Textarea } from "~/core/components/ui/textarea";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import {
+  getDefaultStudentType,
+  studentTypeLabelMap,
+} from "../../../organizations/student-types";
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import StudentInviteDialog from "../../components/student-invite-dialog";
 import { requireAdminRole } from "../../guards.server";
 import {
   MAX_BULK_STUDENTS,
   parseBulkStudents,
   parseStudentClipboard,
-  studentTypeLabels,
 } from "../../lib/student-bulk";
 import {
   hasStudentInput,
@@ -49,24 +53,33 @@ import {
 } from "../../lib/student-bulk-draft";
 
 type EditableRow = EditableStudentRow;
-const emptyRow = (id: string): EditableRow => ({
+const makeEmptyRow = (id: string, defaultType: string): EditableRow => ({
   id,
   name: "",
   phone: "",
   region: "",
-  type: "EXAMINEE",
+  type: defaultType,
 });
 const hasInput = hasStudentInput;
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { profileId, organizationId } = await requireAdminRole(client);
-  return { draftKey: `lestly:student-bulk:${profileId}:${organizationId}:v1` };
+  const studentTypes = await getStudentTypes(client, organizationId);
+  return {
+    studentTypes,
+    draftKey: `lestly:student-bulk:${profileId}:${organizationId}:v1`,
+  };
 }
 
 export default function StudentBulkCreateScreen({
   loaderData,
 }: Route.ComponentProps) {
+  const studentTypes = loaderData.studentTypes;
+  const defaultType = getDefaultStudentType(studentTypes);
+  const studentTypeLabels = studentTypeLabelMap(studentTypes);
+  const activeTypes = studentTypes.filter((type) => type.is_active);
+  const emptyRow = (id: string) => makeEmptyRow(id, defaultType);
   const fetcher = useFetcher<BulkStudentActionData>();
   const busy = fetcher.state !== "idle";
   const nextId = useRef(3);
@@ -174,7 +187,7 @@ export default function StudentBulkCreateScreen({
 
   const pasteRows = () => {
     try {
-      const pasted = parseStudentClipboard(clipboard);
+      const pasted = parseStudentClipboard(clipboard, studentTypes);
       if (!pasted.length) {
         setMessage("붙여넣을 명단을 입력해 주세요.");
         return;
@@ -202,7 +215,7 @@ export default function StudentBulkCreateScreen({
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
-    const parsed = parseBulkStudents(pending);
+    const parsed = parseBulkStudents(pending, studentTypes);
     if (!parsed.success) {
       setMessage(
         parsed.error.issues.find((issue) => !issue.path.length)?.message ??
@@ -272,7 +285,8 @@ export default function StudentBulkCreateScreen({
               <CardTitle>엑셀 명단 붙여넣기</CardTitle>
               <CardDescription>
                 엑셀이나 구글 시트에서 이름 · 전화번호 · 지역 · 유형 순서로 셀을
-                복사하세요. 유형을 생략하면 입시생으로 등록됩니다.
+                복사하세요. 지역은 비워둘 수 있으며, 유형을 생략하면{" "}
+                {studentTypeLabels[defaultType]} 유형으로 등록됩니다.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -282,9 +296,7 @@ export default function StudentBulkCreateScreen({
                 value={clipboard}
                 onChange={(event) => setClipboard(event.target.value)}
                 rows={3}
-                placeholder={
-                  "홍길동\t010-1234-5678\t서울\t입시생\n김하나\t010-9876-5432\t경기\t성인"
-                }
+                placeholder={`홍길동\t010-1234-5678\t서울\t${studentTypeLabels[defaultType]}\n김하나\t010-9876-5432\t경기`}
               />
               <Button type="button" variant="outline" onClick={pasteRows}>
                 명단에 추가
@@ -295,9 +307,9 @@ export default function StudentBulkCreateScreen({
             <CardHeader>
               <CardTitle>등록할 명단</CardTitle>
               <CardDescription>
-                이름·전화번호·지역·유형은 필수입니다. 빈 행은 제외되며, 수업
-                기간은 등록일부터 1년으로 자동 설정됩니다. 추가 정보는 등록 후
-                수정할 수 있습니다.
+                이름·전화번호·유형은 필수이며 지역은 선택입니다. 빈 행은
+                제외되며, 수업 기간은 등록일부터 1년으로 자동 설정됩니다. 추가
+                정보는 등록 후 수정할 수 있습니다.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -307,7 +319,7 @@ export default function StudentBulkCreateScreen({
                     <TableHead className="w-10">번호</TableHead>
                     <TableHead>이름 *</TableHead>
                     <TableHead>전화번호 *</TableHead>
-                    <TableHead>지역 *</TableHead>
+                    <TableHead>지역</TableHead>
                     <TableHead>유형 *</TableHead>
                     <TableHead>상태</TableHead>
                     <TableHead>
@@ -350,19 +362,27 @@ export default function StudentBulkCreateScreen({
                           className="border-input bg-background h-9 min-w-24 rounded-md border px-2 text-sm"
                           aria-invalid={Boolean(row.error)}
                         >
-                          {!Object.hasOwn(studentTypeLabels, row.type) && (
-                            <option value={row.type}>{row.type}</option>
+                          {!activeTypes.some(
+                            (type) => type.code === row.type,
+                          ) && (
+                            <option value={row.type}>
+                              {studentTypeLabels[row.type] || row.type}{" "}
+                              {row.saved ? " (사용 중지)" : " (선택 변경 필요)"}
+                            </option>
                           )}
-                          {Object.entries(studentTypeLabels).map(
-                            ([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ),
-                          )}
+                          {activeTypes.map(({ code, label }) => (
+                            <option key={code} value={code}>
+                              {label}
+                            </option>
+                          ))}
                         </select>
                       </TableCell>
                       <TableCell className="max-w-56 min-w-24 whitespace-normal">
+                        {row.description && (
+                          <p className="text-muted-foreground text-xs">
+                            {row.description}
+                          </p>
+                        )}
                         {row.saved ? (
                           <div className="space-y-1">
                             <span className="text-primary font-medium">

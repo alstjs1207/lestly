@@ -11,6 +11,7 @@ import { data, redirect } from "react-router";
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import { requireAdminRole } from "../../guards.server";
 import {
   addYearsToDateString,
@@ -30,7 +31,8 @@ export async function action({ request }: Route.ActionArgs) {
 
   const formData = await request.formData();
 
-  const parsed = parseStudentForm(formData);
+  const studentTypes = await getStudentTypes(client, organizationId);
+  const parsed = parseStudentForm(formData, studentTypes);
   if (!parsed.success) {
     return data(
       {

@@ -1,0 +1,45 @@
+{
+  "at": "2026-10-28T08:35:06.698Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "readOnly": true,
+  "alreadyApplied": true,
+  "applied": true,
+  "migrations": [
+    {
+      "tag": "0029_student_metadata",
+      "hash": "5d9a9243c21f7f2db1a22cb9639f800635ccdc9ce7f2c849d9d4f05b9d371d01"
+    },
+    {
+      "tag": "0030_organization_student_types",
+      "hash": "122032d953284ab275a448a0468f704ac7d8e92b8415d0581d899365db275f62"
+    }
+  ],
+  "backupVerified": false,
+  "counts": {
+    "attendance_events": 0,
+    "in_app_notifications": 10,
+    "instructors": 3,
+    "notifications": 575,
+    "organization_members": 35,
+    "organization_student_types": 14,
+    "organization_templates": 11,
+    "organizations": 7,
+    "payments": 0,
+    "profiles": 36,
+    "programs": 5,
+    "push_deliveries": 5,
+    "push_events": 3,
+    "push_subscriptions": 2,
+    "schedules": 1112,
+    "settings": 11,
+    "student_account_access": 0,
+    "student_invites": 0,
+    "super_templates": 6,
+    "test_send_logs": 4
+  },
+  "previousClassifications": {
+    "NULL": 6,
+    "ADULT": 1,
+    "STUDENT": 28
+  }
+}

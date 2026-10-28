@@ -13,14 +13,16 @@ import {
 } from "~/core/components/ui/card";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import StudentForm from "../../components/student-form";
 import { requireAdminRole } from "../../guards.server";
 import { getDefaultStudentClassDates } from "../../lib/student-class-dates";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAdminRole(client);
-  return getDefaultStudentClassDates();
+  const { organizationId } = await requireAdminRole(client);
+  const studentTypes = await getStudentTypes(client, organizationId);
+  return { ...getDefaultStudentClassDates(), studentTypes };
 }
 
 export default function StudentCreateScreen({
@@ -56,6 +58,7 @@ export default function StudentCreateScreen({
         <CardContent>
           <StudentForm
             mode="create"
+            studentTypes={loaderData.studentTypes}
             defaultValues={{
               class_start_date: loaderData.classStartDate,
               class_end_date: loaderData.classEndDate,

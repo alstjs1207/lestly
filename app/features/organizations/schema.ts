@@ -7,7 +7,11 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  boolean,
+  check,
+  foreignKey,
   index,
+  integer,
   pgEnum,
   pgPolicy,
   pgTable,
@@ -38,18 +42,6 @@ export const userStateEnum = pgEnum("user_state", [
   "NORMAL",
   "GRADUATE",
   "DELETED",
-]);
-
-/**
- * User Type Enum
- * - EXAMINEE: 입시생
- * - DROPPER: 재수생
- * - ADULT: 성인 수강생
- */
-export const userTypeEnum = pgEnum("user_type", [
-  "EXAMINEE",
-  "DROPPER",
-  "ADULT",
 ]);
 
 /**
@@ -106,6 +98,50 @@ export const organizations = pgTable(
  * Each member can have a different role/state in each organization.
  * A user can be ADMIN in one org and STUDENT in another.
  */
+// Stable text codes keep membership assignments intact when labels change.
+export const organizationStudentTypes = pgTable(
+  "organization_student_types",
+  {
+    organization_id: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.organization_id, { onDelete: "cascade" }),
+    code: text().notNull(),
+    label: text().notNull(),
+    sort_order: integer().notNull().default(0),
+    is_active: boolean().notNull().default(true),
+    is_default: boolean().notNull().default(false),
+  },
+  (table) => [
+    primaryKey({ columns: [table.organization_id, table.code] }),
+    index("organization_student_types_order_idx").on(
+      table.organization_id,
+      table.sort_order,
+      table.code,
+    ),
+    check(
+      "organization_student_types_sort_order_check",
+      sql`${table.sort_order} BETWEEN 0 AND 49`,
+    ),
+    check(
+      "student_type_default_active",
+      sql`NOT ${table.is_default} OR ${table.is_active}`,
+    ),
+    check(
+      "organization_student_types_code_check",
+      sql`length(btrim(${table.code})) BETWEEN 1 AND 80`,
+    ),
+    check(
+      "organization_student_types_label_check",
+      sql`length(btrim(${table.label})) BETWEEN 1 AND 80`,
+    ),
+    pgPolicy("members-select-student-types", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`public.is_org_member(${table.organization_id}) OR public.is_super_admin()`,
+    }),
+  ],
+).enableRLS();
+
 export const organizationMembers = pgTable(
   "organization_members",
   {
@@ -117,11 +153,20 @@ export const organizationMembers = pgTable(
       .references(() => profiles.profile_id, { onDelete: "cascade" }),
     role: userRoleEnum().notNull().default("STUDENT"),
     state: userStateEnum().notNull().default("NORMAL"),
-    type: userTypeEnum(),
+    type: text(),
     student_phone: text(),
     ...timestamps,
   },
   (table) => [
+    // SQL marks this composite FK DEFERRABLE; Drizzle cannot express that timing.
+    foreignKey({
+      name: "organization_members_student_type_fk",
+      columns: [table.organization_id, table.type],
+      foreignColumns: [
+        organizationStudentTypes.organization_id,
+        organizationStudentTypes.code,
+      ],
+    }),
     uniqueIndex("organization_student_phone_unique")
       .on(table.organization_id, table.student_phone)
       .where(

@@ -18,13 +18,17 @@ import {
   saveManagedStudent,
   studentSaveFailure,
 } from "../app/features/admin/lib/student-save.server.ts";
+import {
+  DEFAULT_STUDENT_TYPES,
+  studentTypeLabelMap,
+} from "../app/features/organizations/student-types.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
 const values = {
   name: "홍길동",
   phone: "010-1234-5678",
   region: "서울",
-  type: "EXAMINEE" as const,
+  type: "STUDENT" as const,
 };
 
 test("phone searches with and without punctuation use the same normalized field", () => {
@@ -111,7 +115,7 @@ test("bulk drafts restore incomplete input and saved IDs, and reject malformed/e
     name: "미완성",
     phone: "010",
     region: "",
-    type: "EXAMINEE",
+    type: "STUDENT",
   };
   const text = (rows = [row], updatedAt = now) =>
     JSON.stringify({ rows, clipboard: "복사 중인 명단", updatedAt });
@@ -146,6 +150,27 @@ test("student schedule display and age consistently use the Korean date at midni
   assert.equal(studentAge("2000-10-01", new Date("2026-09-30T14:59:00Z")), 25);
 });
 
+test("restoring legacy bulk drafts preserves saved rows and annotates retakers once", () => {
+  const now = Date.now();
+  const row = {
+    id: "1",
+    name: "학생",
+    phone: "01012345678",
+    region: "",
+    type: "DROPPER",
+    description: "기존 메모",
+  };
+  const restore = (rows: unknown[]) =>
+    readStudentBulkDraft(
+      JSON.stringify({ rows, updatedAt: now, clipboard: "" }),
+      now,
+    );
+  const draft = restore([row]);
+  assert.equal(draft?.rows[0].type, "STUDENT");
+  assert.equal(draft?.rows[0].description, "기존 메모\n[이전 유형: 재수생]");
+  assert.deepEqual(restore(draft!.rows)?.rows, draft?.rows);
+});
+
 test("update API validates input and maps atomic RPC errors without separate writes", async () => {
   let code: string | undefined;
   const calls: any[] = [];
@@ -174,6 +199,10 @@ test("update API validates input and maps atomic RPC errors without separate wri
       "../../guards.server": {
         requireAdminRole: async () => ({ organizationId: "session-org" }),
       },
+      "../../../organizations/student-types.server": {
+        getStudentTypes: async () => DEFAULT_STUDENT_TYPES,
+      },
+      "../../queries": { getStudentById: async () => ({ type: "STUDENT" }) },
       "../../lib/student-form.server": { parseStudentForm },
       "../../lib/student-save.server": {
         studentSaveFailure,

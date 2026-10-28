@@ -57,6 +57,8 @@ import {
 } from "~/core/components/ui/table";
 import makeServerClient from "~/core/lib/supa-client.server";
 
+import { studentTypeLabelMap } from "../../../organizations/student-types";
+import { getStudentTypes } from "../../../organizations/student-types.server";
 import StudentInviteDialog from "../../components/student-invite-dialog";
 import { StudentTotalHours } from "../../components/student-total-hours";
 import { requireAdminRole } from "../../guards.server";
@@ -75,10 +77,10 @@ export async function loader({ request }: Route.LoaderArgs) {
       ? state
       : undefined;
   const type = url.searchParams.get("type");
-  const typeFilter =
-    type === "EXAMINEE" || type === "DROPPER" || type === "ADULT"
-      ? type
-      : undefined;
+  const studentTypes = await getStudentTypes(client, organizationId);
+  const typeFilter = studentTypes.some((option) => option.code === type)
+    ? type
+    : undefined;
 
   const result = await getStudentsPaginated(client, {
     organizationId,
@@ -102,6 +104,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return data(
     {
       ...result,
+      studentTypes,
       totalHours,
     },
     { headers },
@@ -117,23 +120,11 @@ const stateLabels: Record<
   DELETED: { label: "탈퇴", variant: "destructive" },
 };
 
-const typeLabels: Record<string, string> = {
-  EXAMINEE: "입시생",
-  DROPPER: "재수생",
-  ADULT: "성인",
-};
-
 const mobileStateFilters = [
   { value: "all", label: "전체" },
   { value: "NORMAL", label: "정상" },
   { value: "GRADUATE", label: "졸업" },
   { value: "DELETED", label: "탈퇴" },
-];
-
-const mobileTypeFilters = [
-  { value: "EXAMINEE", label: "입시생" },
-  { value: "DROPPER", label: "재수생" },
-  { value: "ADULT", label: "성인" },
 ];
 
 function formatPhoneNumber(value: string | null) {
@@ -151,6 +142,11 @@ function formatPhoneNumber(value: string | null) {
 export default function StudentListScreen({
   loaderData,
 }: Route.ComponentProps) {
+  const typeLabels = studentTypeLabelMap(loaderData.studentTypes);
+  const mobileTypeFilters = loaderData.studentTypes.map((type) => ({
+    value: type.code,
+    label: type.label + (type.is_active ? "" : " (사용 중지)"),
+  }));
   const { students, totalCount, totalPages, currentPage, totalHours } =
     loaderData;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -289,9 +285,11 @@ export default function StudentListScreen({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 유형</SelectItem>
-              <SelectItem value="EXAMINEE">입시생</SelectItem>
-              <SelectItem value="DROPPER">재수생</SelectItem>
-              <SelectItem value="ADULT">성인</SelectItem>
+              {mobileTypeFilters.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

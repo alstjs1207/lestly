@@ -2,9 +2,11 @@ import type { BulkStudentRow } from "./student-bulk.ts";
 
 import { z } from "zod";
 
+import { normalizeLegacyStudent } from "../../organizations/student-types.ts";
 import { MAX_BULK_STUDENTS } from "./student-bulk.ts";
 
-export type EditableStudentRow = BulkStudentRow & {
+export type EditableStudentRow = Omit<BulkStudentRow, "region"> & {
+  region: string;
   saved?: boolean;
   profileId?: string;
   error?: string;
@@ -21,6 +23,7 @@ const draftSchema = z.object({
           phone: z.string(),
           region: z.string(),
           type: z.string(),
+          description: z.string().optional(),
           saved: z.boolean().optional(),
           profileId: z.string().uuid().optional(),
         })
@@ -41,7 +44,9 @@ export function readStudentBulkDraft(value: string | null, now = Date.now()) {
     )
       return null;
     return {
-      rows: parsed.data.rows as EditableStudentRow[],
+      rows: parsed.data.rows.map(
+        normalizeLegacyStudent,
+      ) as EditableStudentRow[],
       clipboard: parsed.data.clipboard,
     };
   } catch {
@@ -50,5 +55,5 @@ export function readStudentBulkDraft(value: string | null, now = Date.now()) {
 }
 
 export function hasStudentInput(row: BulkStudentRow) {
-  return Boolean(row.name.trim() || row.phone.trim() || row.region.trim());
+  return Boolean(row.name.trim() || row.phone.trim() || row.region?.trim());
 }

@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-28T08:35:05.472Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "checks": [
+    "new_organization_defaults",
+    "admin_add_rename_order_default",
+    "stale_snapshot_rejected",
+    "active_and_default_required",
+    "student_create_optional_region",
+    "inactive_existing_preserved_new_assignment_rejected",
+    "legacy_caller_normalization_and_retaker_note",
+    "student_foreign_organization_and_direct_write_denied",
+    "anonymous_rpc_denied",
+    "all_probe_rows_rolled_back",
+    "two_connection_serialization_and_rollback"
+  ],
+  "passed": 11,
+  "probeDataRemaining": false
+}

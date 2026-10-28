@@ -24,15 +24,20 @@ import {
 import { getAllSettings } from "~/features/app-settings/queries";
 import { DEFAULT_SETTINGS, SETTING_KEYS } from "~/features/app-settings/schema";
 
+import { getStudentTypes } from "../../organizations/student-types.server";
 import { BookingDaySettings } from "../components/booking-day-settings";
 import { BookingTimeSettings } from "../components/booking-time-settings";
+import { StudentTypeSettings } from "../components/student-type-settings";
 import { requireAdminRole } from "../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
 
-  const settings = await getAllSettings(client, { organizationId });
+  const [settings, studentTypes] = await Promise.all([
+    getAllSettings(client, { organizationId }),
+    getStudentTypes(client, organizationId),
+  ]);
 
   // Convert to a map for easy access
   const settingsMap: Record<string, number> = {};
@@ -60,6 +65,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       )
     : [];
   return {
+    studentTypes,
     disabledBookingDays,
     disabledBookingTimes,
     maxConcurrentStudents:
@@ -91,6 +97,8 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
         <h1 className="text-2xl font-bold">설정</h1>
         <p className="text-muted-foreground">시스템 설정을 관리합니다.</p>
       </div>
+
+      <StudentTypeSettings types={loaderData.studentTypes} />
 
       <Card>
         <CardHeader>
