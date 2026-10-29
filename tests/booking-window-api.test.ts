@@ -5,6 +5,7 @@ import * as days from "../app/features/app-settings/booking-days.ts";
 import * as policy from "../app/features/app-settings/booking-policy.ts";
 import * as times from "../app/features/app-settings/booking-times.ts";
 import * as window from "../app/features/app-settings/booking-window.ts";
+import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
 import * as kst from "../app/features/schedules/utils/kst.ts";
 import * as rules from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
@@ -12,6 +13,7 @@ import { loadMockedModule } from "./helpers/mocked-module.ts";
 const rolling = {
   ...policy.DEFAULT_BOOKING_POLICY,
   bookingWindow: { mode: "rolling", daysAhead: 14 } as const,
+  cancellationPolicy: { mode: "hours_before", hours: 3 } as const,
 };
 const now = new Date("2026-10-29T08:00:00+09:00");
 class FixedDate extends Date {
@@ -29,6 +31,7 @@ test("settings write one exclusive window atomically and legacy open forms prese
   const { action } = loadMockedModule<{ action(args: any): Promise<any> }>(
     new URL("../app/features/admin/api/settings/update.tsx", import.meta.url),
     {
+      "../../app-settings/cancellation-policy": cancellation,
       "react-router": {
         data: (body: any, init: any) => ({ body, init }),
         redirect: (url: string) => ({ url }),
@@ -56,6 +59,7 @@ test("settings write one exclusive window atomically and legacy open forms prese
       },
       "../../../app-settings/booking-policy": policy,
       "../../../app-settings/booking-window": window,
+      "../../../app-settings/cancellation-policy": cancellation,
       "../../../app-settings/booking-policy.server": {
         getBookingPolicy: async (_: any, { organizationId }: any) => {
           assert.equal(organizationId, "org-a");
@@ -68,17 +72,19 @@ test("settings write one exclusive window atomically and legacy open forms prese
       },
     },
   );
-  const run = (values: Record<string, string>) => {
+  const run = (values: Record<string, string>, legacy = false) => {
     const form = new FormData();
     for (const [key, value] of Object.entries({
       ...policy.DEFAULT_BOOKING_POLICY,
       max_concurrent_students: "5",
       booking_times_present: "1",
       booking_days_present: "1",
+      cancellationMode: "previous_day",
     }))
-      if (key !== "bookingWindow")
+      if (key !== "bookingWindow" && key !== "cancellationPolicy")
         form.set(key, Array.isArray(value) ? value.join(",") : String(value));
     for (const [key, value] of Object.entries(values)) form.set(key, value);
+    if (legacy) form.delete("cancellationMode");
     return action({
       request: new Request("https://lestly.test/api/admin/settings", {
         method: "POST",
@@ -115,10 +121,22 @@ test("settings write one exclusive window atomically and legacy open forms prese
     daysAhead: 0,
   });
   assert.equal(reads, 0);
-  assert.equal((await run({})).url, "/admin/settings");
+  assert.equal((await run({}, true)).url, "/admin/settings");
   assert.equal(reads, 1);
   assert.deepEqual(writes[2].rows[4].setting_value, rolling.bookingWindow);
+  assert.deepEqual(writes[2].rows[5].setting_value, rolling.cancellationPolicy);
   const invalid: Record<string, string>[] = [
+    {
+      bookingWindowMode: "monthly",
+      bookingOpeningDay: "25",
+      cancellationMode: "both",
+    },
+    {
+      bookingWindowMode: "monthly",
+      bookingOpeningDay: "25",
+      cancellationMode: "hours_before",
+      cancellationHours: "721",
+    },
     { bookingWindowMode: "both" },
     { bookingWindowMode: "" },
     { bookingWindowMode: "monthly", bookingOpeningDay: "32" },
@@ -130,7 +148,7 @@ test("settings write one exclusive window atomically and legacy open forms prese
     assert.equal((await run(values)).init.status, 400);
   assert.equal(writes.length, 3);
   for (const write of writes) {
-    assert.equal(write.rows.length, 5);
+    assert.equal(write.rows.length, 6);
     assert.equal(
       Object.hasOwn(write.rows[1].setting_value, "bookingWindow"),
       false,
@@ -140,7 +158,10 @@ test("settings write one exclusive window atomically and legacy open forms prese
   }
 });
 
-function studentRoutes() {
+function studentRoutes(
+  resolvedPolicy: policy.BookingPolicy = rolling,
+  reject = "",
+) {
   const calls: any[] = [];
   const chain: any = {
     select: () => chain,
@@ -155,10 +176,14 @@ function studentRoutes() {
     from: () => chain,
     rpc: async (name: string, args: any) => {
       calls.push({ name, args });
-      return { data: name === "book_student_schedule" ? 42 : [], error: null };
+      return {
+        data: name === "book_student_schedule_with_policy" ? 42 : [],
+        error: reject ? { message: reject } : null,
+      };
     },
   };
   const shared: any = {
+    "../../app-settings/cancellation-policy": cancellation,
     "react-router": {
       data: (body: any, init: any) => ({ body, init }),
       redirect: (url: string) => ({ url }),
@@ -168,7 +193,7 @@ function studentRoutes() {
       getSessionUser: async () => ({ id: "auth-a" }),
     },
     "../../app-settings/booking-policy.server": {
-      getBookingPolicy: async () => rolling,
+      getBookingPolicy: async () => resolvedPolicy,
     },
     "../utils/kst": kst,
   };
@@ -209,11 +234,16 @@ function studentRoutes() {
   );
   return {
     calls,
-    create: async (date: string) => {
+    create: async (date: string, values: Record<string, string> = {}) => {
       const form = new FormData();
       form.set("date", date);
       form.set("start_time", "09:00");
       form.set("duration_minutes", "180");
+      form.set(
+        "cancellation_policy",
+        JSON.stringify(resolvedPolicy.cancellationPolicy),
+      );
+      for (const [key, value] of Object.entries(values)) form.set(key, value);
       return create.action({
         request: new Request("https://lestly.test/api/schedules/create", {
           method: "POST",
@@ -234,7 +264,7 @@ test("student create API forwards the final allowed day and rejects the followin
   assert.equal((await f.create("2026-11-12")).body.success, true);
   assert.equal((await f.create("2026-11-13")).init.status, 400);
   assert.equal(f.calls.length, 1);
-  assert.equal(f.calls[0].name, "book_student_schedule");
+  assert.equal(f.calls[0].name, "book_student_schedule_with_policy");
   assert.equal(f.calls[0].args.p_start_time, "2026-11-12T00:00:00.000Z");
 });
 test("availability API returns the latest policy for a newly closed date without offering slots or caching it", async () => {
@@ -246,4 +276,49 @@ test("availability API returns the latest policy for a newly closed date without
   assert.equal(f.calls.length, 0);
   await f.available("2026-11-12");
   assert.equal(f.calls[0].name, "get_student_booking_availability_minutes");
+});
+
+test("student booking requires the exact displayed cancellation policy and explicit acknowledgement after cutoff", async () => {
+  const long = {
+    ...rolling,
+    cancellationPolicy: { mode: "hours_before", hours: 720 } as const,
+  };
+  const f = studentRoutes(long);
+  assert.equal(
+    (await f.create("2026-10-30", { cancellation_policy: "null" })).init.status,
+    409,
+  );
+  assert.equal(
+    (
+      await f.create("2026-10-30", {
+        cancellation_policy: JSON.stringify(
+          cancellation.DEFAULT_CANCELLATION_POLICY,
+        ),
+      })
+    ).init.status,
+    409,
+  );
+  assert.equal((await f.create("2026-10-30")).init.status, 400);
+  assert.equal(f.calls.length, 0);
+  assert.equal(
+    (await f.create("2026-10-30", { accept_no_cancellation: "1" })).body
+      .success,
+    true,
+  );
+  assert.deepEqual(
+    f.calls[0].args.p_expected_cancellation_policy,
+    long.cancellationPolicy,
+  );
+  assert.equal(f.calls[0].args.p_accept_no_cancellation, true);
+  for (const error of [
+    "schedule_cancellation_policy_changed",
+    "schedule_cancellation_ack_required",
+  ]) {
+    const stale = studentRoutes(long, error);
+    assert.equal(
+      (await stale.create("2026-10-30", { accept_no_cancellation: "1" })).body
+        .success,
+      false,
+    );
+  }
 });

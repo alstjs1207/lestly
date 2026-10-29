@@ -12,6 +12,7 @@ import {
   bookingWindowDescription,
   bookingWindowRange,
 } from "../../app-settings/booking-window";
+import { cancellationPolicyDescription } from "../../app-settings/cancellation-policy";
 import { toKSTDateString } from "../utils/kst";
 import {
   type LearningSchedule,
@@ -344,8 +345,10 @@ export function StudentWeeklySchedules({
             {formatLearningDate(allowed.endDate.toISOString(), true)}
           </p>
           <p>
-            {bookingWindowDescription(data.bookingPolicy?.bookingWindow)} 수업
-            전날까지 취소할 수 있어요.
+            {bookingWindowDescription(data.bookingPolicy?.bookingWindow)}
+            {cancellationPolicyDescription(
+              data.bookingPolicy?.cancellationPolicy,
+            )}
           </p>
           {(data.classStartDate || data.classEndDate) && (
             <p>

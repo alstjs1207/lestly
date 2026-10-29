@@ -332,3 +332,5 @@ status: pending (상담 대기)
 6. 예약·상담·관리 경험이 서비스의 핵심 가치다
 
 ---
+
+- [수강생 예약 취소 정책](docs/student-cancellation-policy.md)

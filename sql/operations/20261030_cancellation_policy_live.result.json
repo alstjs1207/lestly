@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-29T16:49:21.644Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "checks": [
+    "JS and SQL cancellation rules agree at KST midnight, hour cutoffs, zero, leap day and year boundaries",
+    "invalid and unauthorized cancellation settings fail, and mixed settings save atomically",
+    "inserts ignore supplied snapshots, settings changes preserve prior reservations and edits keep their original rule",
+    "student DELETE uses saved cutoff, blocks other students and expired bookings, and keeps admin exceptions",
+    "booking confirmation rechecks the shown policy and expired-cutoff acknowledgement before creating a snapshot",
+    "authenticated booking waits for settings save and rejects an outdated cancellation policy"
+  ],
+  "passed": 6,
+  "allFixturesRemoved": true,
+  "businessDataUnchanged": true
+}

@@ -1,0 +1,101 @@
+{
+  "initial": {
+    "mode": "previous_day",
+    "hours": false,
+    "clock": {
+      "durationMinutes": "180, 360, 540",
+      "defaultDurationMinutes": "180",
+      "firstStart": "09:00",
+      "lastStart": "20:00",
+      "startIntervalMinutes": "30",
+      "leadMinutes": "0",
+      "max_concurrent_students": "5",
+      "bookingWindowMode": "monthly",
+      "bookingOpeningDay": "25"
+    }
+  },
+  "routes": [
+    {
+      "route": "/admin",
+      "status": 200,
+      "applicationError": false
+    },
+    {
+      "route": "/admin/settings",
+      "status": 200,
+      "applicationError": false
+    },
+    {
+      "route": "/admin/students",
+      "status": 200,
+      "applicationError": false
+    },
+    {
+      "route": "/admin/students/new",
+      "status": 200,
+      "applicationError": false
+    },
+    {
+      "route": "/admin/students/bulk",
+      "status": 200,
+      "applicationError": false
+    },
+    {
+      "route": "/admin/schedules",
+      "status": 200,
+      "applicationError": false
+    },
+    {
+      "route": "/admin/schedules/new",
+      "status": 200,
+      "applicationError": false
+    },
+    {
+      "route": "/admin/attendance",
+      "status": 200,
+      "applicationError": false
+    }
+  ],
+  "invalidPosts": [
+    {
+      "mode": "both",
+      "hours": "24",
+      "status": 400
+    },
+    {
+      "mode": "hours_before",
+      "hours": "-1",
+      "status": 400
+    },
+    {
+      "mode": "hours_before",
+      "hours": "721",
+      "status": 400
+    },
+    {
+      "mode": "hours_before",
+      "hours": "1.5",
+      "status": 400
+    },
+    {
+      "mode": "hours_before",
+      "hours": "",
+      "status": 400
+    }
+  ],
+  "validOrganizationPolicySaved": false,
+  "exclusiveConditionalFields": true,
+  "draftHours24": true,
+  "draftHours0Valid": true,
+  "defaultsPreservedAfterReload": true,
+  "desktopWidth": 1440,
+  "mobileWidth": 375,
+  "horizontalOverflow": false,
+  "at": "2026-10-29T16:55:07.192049+00:00",
+  "sourceCommit": "a5e24e4a92d0a7ee10fe2effed9700587f5de333",
+  "preview": "https://lestly-git-preview-alstjs1207s-projects.vercel.app",
+  "deployment": "https://vercel.com/alstjs1207s-projects/lestly/5dtJXVViUHoFNxq33rWEpiCiPj27",
+  "businessDataMatchesPreMigrationBackup": true,
+  "existingBookings": 1112,
+  "existingSettings": 14
+}

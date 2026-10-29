@@ -12,7 +12,12 @@ import {
   bookingWindowRange,
   isBookingDateInWindow,
 } from "../../app-settings/booking-window.ts";
-import { fromKST, nowKST, toKST, toKSTDateString } from "./kst.ts";
+import {
+  type CancellationPolicy,
+  DEFAULT_CANCELLATION_POLICY,
+  canCancelWithPolicy,
+} from "../../app-settings/cancellation-policy.ts";
+import { fromKST, toKST, toKSTDateString } from "./kst.ts";
 
 /** Check the organization's booking window using the Korean start date. */
 export function canStudentRegisterSchedule(
@@ -27,23 +32,13 @@ export function canStudentRegisterSchedule(
   );
 }
 
-/**
- * Check if a student can cancel a schedule
- *
- * Rules:
- * - Cannot cancel on the same day (must be at least one day before)
- */
-export function canStudentCancelSchedule(scheduleDate: Date): boolean {
-  const now = nowKST();
-  const schedule = toKST(scheduleDate);
-
-  // Compare KST dates (year * 10000 + month * 100 + day for simple comparison)
-  const todayValue = now.year * 10000 + now.month * 100 + now.day;
-  const scheduleValue =
-    schedule.year * 10000 + schedule.month * 100 + schedule.day;
-
-  // Can only cancel if the schedule is after today
-  return scheduleValue > todayValue;
+/** Uses the reservation's saved policy, never the current organization setting. */
+export function canStudentCancelSchedule(
+  scheduleDate: Date,
+  policy: CancellationPolicy = DEFAULT_CANCELLATION_POLICY,
+  now = new Date(),
+): boolean {
+  return canCancelWithPolicy(scheduleDate, policy, now);
 }
 
 /** Inclusive calendar date bounds; past times are checked separately. */

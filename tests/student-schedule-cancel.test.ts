@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
 function handler({
@@ -65,6 +66,7 @@ function handler({
           pushes.push(args);
         },
       },
+      "../../app-settings/cancellation-policy": cancellation,
       "react-router": {
         data: (body: unknown, init: unknown) => ({ body, init }),
         redirect: (url: string) => ({ url }),
@@ -101,7 +103,7 @@ test("cancel handler validates IDs, own schedule and deadline before deleting", 
   assert.equal((await missing.run()).body.success, false);
   assert.equal(missing.deletes(), 0);
   const sameDay = handler({ allow: false });
-  assert.match((await sameDay.run()).body.error, /당일/);
+  assert.match((await sameDay.run()).body.error, /기한/);
   assert.equal(sameDay.deletes(), 0);
 });
 

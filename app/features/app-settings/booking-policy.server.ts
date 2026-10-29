@@ -11,6 +11,11 @@ import {
   DEFAULT_BOOKING_WINDOW,
   bookingWindowSchema,
 } from "./booking-window.ts";
+import {
+  CANCELLATION_POLICY_KEY,
+  DEFAULT_CANCELLATION_POLICY,
+  cancellationPolicySchema,
+} from "./cancellation-policy.ts";
 
 export async function getBookingPolicy(
   client: SupabaseClient<Database>,
@@ -20,7 +25,11 @@ export async function getBookingPolicy(
     .from("settings")
     .select("setting_key,setting_value")
     .eq("organization_id", organizationId)
-    .in("setting_key", [BOOKING_POLICY_KEY, BOOKING_WINDOW_KEY]);
+    .in("setting_key", [
+      BOOKING_POLICY_KEY,
+      BOOKING_WINDOW_KEY,
+      CANCELLATION_POLICY_KEY,
+    ]);
   if (error) throw error;
   const savedPolicy = data?.find(
     (row) => row.setting_key === BOOKING_POLICY_KEY,
@@ -28,10 +37,16 @@ export async function getBookingPolicy(
   const savedWindow = data?.find(
     (row) => row.setting_key === BOOKING_WINDOW_KEY,
   );
+  const savedCancellation = data?.find(
+    (row) => row.setting_key === CANCELLATION_POLICY_KEY,
+  );
   return {
     ...(savedPolicy
       ? parseBookingPolicy(savedPolicy.setting_value)
       : DEFAULT_BOOKING_POLICY),
+    cancellationPolicy: savedCancellation
+      ? cancellationPolicySchema.parse(savedCancellation.setting_value)
+      : DEFAULT_CANCELLATION_POLICY,
     bookingWindow: savedWindow
       ? bookingWindowSchema.parse(savedWindow.setting_value)
       : DEFAULT_BOOKING_WINDOW,

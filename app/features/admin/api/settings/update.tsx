@@ -23,6 +23,10 @@ import {
   BOOKING_WINDOW_KEY,
   bookingWindowFromForm,
 } from "../../../app-settings/booking-window";
+import {
+  CANCELLATION_POLICY_KEY,
+  cancellationPolicyFromForm,
+} from "../../../app-settings/cancellation-policy";
 import { requireAdminRole } from "../../guards.server";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -39,14 +43,25 @@ export async function action({ request }: Route.ActionArgs) {
   };
   const maxConcurrentStudents = numberField("max_concurrent_students");
   let bookingWindow;
+  let cancellationPolicy;
   try {
+    const current =
+      !formData.has("bookingWindowMode") || !formData.has("cancellationMode")
+        ? await getBookingPolicy(client, { organizationId })
+        : null;
+    cancellationPolicy = formData.has("cancellationMode")
+      ? cancellationPolicyFromForm(formData)
+      : current!.cancellationPolicy;
     // A form opened before the upgrade must preserve the current window.
     bookingWindow = formData.has("bookingWindowMode")
       ? bookingWindowFromForm(formData)
-      : (await getBookingPolicy(client, { organizationId })).bookingWindow;
+      : current!.bookingWindow;
   } catch {
     return data(
-      { error: "예약 오픈 방식을 확인하거나 설정을 새로 불러와 주세요." },
+      {
+        error:
+          "예약 오픈 방식·취소 기한을 확인하거나 설정을 새로 불러와 주세요.",
+      },
       { status: 400 },
     );
   }
@@ -62,6 +77,7 @@ export async function action({ request }: Route.ActionArgs) {
     startIntervalMinutes: numberField("startIntervalMinutes"),
     leadMinutes: numberField("leadMinutes"),
     bookingWindow,
+    cancellationPolicy,
   });
   if (
     !parsed.success ||
@@ -91,7 +107,11 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    const { bookingWindow: window, ...timePolicy } = parsed.data;
+    const {
+      bookingWindow: window,
+      cancellationPolicy: cancellation,
+      ...timePolicy
+    } = parsed.data;
     const { error } = await client.from("settings").upsert(
       [
         {
@@ -118,6 +138,11 @@ export async function action({ request }: Route.ActionArgs) {
           organization_id: organizationId,
           setting_key: BOOKING_WINDOW_KEY,
           setting_value: window,
+        },
+        {
+          organization_id: organizationId,
+          setting_key: CANCELLATION_POLICY_KEY,
+          setting_value: cancellation,
         },
       ],
       { onConflict: "organization_id,setting_key" },

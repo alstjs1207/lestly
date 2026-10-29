@@ -17,6 +17,11 @@ import {
   submittedDuration,
 } from "../../app-settings/booking-policy";
 import { getBookingPolicy } from "../../app-settings/booking-policy.server";
+import {
+  canCancelWithPolicy,
+  cancellationPolicySchema,
+  sameCancellationPolicy,
+} from "../../app-settings/cancellation-policy";
 import { toKSTDateString } from "../utils/kst";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -118,17 +123,59 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
+  let expectedPolicy;
+  try {
+    expectedPolicy = cancellationPolicySchema.parse(
+      JSON.parse(String(formData.get("cancellation_policy"))),
+    );
+  } catch {
+    return data(
+      {
+        success: false,
+        error: "취소 정책을 확인할 수 없어요. 예약 화면을 새로 불러와 주세요.",
+      },
+      { status: 409, headers },
+    );
+  }
+  if (!sameCancellationPolicy(expectedPolicy, policy.cancellationPolicy))
+    return data(
+      {
+        success: false,
+        error: "취소 정책이 변경됐어요. 예약 화면에서 다시 확인해주세요.",
+      },
+      { status: 409, headers },
+    );
+  const acceptNoCancellation = formData.get("accept_no_cancellation") === "1";
+  if (
+    !canCancelWithPolicy(startTime, policy.cancellationPolicy, now) &&
+    !acceptNoCancellation
+  )
+    return data(
+      {
+        success: false,
+        error:
+          "취소 기한이 지난 수업이에요. 예약 후 직접 취소할 수 없다는 안내를 확인해주세요.",
+      },
+      { status: 400, headers },
+    );
+
   const { data: scheduleId, error } = await client.rpc(
-    "book_student_schedule",
+    "book_student_schedule_with_policy",
     {
       p_organization_id: organizationId,
       p_program_id: programId,
       p_start_time: startTime.toISOString(),
       p_end_time: endTime.toISOString(),
+      p_expected_cancellation_policy: expectedPolicy,
+      p_accept_no_cancellation: acceptNoCancellation,
     },
   );
   if (error) {
     const errors: Record<string, string> = {
+      schedule_cancellation_policy_changed:
+        "취소 정책이 변경됐어요. 시간을 다시 선택하고 취소 안내를 확인해주세요.",
+      schedule_cancellation_ack_required:
+        "취소 기한이 지났어요. 시간을 다시 선택하고 직접 취소 불가 안내를 확인해주세요.",
       schedule_booking_closed:
         "예약 접수가 마감됐습니다. 다른 시간을 선택해주세요.",
       schedule_date_not_allowed:

@@ -4,6 +4,10 @@ import {
   DEFAULT_BOOKING_WINDOW,
   bookingWindowSchema,
 } from "./booking-window.ts";
+import {
+  DEFAULT_CANCELLATION_POLICY,
+  cancellationPolicySchema,
+} from "./cancellation-policy.ts";
 
 export const BOOKING_POLICY_KEY = "booking_policy";
 const clock = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
@@ -17,6 +21,9 @@ export const bookingPolicySchema = z
     leadMinutes: z.number().int().min(0).max(43200),
     // Resolved for consumers; persisted separately as settings.booking_window.
     bookingWindow: bookingWindowSchema.default(DEFAULT_BOOKING_WINDOW),
+    cancellationPolicy: cancellationPolicySchema.default(
+      DEFAULT_CANCELLATION_POLICY,
+    ),
   })
   .strict()
   .superRefine((p, ctx) => {
@@ -44,6 +51,7 @@ export const DEFAULT_BOOKING_POLICY: BookingPolicy = {
   startIntervalMinutes: 30,
   leadMinutes: 0,
   bookingWindow: DEFAULT_BOOKING_WINDOW,
+  cancellationPolicy: DEFAULT_CANCELLATION_POLICY,
 };
 export function parseBookingPolicy(value: unknown): BookingPolicy {
   return bookingPolicySchema.parse(value);

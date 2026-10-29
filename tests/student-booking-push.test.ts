@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import * as bookingPolicy from "../app/features/app-settings/booking-policy.ts";
+import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
 import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
 import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
@@ -42,6 +43,7 @@ function setup(rejectBooking = false) {
         getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
       },
       "../../app-settings/booking-policy": bookingPolicy,
+      "../../app-settings/cancellation-policy": cancellation,
       "react-router": {
         data: (data: unknown, init?: unknown) => ({ data, init }),
         redirect: (url: string) => ({ url }),
@@ -72,6 +74,9 @@ function setup(rejectBooking = false) {
     start_time: "09:00",
     duration_minutes: "180",
     program_id: "1",
+    cancellation_policy: JSON.stringify(
+      cancellation.DEFAULT_CANCELLATION_POLICY,
+    ),
   }))
     form.set(key, value);
   return {

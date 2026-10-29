@@ -11,7 +11,12 @@ import {
   DialogTitle,
 } from "~/core/components/ui/dialog";
 
-import { toKSTDateString } from "../utils/kst";
+import {
+  DEFAULT_CANCELLATION_POLICY,
+  canCancelWithPolicy,
+  cancellationPolicyDescription,
+  cancellationPolicySchema,
+} from "../../app-settings/cancellation-policy";
 import { type LearningSchedule } from "../utils/learning-records";
 import { ScheduleInformation } from "./learning-schedule-detail";
 
@@ -44,11 +49,22 @@ export function StudentScheduleManager({
     // Callbacks intentionally follow the latest render without reprocessing a response.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.data, fetcher.state]);
-  const ended = !!schedule && new Date(schedule.end_time) <= new Date();
+  // Keep a dialog opened across the deadline in sync with the server rule.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!schedule) return;
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, [schedule?.schedule_id]);
+  const ended = !!schedule && new Date(schedule.end_time) <= now;
+  const parsedPolicy = cancellationPolicySchema.safeParse(
+    schedule?.cancellation_policy ?? DEFAULT_CANCELLATION_POLICY,
+  );
   const canCancel =
     !!schedule &&
-    toKSTDateString(new Date(schedule.start_time)) >
-      toKSTDateString(new Date());
+    parsedPolicy.success &&
+    canCancelWithPolicy(new Date(schedule.start_time), parsedPolicy.data, now);
   return (
     <Dialog
       open={!!schedule}
@@ -74,8 +90,12 @@ export function StudentScheduleManager({
           {ended
             ? "지난 수업은 취소할 수 없어요."
             : canCancel
-              ? "취소는 수업 전날 23:59까지 가능해요."
-              : "당일 수업은 취소할 수 없어요. 변경이 필요하면 학원에 문의해주세요."}
+              ? cancellationPolicyDescription(
+                  parsedPolicy.success
+                    ? parsedPolicy.data
+                    : DEFAULT_CANCELLATION_POLICY,
+                )
+              : "취소 가능 기한이 지났어요. 변경이 필요하면 학원에 문의해주세요."}
         </p>
         {error && (
           <p role="alert" className="text-destructive text-sm">

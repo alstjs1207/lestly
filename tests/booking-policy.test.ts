@@ -197,7 +197,7 @@ test("resolved policy reads the separate booking window while preserving legacy 
       return query;
     },
     in: async (_: string, keys: string[]) => {
-      assert.deepEqual(keys, ["booking_policy", "booking_window"]);
+      assert.deepEqual(keys, ["booking_policy", "booking_window", "cancellation_policy"]);
       return { data: rows, error: null };
     },
   };

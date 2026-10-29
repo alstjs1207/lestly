@@ -34,10 +34,16 @@ import {
   DEFAULT_BOOKING_WINDOW,
   bookingWindowSchema,
 } from "../../app-settings/booking-window";
+import {
+  CANCELLATION_POLICY_KEY,
+  DEFAULT_CANCELLATION_POLICY,
+  cancellationPolicySchema,
+} from "../../app-settings/cancellation-policy";
 import { getStudentTypes } from "../../organizations/student-types.server";
 import { BookingDaySettings } from "../components/booking-day-settings";
 import { BookingPolicyFields } from "../components/booking-policy-fields";
 import { BookingWindowFields } from "../components/booking-window-fields";
+import { CancellationPolicyFields } from "../components/cancellation-policy-fields";
 import { StudentTypeSettings } from "../components/student-type-settings";
 import { requireAdminRole } from "../guards.server";
 
@@ -84,6 +90,14 @@ export async function loader({ request }: Route.LoaderArgs) {
               .setting_value,
           )
         : DEFAULT_BOOKING_POLICY),
+      cancellationPolicy: settings.some(
+        (s) => s.setting_key === CANCELLATION_POLICY_KEY,
+      )
+        ? cancellationPolicySchema.parse(
+            settings.find((s) => s.setting_key === CANCELLATION_POLICY_KEY)!
+              .setting_value,
+          )
+        : DEFAULT_CANCELLATION_POLICY,
       bookingWindow: settings.some((s) => s.setting_key === BOOKING_WINDOW_KEY)
         ? bookingWindowSchema.parse(
             settings.find((s) => s.setting_key === BOOKING_WINDOW_KEY)!
@@ -152,6 +166,11 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
                 </p>
               </div>
             </div>
+            <CancellationPolicyFields
+              key={JSON.stringify(loaderData.bookingPolicy.cancellationPolicy)}
+              policy={loaderData.bookingPolicy.cancellationPolicy}
+              busy={isSubmitting}
+            />
             <BookingWindowFields
               key={JSON.stringify(loaderData.bookingPolicy.bookingWindow)}
               window={loaderData.bookingPolicy.bookingWindow}

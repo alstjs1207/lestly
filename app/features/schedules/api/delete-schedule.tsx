@@ -9,6 +9,11 @@ import makeServerClient, {
 import { dispatchSchedulePush } from "~/features/notifications/push/dispatch.server";
 import { canStudentCancelSchedule } from "~/features/schedules/utils/student-schedule-rules";
 
+import {
+  DEFAULT_CANCELLATION_POLICY,
+  cancellationPolicySchema,
+} from "../../app-settings/cancellation-policy";
+
 export async function action({ request, params }: Route.ActionArgs) {
   requireMethod("POST")(request);
   const [client, headers] = makeServerClient(request);
@@ -32,7 +37,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     );
   const { data: schedule, error: readError } = await client
     .from("schedules")
-    .select("schedule_id,start_time")
+    .select("schedule_id,start_time,cancellation_policy")
     .is("cancelled_at", null)
     .eq("schedule_id", id)
     .eq("student_id", profile.profile_id)
@@ -54,12 +59,18 @@ export async function action({ request, params }: Route.ActionArgs) {
       },
       { status: 404, headers },
     );
-  if (!canStudentCancelSchedule(new Date(schedule.start_time)))
+  const savedPolicy = cancellationPolicySchema.safeParse(
+    schedule.cancellation_policy ?? DEFAULT_CANCELLATION_POLICY,
+  );
+  if (
+    !savedPolicy.success ||
+    !canStudentCancelSchedule(new Date(schedule.start_time), savedPolicy.data)
+  )
     return data(
       {
         success: false,
         error:
-          "당일·지난 수업은 취소할 수 없어요. 변경이 필요하면 학원에 문의해주세요.",
+          "취소 가능 기한이 지났어요. 변경이 필요하면 학원에 문의해주세요.",
       },
       { status: 400, headers },
     );

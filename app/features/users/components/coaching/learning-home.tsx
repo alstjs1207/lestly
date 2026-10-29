@@ -257,8 +257,8 @@ export function LearningHome(props: LearningHomeProps) {
               )}
             </div>
             <p className="text-muted-foreground mt-4 text-xs leading-relaxed">
-              다음 달 신규 예약은 매월 25일에 열려요. 취소는 수업 전날까지
-              가능해요.
+              예약 가능 기간과 취소 기한은 일정 화면에서 확인해주세요. 이미
+              예약한 수업은 수업 상세에 표시된 취소 규칙을 따라요.
             </p>
           </section>
           <ReflectionJournal
