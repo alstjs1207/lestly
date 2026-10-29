@@ -115,15 +115,15 @@ const stateLabels: Record<
   string,
   { label: string; variant: "success" | "secondary" | "destructive" }
 > = {
-  NORMAL: { label: "정상", variant: "success" },
-  GRADUATE: { label: "졸업", variant: "secondary" },
+  NORMAL: { label: "수강 중", variant: "success" },
+  GRADUATE: { label: "수강 종료", variant: "secondary" },
   DELETED: { label: "탈퇴", variant: "destructive" },
 };
 
 const mobileStateFilters = [
   { value: "all", label: "전체" },
-  { value: "NORMAL", label: "정상" },
-  { value: "GRADUATE", label: "졸업" },
+  { value: "NORMAL", label: "수강 중" },
+  { value: "GRADUATE", label: "수강 종료" },
   { value: "DELETED", label: "탈퇴" },
 ];
 
@@ -270,8 +270,8 @@ export default function StudentListScreen({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 상태</SelectItem>
-              <SelectItem value="NORMAL">정상</SelectItem>
-              <SelectItem value="GRADUATE">졸업</SelectItem>
+              <SelectItem value="NORMAL">수강 중</SelectItem>
+              <SelectItem value="GRADUATE">수강 종료</SelectItem>
               <SelectItem value="DELETED">탈퇴</SelectItem>
             </SelectContent>
           </Select>

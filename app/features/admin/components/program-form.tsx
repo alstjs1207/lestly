@@ -326,7 +326,15 @@ export default function ProgramForm({
               min="30"
               step="30"
               defaultValue={defaultValues?.duration_minutes || 120}
+              aria-describedby="program-duration-help"
             />
+            <p
+              id="program-duration-help"
+              className="text-muted-foreground text-xs"
+            >
+              클래스 소개용 시간입니다. 예약 가능한 수업 길이는 조직의 예약 시간
+              규칙에서 별도로 설정합니다.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -337,7 +345,15 @@ export default function ProgramForm({
               type="number"
               min="1"
               defaultValue={defaultValues?.total_sessions || 4}
+              aria-describedby="program-sessions-help"
             />
+            <p
+              id="program-sessions-help"
+              className="text-muted-foreground text-xs"
+            >
+              클래스 소개용 회차입니다. 반복 예약은 이 횟수가 아닌 수강생의 수강
+              종료일까지 생성됩니다.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -349,7 +365,15 @@ export default function ProgramForm({
               min="1"
               defaultValue={defaultValues?.max_capacity}
               placeholder="5"
+              aria-describedby="program-capacity-help"
             />
+            <p
+              id="program-capacity-help"
+              className="text-muted-foreground text-xs"
+            >
+              클래스 소개용 모집 인원입니다. 실제 예약 인원은 조직 전체 동시
+              수강 인원 설정으로 제한합니다.
+            </p>
           </div>
 
           <div className="space-y-2">

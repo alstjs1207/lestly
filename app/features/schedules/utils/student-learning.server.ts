@@ -12,7 +12,7 @@ import { getStudentHoursTotals } from "./student-hours.ts";
 
 export const learningScheduleSelect = `schedule_id, start_time, end_time, attendance_status, cancellation_policy,
   program:programs!schedules_program_id_programs_program_id_fk(
-    program_id, title, location_address,
+    program_id, title, location_address, location_type,
     instructor:instructors!programs_instructor_id_instructors_instructor_id_fk(name)
   )`;
 

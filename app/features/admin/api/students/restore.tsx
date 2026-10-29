@@ -30,7 +30,7 @@ export async function action({ request, params }: Route.ActionArgs) {
         success: false,
         error:
           failure?.error ??
-          "재원 복귀를 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          "수강 재개를 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       },
       { status: failure?.status ?? 500, headers },
     );

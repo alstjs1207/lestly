@@ -5,7 +5,9 @@ import test from "node:test";
 import {
   completedSchedules,
   coursePeriodSummary,
+  formatLearningMinutes,
   learningHeatmap,
+  learningLocation,
   scheduleTimeRange,
   sumScheduleHours,
 } from "../app/features/schedules/utils/learning-records.ts";
@@ -223,4 +225,44 @@ test("reflection keys isolate profiles and malformed history cannot become a sav
     ),
     { "2026-10-23": { text: "작은 진전", updatedAt: now.toISOString() } },
   );
+});
+
+test("heatmap counts short attended lessons and preserves duration totals", () => {
+  const short = row(10, "2026-10-22T01:00:00Z", "2026-10-22T01:50:00Z");
+  const second = row(11, "2026-10-22T02:00:00Z", "2026-10-22T02:30:00Z");
+  const absent = { ...short, attendance_status: "ABSENT" };
+  const pending = { ...second, attendance_status: "PENDING" };
+  const day = learningHeatmap(
+    [short, second, absent, pending, running],
+    now,
+  ).find((d) => d.date === "2026-10-22")!;
+  assert.equal(day.count, 2);
+  assert.equal(day.minutes, 80);
+  assert.equal(day.hours, sumScheduleHours([short, second]));
+  assert.equal(formatLearningMinutes(day.minutes), "1시간 20분");
+  assert.equal(formatLearningMinutes(50), "50분");
+  assert.equal(formatLearningMinutes(0), "0분");
+  const blank = learningHeatmap([], now).find((d) => d.date === "2026-10-22")!;
+  assert.equal(blank.count, 0);
+});
+
+test("online locations never expose a stored address as an offline map", () => {
+  const online = learningLocation({
+    program_id: 1,
+    title: "온라인 과외",
+    location_type: "online",
+    location_address: "이전 오프라인 주소",
+  });
+  assert.equal(online.online, true);
+  assert.equal(online.mapAddress, null);
+  assert.match(online.label, /온라인 수업.*담당 강사/);
+  const offline = learningLocation({
+    program_id: 2,
+    title: "클래스",
+    location_type: "offline",
+    location_address: "서울",
+  });
+  assert.equal(offline.mapAddress, "서울");
+  assert.equal(offline.label, "서울");
+  assert.match(learningLocation(null).label, /수업 운영자/);
 });

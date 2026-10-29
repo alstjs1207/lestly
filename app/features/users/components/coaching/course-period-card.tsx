@@ -91,8 +91,8 @@ export function CoursePeriodCard({
               </p>
               <p className="mt-2 text-sm leading-relaxed">
                 {expired || period.status === "last-day"
-                  ? "수강 연장은 학원에 문의해 주세요."
-                  : "종료일은 학원에 확인해 주세요."}
+                  ? "수강 연장은 수업 운영자에게 문의해 주세요."
+                  : "종료일은 수업 운영자에게 확인해 주세요."}
               </p>
             </>
           )}

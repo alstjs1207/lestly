@@ -289,26 +289,42 @@ export default function StudentForm({
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="parent_name">학부모 이름</Label>
-          <Input
-            id="parent_name"
-            name="parent_name"
-            defaultValue={defaultValues?.parent_name}
-            placeholder="학부모 이름"
-          />
-        </div>
+        <details
+          className="rounded-lg border p-4 md:col-span-2"
+          open={Boolean(
+            defaultValues?.parent_name || defaultValues?.parent_phone,
+          )}
+        >
+          <summary className="cursor-pointer text-sm font-medium">
+            보호자 정보 (선택)
+          </summary>
+          <p className="text-muted-foreground mt-2 text-xs">
+            보호자 연락이 필요한 경우에만 입력하세요. 기존에 등록된 정보는
+            유지됩니다.
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="parent_name">보호자 이름</Label>
+              <Input
+                id="parent_name"
+                name="parent_name"
+                defaultValue={defaultValues?.parent_name}
+                placeholder="보호자 이름"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="parent_phone">학부모 전화번호</Label>
-          <Input
-            id="parent_phone"
-            name="parent_phone"
-            type="tel"
-            defaultValue={defaultValues?.parent_phone}
-            placeholder="010-1234-5678"
-          />
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent_phone">보호자 연락처</Label>
+              <Input
+                id="parent_phone"
+                name="parent_phone"
+                type="tel"
+                defaultValue={defaultValues?.parent_phone}
+                placeholder="010-1234-5678"
+              />
+            </div>
+          </div>
+        </details>
 
         <div className="space-y-2">
           <Label htmlFor="color">캘린더 색상</Label>

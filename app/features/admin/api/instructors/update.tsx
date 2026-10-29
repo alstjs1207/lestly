@@ -53,7 +53,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   } = parsed.data;
   if (!(await isInstructorPushAccount(organizationId, pushProfileId))) {
     return data(
-      { error: "같은 학원의 활성 관리자 계정을 선택해 주세요." },
+      { error: "같은 조직의 활성 관리자 계정을 선택해 주세요." },
       { status: 400, headers },
     );
   }

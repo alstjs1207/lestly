@@ -22,7 +22,7 @@ export default function StudentRestoreDialog(props: Props) {
       <DialogTrigger asChild>
         <Button variant="outline">
           <RotateCcwIcon className="mr-2 h-4 w-4" />
-          재원 복귀
+          수강 재개
         </Button>
       </DialogTrigger>
       {open && <RestoreConfirmation {...props} />}
@@ -36,9 +36,9 @@ function RestoreConfirmation({ studentId, studentName, withdrawn }: Props) {
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>재원 복귀</DialogTitle>
+        <DialogTitle>수강 재개</DialogTitle>
         <DialogDescription>
-          {studentName} 수강생을 재원 상태로 복귀하시겠습니까?
+          {studentName} 수강생을 수강 중인 상태로 복귀하시겠습니까?
           {withdrawn && " 복귀 후 다시 로그인할 수 있습니다."} 취소된 예약은
           복구되지 않습니다. 기존 수강 기간은 유지되므로 필요한 경우 수정
           화면에서 변경해 주세요.
@@ -55,7 +55,7 @@ function RestoreConfirmation({ studentId, studentName, withdrawn }: Props) {
           action={`/api/admin/students/${studentId}/restore`}
         >
           <Button type="submit" disabled={busy}>
-            {busy ? "처리 중..." : "확인하고 재원 복귀"}
+            {busy ? "처리 중..." : "확인하고 수강 재개"}
           </Button>
         </fetcher.Form>
       </DialogFooter>

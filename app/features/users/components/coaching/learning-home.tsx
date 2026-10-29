@@ -14,6 +14,7 @@ import { toKST, toKSTDateString } from "~/features/schedules/utils/kst";
 import {
   type LearningSchedule,
   formatLearningDate,
+  learningLocation,
   scheduleTimeRange,
 } from "~/features/schedules/utils/learning-records";
 
@@ -47,6 +48,7 @@ export function LearningHome(props: LearningHomeProps) {
     chart,
   } = props;
   const now = new Date(props.now);
+  const nextLocation = learningLocation(nextSchedule?.program ?? null);
   const expired =
     !!props.classEndDate && props.classEndDate < toKSTDateString(now);
   const maximum = Math.max(1, ...chart.map((d) => d.hours));
@@ -81,8 +83,8 @@ export function LearningHome(props: LearningHomeProps) {
       </header>
       {props.graduated && (
         <p className="rounded-xl bg-violet-50 p-4 text-sm text-violet-900 dark:bg-violet-950 dark:text-violet-100">
-          졸업생입니다. 지난 수업 기록을 확인할 수 있으며 새 수업은 예약할 수
-          없습니다.
+          이 운영 공간의 수강이 종료된 상태입니다. 지난 수업 기록을 확인할 수
+          있으며 새 수업은 예약할 수 없습니다.
         </p>
       )}
       {!props.graduated && (
@@ -211,12 +213,11 @@ export function LearningHome(props: LearningHomeProps) {
                 <p className="text-muted-foreground mt-2 text-sm">
                   담당 강사 ·{" "}
                   {nextSchedule.program?.instructor?.name ||
-                    "학원에 확인해주세요"}
+                    "수업 운영자에게 확인해주세요"}
                 </p>
                 <p className="text-muted-foreground mt-2 flex items-start gap-2 text-sm leading-relaxed">
                   <MapPin className="mt-0.5 size-4 shrink-0" />
-                  {nextSchedule.program?.location_address ||
-                    "장소는 학원에 확인해주세요"}
+                  {nextLocation.label}
                 </p>
               </>
             ) : (
@@ -224,7 +225,7 @@ export function LearningHome(props: LearningHomeProps) {
                 <h3 className="font-semibold">예정된 수업이 없어요.</h3>
                 <p className="text-muted-foreground mt-2 text-sm">
                   {expired
-                    ? "수강 기간이 끝났어요. 다음 수강은 학원에 문의해주세요."
+                    ? "수강 기간이 끝났어요. 다음 수강은 수업 운영자에게 문의해주세요."
                     : "나에게 맞는 날에 다음 배움을 이어가요."}
                 </p>
               </div>

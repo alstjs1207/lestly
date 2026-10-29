@@ -28,7 +28,8 @@
     "verify:worker": "node scripts/verify-worker.mjs",
     "verify:node": "node scripts/verify-node.mjs",
     "test:booking-policy:ssr": "node tests/booking-policy-ssr.mjs",
-    "test:booking-window:ssr": "node tests/booking-window-ssr.mjs"
+    "test:booking-window:ssr": "node tests/booking-window-ssr.mjs",
+    "test:generalization:ssr": "node tests/service-generalization-ssr.mjs"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",

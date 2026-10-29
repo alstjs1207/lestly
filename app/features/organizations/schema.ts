@@ -35,7 +35,7 @@ export const userRoleEnum = pgEnum("user_role", ["STUDENT", "ADMIN"]);
 /**
  * User State Enum
  * - NORMAL: 정상 수강 중인 수강생
- * - GRADUATE: 졸업 처리된 수강생
+ * - GRADUATE: 수강 종료 처리된 수강생
  * - DELETED: 탈퇴 처리된 수강생
  */
 export const userStateEnum = pgEnum("user_state", [

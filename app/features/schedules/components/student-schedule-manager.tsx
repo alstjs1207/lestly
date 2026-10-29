@@ -95,7 +95,7 @@ export function StudentScheduleManager({
                     ? parsedPolicy.data
                     : DEFAULT_CANCELLATION_POLICY,
                 )
-              : "취소 가능 기한이 지났어요. 변경이 필요하면 학원에 문의해주세요."}
+              : "취소 가능 기한이 지났어요. 변경이 필요하면 수업 운영자에게 문의해주세요."}
         </p>
         {error && (
           <p role="alert" className="text-destructive text-sm">

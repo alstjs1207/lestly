@@ -27,7 +27,10 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   if (student.state !== "NORMAL")
     return data(
-      { success: false, error: "재원생에게만 초대 링크를 발급할 수 있습니다." },
+      {
+        success: false,
+        error: "수강 중인 수강생에게만 초대 링크를 발급할 수 있습니다.",
+      },
       { status: 409 },
     );
 

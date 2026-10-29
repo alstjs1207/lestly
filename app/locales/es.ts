@@ -41,7 +41,7 @@ const es: Translation = {
       organizationDashboard: "Panel de organizacion",
       totalStudents: "Total de Estudiantes",
       activeStudents: "Estudiantes Activos",
-      graduated: "Graduados",
+      graduated: "Inscripción finalizada",
       todaysClasses: "Clases de Hoy",
       allStudents: "Todos los estudiantes",
       currentlyEnrolled: "Actualmente inscritos",

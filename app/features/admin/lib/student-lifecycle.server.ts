@@ -55,7 +55,7 @@ export function studentLifecycleFailure(error: unknown) {
   if (e?.message === "course_period_shared_profile")
     return {
       status: 409,
-      error: "여러 학원에 연결된 수강생의 수강 기간은 별도 확인이 필요합니다.",
+      error: "여러 조직에 연결된 수강생의 수강 기간은 별도 확인이 필요합니다.",
     };
   return null;
 }
