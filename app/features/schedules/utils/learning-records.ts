@@ -5,6 +5,7 @@ export interface LearningSchedule {
   start_time: string;
   end_time: string;
   attendance_status?: string;
+  cancellation_policy?: unknown;
   program: {
     program_id: number;
     title: string;

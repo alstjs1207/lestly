@@ -12,6 +12,7 @@ import {
   parseDisabledBookingTimes,
 } from "../app/features/app-settings/booking-times.ts";
 import * as bookingWindow from "../app/features/app-settings/booking-window.ts";
+import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
 import { desktopBookingSlots } from "../app/features/schedules/utils/desktop-booking.ts";
 import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
 import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
@@ -105,6 +106,7 @@ test("settings route validates all choices before one tenant-scoped atomic write
   }>(
     new URL("../app/features/admin/api/settings/update.tsx", import.meta.url),
     {
+      "../../../app-settings/cancellation-policy": cancellation,
       "../../../app-settings/booking-policy": bookingPolicy,
       "../../../app-settings/booking-policy.server": {
         getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
@@ -184,7 +186,7 @@ test("settings route validates all choices before one tenant-scoped atomic write
     "/admin/settings",
   );
   assert.equal(writes.length, 1);
-  assert.equal(writes[0].rows.length, 5);
+  assert.equal(writes[0].rows.length, 6);
   assert.ok(
     writes[0].rows.every((row: any) => row.organization_id === "org-a"),
   );
@@ -208,6 +210,7 @@ test("availability failures retain restrictions and settings query failures neve
       import.meta.url,
     ),
     {
+      "../../../app-settings/cancellation-policy": cancellation,
       "../../../app-settings/booking-policy": bookingPolicy,
       "../../../app-settings/booking-policy.server": {
         getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,

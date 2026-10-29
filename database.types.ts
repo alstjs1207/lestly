@@ -895,6 +895,7 @@ export type Database = {
           attendance_version: number
           attendance_updated_at: string | null
           attendance_updated_by: string | null
+          cancellation_policy: Json
           cancelled_at: string | null
           created_at: string
           end_time: string
@@ -913,6 +914,7 @@ export type Database = {
           attendance_version?: number
           attendance_updated_at?: string | null
           attendance_updated_by?: string | null
+          cancellation_policy?: Json
           cancelled_at?: string | null
           created_at?: string
           end_time: string
@@ -931,6 +933,7 @@ export type Database = {
           attendance_version?: number
           attendance_updated_at?: string | null
           attendance_updated_by?: string | null
+          cancellation_policy?: Json
           cancelled_at?: string | null
           created_at?: string
           end_time?: string
@@ -1122,6 +1125,11 @@ export type Database = {
       can_deliver_student_notification: { Args: { p_notification_id: number }; Returns: boolean }
       get_student_change_impact: { Args: { p_organization_id: string; p_student_id: string; p_state: "NORMAL" | "GRADUATE" | "DELETED"; p_end: string | null }; Returns: Json }
       set_student_state: { Args: { p_organization_id: string; p_student_id: string; p_state: "NORMAL" | "GRADUATE" | "DELETED"; p_confirmation?: string | null }; Returns: undefined }
+      book_student_schedule_with_policy: {
+        Args: { p_organization_id: string; p_program_id: number | null; p_start_time: string; p_end_time: string; p_expected_cancellation_policy: Json; p_accept_no_cancellation: boolean }
+        Returns: number
+      }
+      cancellation_allowed: { Args: { p_start: string; p_policy: Json; p_now: string }; Returns: boolean }
       book_student_schedule: {
         Args: { p_organization_id: string; p_program_id: number | null; p_start_time: string; p_end_time: string }
         Returns: number

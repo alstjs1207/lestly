@@ -10,6 +10,7 @@ import {
   bookingWindowDescription,
   bookingWindowRange,
 } from "../../app-settings/booking-window";
+import { cancellationPolicyDescription } from "../../app-settings/cancellation-policy";
 import { toKST } from "../utils/kst";
 import {
   type LearningSchedule,
@@ -286,6 +287,12 @@ export function StudentSchedulesView({
           <p>
             {bookingWindowDescription(data.bookingPolicy?.bookingWindow)} 지난
             수업과 미리 등록된 수업은 월을 바꿔 확인할 수 있어요.
+          </p>
+          <p>
+            {cancellationPolicyDescription(
+              data.bookingPolicy?.cancellationPolicy,
+            )}{" "}
+            기존 예약은 수업 상세의 취소 규칙을 따라요.
           </p>
           {(data.classStartDate || data.classEndDate) && (
             <p>

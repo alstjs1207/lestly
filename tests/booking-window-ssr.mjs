@@ -67,9 +67,24 @@ assert.match(monthly, /name="bookingOpeningDay"/);
 assert.doesNotMatch(monthly, /name="bookingDaysAhead"/);
 assert.match(monthly, /2026-12-31/);
 assert.match(monthly, /말일에/);
+const hoursMarkup = await render(
+  "features/admin/screens/settings",
+  "/admin/settings",
+  {
+    ...settings,
+    bookingPolicy: {
+      ...policy,
+      cancellationPolicy: { mode: "hours_before", hours: 24 },
+    },
+  },
+);
+assert.match(hoursMarkup, /name="cancellationHours"/);
+assert.match(hoursMarkup, /value="24"/);
+assert.doesNotMatch(monthly, /name="cancellationHours"/);
 const rollingPolicy = {
   ...policy,
   bookingWindow: { mode: "rolling", daysAhead: 14 },
+  cancellationPolicy: { mode: "hours_before", hours: 3 },
 };
 const rolling = await render(
   "features/admin/screens/settings",
@@ -117,6 +132,7 @@ for (const [id, path] of [
     student,
   );
   assert.match(markup, /14일 뒤까지/);
+  assert.match(markup, /시작 3시간 전까지/);
   assert.doesNotMatch(markup, /매월 25일/);
   assert.match(markup, /범위 밖 기존 예약/);
 }

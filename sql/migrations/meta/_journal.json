@@ -246,6 +246,13 @@
       "when": 1793404800002,
       "tag": "0034_booking_window",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793404800003,
+      "tag": "0035_cancellation_policy",
+      "breakpoints": true
     }
   ]
 }

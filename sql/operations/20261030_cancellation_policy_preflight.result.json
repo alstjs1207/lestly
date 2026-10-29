@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-29T16:46:22.113Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "migration": "0035_cancellation_policy",
+  "hash": "33e0887080890e4a303c40c2c1070f13824f8375c357c6c791c53f8e8f30937a",
+  "readOnly": true,
+  "alreadyApplied": false,
+  "applied": false,
+  "backupVerified": false,
+  "businessDataUnchanged": true,
+  "counts": {
+    "attendance_events": 0,
+    "in_app_notifications": 10,
+    "instructors": 3,
+    "notifications": 575,
+    "organization_members": 35,
+    "organization_student_types": 14,
+    "organization_templates": 11,
+    "organizations": 7,
+    "payments": 0,
+    "profiles": 36,
+    "programs": 5,
+    "push_deliveries": 5,
+    "push_events": 3,
+    "push_subscriptions": 2,
+    "schedules": 1112,
+    "settings": 14,
+    "student_account_access": 0,
+    "student_invites": 0,
+    "super_templates": 6,
+    "test_send_logs": 4
+  }
+}

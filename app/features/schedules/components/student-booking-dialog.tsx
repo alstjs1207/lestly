@@ -17,6 +17,10 @@ import {
   formatDuration,
 } from "../../app-settings/booking-policy";
 import {
+  canCancelWithPolicy,
+  cancellationPolicyDescription,
+} from "../../app-settings/cancellation-policy";
+import {
   type BookingAvailability,
   desktopBookingSlots,
 } from "../utils/desktop-booking";
@@ -57,6 +61,8 @@ export function StudentBookingDialog({
   );
   const [program, setProgram] = useState("");
   const [error, setError] = useState("");
+  const [acceptNoCancellation, setAcceptNoCancellation] = useState(false);
+  const [refresh, setRefresh] = useState(0);
   const [now, setNow] = useState(() => new Date());
   const hours = (
     DURATION_OPTIONS.find((d) => d.value === duration) ??
@@ -110,16 +116,19 @@ export function StudentBookingDialog({
       availability.load(
         `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
       );
-  }, [date, hours, today]);
+  }, [date, hours, today, refresh]);
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
     if (fetcher.data.success) {
       onClose();
       onBooked();
-    } else
+    } else {
+      setTime("");
+      setRefresh((value) => value + 1);
       setError(
         fetcher.data.error || "예약하지 못했어요. 날짜와 시간을 확인해주세요.",
       );
+    }
   }, [fetcher.data, fetcher.state]);
   const visibleSlots = date
     ? desktopBookingSlots(
@@ -138,6 +147,10 @@ export function StudentBookingDialog({
       : "이 시작 시간은 현재 신청할 수 없어요.");
   const selectedReason = time ? reasonFor(time) : null;
   const start = date && time ? new Date(`${date}T${time}:00+09:00`) : null;
+  const noCancellation =
+    !!start && !canCancelWithPolicy(start, policy.cancellationPolicy, now);
+  const acceptanceKey = `${date}:${time}:${JSON.stringify(policy.cancellationPolicy)}`;
+  useEffect(() => setAcceptNoCancellation(false), [acceptanceKey]);
   const end = start ? new Date(start.getTime() + hours * 3_600_000) : null;
   return (
     <Dialog
@@ -318,6 +331,24 @@ export function StudentBookingDialog({
             {error || selectedReason}
           </p>
         )}
+        <p className="text-muted-foreground text-sm">
+          {cancellationPolicyDescription(policy.cancellationPolicy)}
+        </p>
+        {noCancellation && (
+          <label className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+            <input
+              type="checkbox"
+              checked={acceptNoCancellation}
+              disabled={busy}
+              onChange={(e) => setAcceptNoCancellation(e.target.checked)}
+              className="mt-1 shrink-0"
+            />
+            <span>
+              이 수업은 이미 취소 기한이 지났어요. 예약 후 직접 취소할 수
+              없으며, 변경은 학원에 문의해야 함을 확인했어요.
+            </span>
+          </label>
+        )}
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={onClose}>
             닫기
@@ -328,17 +359,32 @@ export function StudentBookingDialog({
               !time ||
               !!dateReason ||
               !!selectedReason ||
+              (noCancellation && !acceptNoCancellation) ||
               availabilityPending ||
               (programs.length > 0 && !program)
             }
             onClick={() => {
-              if (!date || !time || busy || reasonFor(time)) return;
+              if (
+                !date ||
+                !time ||
+                busy ||
+                reasonFor(time) ||
+                availabilityPending ||
+                dateReason ||
+                (noCancellation && !acceptNoCancellation) ||
+                (programs.length > 0 && !program)
+              )
+                return;
               setError("");
               fetcher.submit(
                 {
                   date,
                   start_time: time,
                   duration_minutes: String(Math.round(hours * 60)),
+                  cancellation_policy: JSON.stringify(
+                    policy.cancellationPolicy,
+                  ),
+                  accept_no_cancellation: acceptNoCancellation ? "1" : "0",
                   ...(program ? { program_id: program } : {}),
                 },
                 { method: "post", action: "/api/schedules/create" },

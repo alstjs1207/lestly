@@ -10,6 +10,10 @@ import {
   formatDuration,
 } from "../../app-settings/booking-policy";
 import {
+  canCancelWithPolicy,
+  cancellationPolicyDescription,
+} from "../../app-settings/cancellation-policy";
+import {
   type BookingAvailability,
   desktopBookingSlots,
 } from "../utils/desktop-booking";
@@ -63,6 +67,7 @@ export function StudentBookingPanel({
     programs.length === 1 ? String(programs[0].program_id) : "",
   );
   const [error, setError] = useState("");
+  const [acceptNoCancellation, setAcceptNoCancellation] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [confirmed, setConfirmed] = useState<{
     start: Date;
@@ -127,6 +132,10 @@ export function StudentBookingPanel({
     (p) => String(p.program_id) === program,
   );
   const start = time ? new Date(`${date}T${time}:00+09:00`) : null;
+  const noCancellation =
+    !!start && !canCancelWithPolicy(start, policy.cancellationPolicy, now);
+  const acceptanceKey = `${date}:${time}:${JSON.stringify(policy.cancellationPolicy)}`;
+  useEffect(() => setAcceptNoCancellation(false), [acceptanceKey]);
   const end = start ? new Date(start.getTime() + hours * 3_600_000) : null;
   const summary =
     confirmed ??
@@ -393,6 +402,21 @@ export function StudentBookingPanel({
               가능 시간 다시 불러오기
             </Button>
           )}
+        {!confirmed && noCancellation && (
+          <label className="mb-3 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+            <input
+              type="checkbox"
+              checked={acceptNoCancellation}
+              disabled={busy}
+              onChange={(e) => setAcceptNoCancellation(e.target.checked)}
+              className="mt-1 shrink-0"
+            />
+            <span>
+              이 수업은 이미 취소 기한이 지났어요. 예약 후 직접 취소할 수
+              없으며, 변경은 학원에 문의해야 함을 확인했어요.
+            </span>
+          </label>
+        )}
         {confirmed ? (
           <Button
             variant="outline"
@@ -414,6 +438,7 @@ export function StudentBookingPanel({
               !!dateReason ||
               !time ||
               !!selectedReason ||
+              (noCancellation && !acceptNoCancellation) ||
               (programs.length > 0 && !selectedProgram)
             }
             onClick={() => {
@@ -424,6 +449,7 @@ export function StudentBookingPanel({
                 pending ||
                 dateReason ||
                 selectedReason ||
+                (noCancellation && !acceptNoCancellation) ||
                 (programs.length > 0 && !selectedProgram)
               )
                 return;
@@ -439,6 +465,10 @@ export function StudentBookingPanel({
                   date,
                   start_time: time,
                   duration_minutes: String(Math.round(hours * 60)),
+                  cancellation_policy: JSON.stringify(
+                    policy.cancellationPolicy,
+                  ),
+                  accept_no_cancellation: acceptNoCancellation ? "1" : "0",
                   ...(selectedProgram ? { program_id: program } : {}),
                 },
                 { method: "post", action: "/api/schedules/create" },
@@ -451,7 +481,7 @@ export function StudentBookingPanel({
           </Button>
         )}
         <p className="text-muted-foreground text-center text-xs">
-          수업 전날까지 취소할 수 있어요.
+          {cancellationPolicyDescription(policy.cancellationPolicy)}
         </p>
       </div>
     </section>

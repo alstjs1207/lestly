@@ -11,6 +11,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgPolicy,
   pgTable,
   text,
@@ -49,6 +50,9 @@ export const schedules = pgTable(
     student_id: uuid("student_id")
       .notNull()
       .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    cancellation_policy: jsonb("cancellation_policy")
+      .notNull()
+      .default(sql`'{"mode":"previous_day"}'::jsonb`),
     start_time: timestamp("start_time", { withTimezone: true }).notNull(),
     end_time: timestamp("end_time", { withTimezone: true }).notNull(),
     // rrule.js format for recurring schedules (e.g., "FREQ=WEEKLY;BYDAY=MO")
@@ -122,12 +126,12 @@ export const schedules = pgTable(
         OR (${table.end_time} <= now() AND ${table.organization_id} = ANY ((SELECT public.get_account_org_ids('STUDENT', ARRAY['GRADUATE']::public.user_state[]))::uuid[]))`,
     }),
     // Student creation uses book_student_schedule; no direct INSERT policy.
-    // RLS Policy: Students can delete their own schedules (not on the same day)
+    // Students cancel using the immutable rule saved with each reservation.
     pgPolicy("student-delete-own-schedules-policy", {
       for: "delete",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`${table.student_id} = public.get_current_profile_id() AND public.is_org_member(${table.organization_id}) AND (${table.start_time} AT TIME ZONE 'Asia/Seoul')::date > (now() AT TIME ZONE 'Asia/Seoul')::date`,
+      using: sql`${table.student_id} = public.get_current_profile_id() AND ${table.organization_id} = ANY ((SELECT public.get_account_org_ids('STUDENT', ARRAY['NORMAL']::public.user_state[]))::uuid[]) AND ${table.cancelled_at} IS NULL AND public.cancellation_allowed(${table.start_time}, ${table.cancellation_policy}, clock_timestamp())`,
     }),
     // RLS Policy: ADMIN can view schedules in their organization
     pgPolicy("admin-select-org-schedules-policy", {
