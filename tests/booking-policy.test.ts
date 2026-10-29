@@ -87,7 +87,7 @@ test("only absent policy uses legacy defaults; read errors and malformed saved p
   const q: any = {
     select: () => q,
     eq: () => q,
-    maybeSingle: async () => response,
+    in: async () => response,
   };
   const client: any = { from: () => q };
   assert.deepEqual(
@@ -100,7 +100,12 @@ test("only absent policy uses legacy defaults; read errors and malformed saved p
     /read_failed/,
   );
   response = {
-    data: { setting_value: { ...policy, startIntervalMinutes: 0 } },
+    data: [
+      {
+        setting_key: "booking_policy",
+        setting_value: { ...policy, startIntervalMinutes: 0 },
+      },
+    ],
     error: null,
   };
   await assert.rejects(getBookingPolicy(client, { organizationId: "org-a" }));
@@ -173,4 +178,36 @@ test("calendar bounds keep legacy out-of-range and overnight lessons visible", (
   assert.equal(bounds.slotMinTime, "00:00");
   assert.equal(bounds.slotMaxTime, "24:00");
   assert.deepEqual(bounds.slotDuration, { minutes: 50 });
+});
+
+test("resolved policy reads the separate booking window while preserving legacy clock JSON and rejecting corrupt window data", async () => {
+  const { bookingWindow: ignored, ...legacy } = DEFAULT_BOOKING_POLICY;
+  let rows: any[] = [
+    { setting_key: "booking_policy", setting_value: legacy },
+    {
+      setting_key: "booking_window",
+      setting_value: { mode: "rolling", daysAhead: 14 },
+    },
+  ];
+  const query: any = {
+    select: () => query,
+    eq: (key: string, value: string) => {
+      assert.equal(key, "organization_id");
+      assert.equal(value, "org-a");
+      return query;
+    },
+    in: async (_: string, keys: string[]) => {
+      assert.deepEqual(keys, ["booking_policy", "booking_window"]);
+      return { data: rows, error: null };
+    },
+  };
+  const resolved = await getBookingPolicy({ from: () => query } as any, {
+    organizationId: "org-a",
+  });
+  assert.deepEqual(resolved.bookingWindow, { mode: "rolling", daysAhead: 14 });
+  assert.deepEqual(rows[0].setting_value, legacy);
+  rows[1].setting_value = null;
+  await assert.rejects(
+    getBookingPolicy({ from: () => query } as any, { organizationId: "org-a" }),
+  );
 });

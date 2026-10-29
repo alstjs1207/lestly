@@ -254,6 +254,9 @@ status: pending (상담 대기)
 
 예약 규칙 공통화 Phase 3은 분 단위 수업 길이·시작 범위·간격·접수 마감과 최대 동시 인원 계산을 지원한다.
 실제 반영은 `0032_booking_policy.sql` → `0033_booking_policy_fresh_snapshot.sql` → 새 앱 순서이며 구현·검증 상태는 [공통화 계획](docs/service-generalization-plan.md#phase-3)을 따른다.
+예약 기간 공통화 Phase 4는 **월별 오픈** 또는 **오늘 기준 N일** 중 하나를 조직별로 선택한다.
+`0034_booking_window.sql` → 새 앱 순서로 적용하며, 자세한 설정·예시는 [예약 오픈 방식](docs/student-booking-window.md)을 따른다.
+
 휴무일 표시는 예약 화면에 반영되고, 예약 RPC 및 직접 INSERT에도 DB 검증이
 적용된다. 로컬 검증: `npm run test:unit`, `npm run test:db`.
 

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  DEFAULT_BOOKING_WINDOW,
+  bookingWindowSchema,
+} from "./booking-window.ts";
+
 export const BOOKING_POLICY_KEY = "booking_policy";
 const clock = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
 export const bookingPolicySchema = z
@@ -10,6 +15,8 @@ export const bookingPolicySchema = z
     lastStart: clock,
     startIntervalMinutes: z.number().int().min(1).max(1440),
     leadMinutes: z.number().int().min(0).max(43200),
+    // Resolved for consumers; persisted separately as settings.booking_window.
+    bookingWindow: bookingWindowSchema.default(DEFAULT_BOOKING_WINDOW),
   })
   .strict()
   .superRefine((p, ctx) => {
@@ -36,6 +43,7 @@ export const DEFAULT_BOOKING_POLICY: BookingPolicy = {
   lastStart: "20:00",
   startIntervalMinutes: 30,
   leadMinutes: 0,
+  bookingWindow: DEFAULT_BOOKING_WINDOW,
 };
 export function parseBookingPolicy(value: unknown): BookingPolicy {
   return bookingPolicySchema.parse(value);

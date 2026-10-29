@@ -87,16 +87,21 @@ export function StudentBookingPanel({
   const submitting = fetcher.state !== "idle";
   const busy = submitting || disabled;
   const requestDateReason = canBook
-    ? bookingDateReason(date, course, now)
+    ? bookingDateReason(date, { ...course, bookingPolicy: policy }, now)
     : "예약 가능한 수강생 계정인지 학원에 확인해주세요.";
   const key = `${date}:${hours}`;
+  const today = toKSTDateString(now);
   const dateReason =
     requestDateReason ||
     bookingDateReason(
       date,
       availability.data?.key === key && availability.data.disabledDays
-        ? { ...course, disabledBookingDays: availability.data.disabledDays }
-        : course,
+        ? {
+            ...course,
+            bookingPolicy: policy,
+            disabledBookingDays: availability.data.disabledDays,
+          }
+        : { ...course, bookingPolicy: policy },
       now,
     );
   const pending =
@@ -132,11 +137,11 @@ export function StudentBookingPanel({
     summary && toKSTDateString(summary.end) !== toKSTDateString(summary.start);
 
   useEffect(() => {
-    if (!requestDateReason)
+    if (canBook)
       availability.load(
         `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
       );
-  }, [date, hours, requestDateReason, refresh, refreshKey]);
+  }, [date, hours, canBook, refresh, refreshKey, today]);
   useEffect(() => {
     onBusyChange(submitting);
     return () => onBusyChange(false);

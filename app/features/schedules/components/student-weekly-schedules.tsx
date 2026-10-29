@@ -8,6 +8,10 @@ import { Link, useNavigation } from "react-router";
 import { Button } from "~/core/components/ui/button";
 import { isBookingDayDisabled } from "~/features/app-settings/booking-days";
 
+import {
+  bookingWindowDescription,
+  bookingWindowRange,
+} from "../../app-settings/booking-window";
 import { toKSTDateString } from "../utils/kst";
 import {
   type LearningSchedule,
@@ -89,6 +93,7 @@ export function StudentWeeklySchedules({
   const busy = submitting || navigating;
   const { schedules, programs, selectedDate: date } = data;
   const today = toKSTDateString(now);
+  const allowed = bookingWindowRange(data.bookingPolicy?.bookingWindow, now);
   const dates = studentWeekDates(date);
   const currentWeek = studentWeekDates(today)[0] === dates[0];
   const nextWeek = studentWeekDates(shiftStudentDate(today, 7))[0] === dates[0];
@@ -335,12 +340,12 @@ export function StudentWeeklySchedules({
         <div className="mt-3 space-y-2">
           <p>
             신규 예약 가능 기간 ·{" "}
-            {formatLearningDate(data.allowedStartDate, true)} ~{" "}
-            {formatLearningDate(data.allowedEndDate, true)}
+            {formatLearningDate(allowed.startDate.toISOString(), true)} ~{" "}
+            {formatLearningDate(allowed.endDate.toISOString(), true)}
           </p>
           <p>
-            다음 달 신규 예약은 매월 25일에 열려요. 수업 전날까지 취소할 수
-            있어요.
+            {bookingWindowDescription(data.bookingPolicy?.bookingWindow)} 수업
+            전날까지 취소할 수 있어요.
           </p>
           {(data.classStartDate || data.classEndDate) && (
             <p>

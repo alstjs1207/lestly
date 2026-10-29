@@ -41,7 +41,6 @@ export async function loadStudentCalendar(
         month: Number(selectedDate.slice(5, 7)),
       };
   const range = getKSTMonthRange(year, month);
-  const allowed = getStudentAllowedDateRange();
   const { data: membership, error } = await client
     .from("organization_members")
     .select("organization_id")
@@ -85,6 +84,7 @@ export async function loadStudentCalendar(
         : Promise.resolve(DEFAULT_BOOKING_POLICY),
     ]);
   if (upcoming.error) throw upcoming.error;
+  const allowed = getStudentAllowedDateRange(bookingPolicy, now);
   const requestedSchedule = schedules.find(
     (schedule) => String(schedule.schedule_id) === params.get("schedule"),
   );

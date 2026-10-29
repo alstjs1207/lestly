@@ -17,6 +17,7 @@ const policy = {
   lastStart: "20:00",
   startIntervalMinutes: 50,
   leadMinutes: 60,
+  bookingWindow: { mode: "monthly", openingDay: 25 },
 };
 async function render(id, path, fixture) {
   const route = build.routes[id];
@@ -45,6 +46,7 @@ const settings = await render(
   "features/admin/screens/settings",
   "/admin/settings",
   {
+    now: "2026-10-29T00:00:00Z",
     bookingPolicy: policy,
     studentTypes: [
       {

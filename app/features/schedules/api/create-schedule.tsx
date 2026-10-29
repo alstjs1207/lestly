@@ -91,9 +91,13 @@ export async function action({ request }: Route.ActionArgs) {
   }
   // Parse date and time (use parseDateString to avoid UTC timezone issue)
   const date = parseDateString(dateStr);
+  const now = new Date();
 
   // Check if student can register for this date
-  if (toKSTDateString(date) !== dateStr || !canStudentRegisterSchedule(date)) {
+  if (
+    toKSTDateString(date) !== dateStr ||
+    !canStudentRegisterSchedule(date, policy, now)
+  ) {
     return data(
       { success: false, error: "해당 날짜에는 스케쥴을 등록할 수 없습니다." },
       { status: 400 },
@@ -104,10 +108,7 @@ export async function action({ request }: Route.ActionArgs) {
   const endTime = calculateEndTime(startTime, minutes / 60);
 
   // Check if schedule is in the past
-  if (
-    startTime <= new Date() ||
-    +startTime < Date.now() + policy.leadMinutes * 60_000
-  ) {
+  if (startTime <= now || +startTime < +now + policy.leadMinutes * 60_000) {
     return data(
       {
         success: false,

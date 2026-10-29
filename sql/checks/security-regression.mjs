@@ -16,6 +16,10 @@ import {
   checkBookingPolicy,
   checkBookingPolicyMigration,
 } from "./booking-policy.mjs";
+import {
+  checkBookingWindow,
+  checkBookingWindowMigration,
+} from "./booking-window.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
 import {
@@ -211,6 +215,7 @@ try {
     if (entry.idx === 29) await checkStudentMetadataMigration(db, sql);
     if (entry.idx === 30) await checkStudentTypePolicyMigration(db, sql);
     if (entry.idx === 32) await checkBookingPolicyMigration(db, sql);
+    if (entry.idx === 34) await checkBookingWindowMigration(db, sql);
     sql = sql.replace(
       /^CREATE EXTENSION IF NOT EXISTS pg_(cron|net).*;$/gm,
       "",
@@ -2037,6 +2042,16 @@ try {
     adminB,
     studentA,
     studentB,
+  });
+  await checkBookingWindow({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    studentA,
   });
   await checkAttendance({
     db,

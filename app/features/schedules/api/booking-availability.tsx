@@ -12,6 +12,7 @@ import {
 import { getUserProfile } from "~/features/users/queries";
 
 import { getBookingPolicy } from "../../app-settings/booking-policy.server";
+import { isBookingDateInWindow } from "../../app-settings/booking-window";
 import { toKSTDateString } from "../utils/kst";
 import { parseDateString } from "../utils/student-schedule-rules";
 
@@ -51,6 +52,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     getDisabledBookingTimes(client, { organizationId: member.organization_id }),
     getDisabledBookingDays(client, { organizationId: member.organization_id }),
   ]);
+  // Still return the newest policy when a previously open date has closed,
+  // so open booking panels can explain the updated range and block submission.
+  if (!isBookingDateInWindow(date, bookingPolicy.bookingWindow, new Date()))
+    return data(
+      { key, slots: [], disabledTimes, disabledDays, bookingPolicy },
+      { headers },
+    );
   const { data: slots, error: availabilityError } = await client.rpc(
     "get_student_booking_availability_minutes",
     {

@@ -29,9 +29,15 @@ import {
   DEFAULT_BOOKING_POLICY,
   parseBookingPolicy,
 } from "../../app-settings/booking-policy";
+import {
+  BOOKING_WINDOW_KEY,
+  DEFAULT_BOOKING_WINDOW,
+  bookingWindowSchema,
+} from "../../app-settings/booking-window";
 import { getStudentTypes } from "../../organizations/student-types.server";
 import { BookingDaySettings } from "../components/booking-day-settings";
 import { BookingPolicyFields } from "../components/booking-policy-fields";
+import { BookingWindowFields } from "../components/booking-window-fields";
 import { StudentTypeSettings } from "../components/student-type-settings";
 import { requireAdminRole } from "../guards.server";
 
@@ -70,12 +76,21 @@ export async function loader({ request }: Route.LoaderArgs) {
       )
     : [];
   return {
-    bookingPolicy: settings.some((s) => s.setting_key === BOOKING_POLICY_KEY)
-      ? parseBookingPolicy(
-          settings.find((s) => s.setting_key === BOOKING_POLICY_KEY)!
-            .setting_value,
-        )
-      : DEFAULT_BOOKING_POLICY,
+    now: new Date().toISOString(),
+    bookingPolicy: {
+      ...(settings.some((s) => s.setting_key === BOOKING_POLICY_KEY)
+        ? parseBookingPolicy(
+            settings.find((s) => s.setting_key === BOOKING_POLICY_KEY)!
+              .setting_value,
+          )
+        : DEFAULT_BOOKING_POLICY),
+      bookingWindow: settings.some((s) => s.setting_key === BOOKING_WINDOW_KEY)
+        ? bookingWindowSchema.parse(
+            settings.find((s) => s.setting_key === BOOKING_WINDOW_KEY)!
+              .setting_value,
+          )
+        : DEFAULT_BOOKING_WINDOW,
+    },
     studentTypes,
     disabledBookingDays,
     disabledBookingTimes,
@@ -137,6 +152,12 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
                 </p>
               </div>
             </div>
+            <BookingWindowFields
+              key={JSON.stringify(loaderData.bookingPolicy.bookingWindow)}
+              window={loaderData.bookingPolicy.bookingWindow}
+              now={loaderData.now}
+              busy={isSubmitting}
+            />
             <BookingPolicyFields
               key={JSON.stringify([
                 loaderData.bookingPolicy,
