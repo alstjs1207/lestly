@@ -4,7 +4,11 @@ import {
   DEFAULT_BOOKING_POLICY,
   bookingStartTimes,
 } from "../../app-settings/booking-policy.ts";
-import { fromKST, toKST, toKSTDateString } from "./kst.ts";
+import {
+  bookingWindowDescription,
+  isBookingDateInWindow,
+} from "../../app-settings/booking-window.ts";
+import { toKSTDateString } from "./kst.ts";
 
 export interface CourseDates {
   classStartDate: string | null;
@@ -18,18 +22,15 @@ export function bookingDateReason(
   now = new Date(),
 ): string | null {
   const today = toKSTDateString(now);
-  const kst = toKST(now);
-  const lastDay = toKSTDateString(
-    fromKST(kst.year, kst.month + (kst.day >= 25 ? 2 : 1), 0),
-  );
   if (date < today) return "지난 날짜에는 수업을 예약할 수 없어요.";
   if (
     (course.classStartDate && date < course.classStartDate) ||
     (course.classEndDate && date > course.classEndDate)
   )
     return "수강 기간에 포함된 날짜를 선택해주세요.";
-  if (date > lastDay)
-    return "다음 달 신규 예약은 매월 25일에 열려요. 이미 등록된 일정은 확인할 수 있어요.";
+  const window = (course.bookingPolicy ?? DEFAULT_BOOKING_POLICY).bookingWindow;
+  if (!isBookingDateInWindow(date, window, now))
+    return `${bookingWindowDescription(window)} 이미 등록된 일정은 확인할 수 있어요.`;
   if (isBookingDayDisabled(date, course.disabledBookingDays ?? []))
     return "이 요일은 휴무일로 신규 예약을 받지 않아요. 다른 날짜를 선택해주세요.";
   return null;

@@ -20,6 +20,7 @@ import {
   type BookingAvailability,
   desktopBookingSlots,
 } from "../utils/desktop-booking";
+import { toKSTDateString } from "../utils/kst";
 import {
   type LearningSchedule,
   formatLearningDate,
@@ -71,6 +72,7 @@ export function StudentBookingDialog({
   }, [JSON.stringify(policy)]);
   const busy = fetcher.state !== "idle";
   const key = `${date}:${hours}`;
+  const today = toKSTDateString(now);
   const slots = availability.data?.key === key ? availability.data.slots : null;
   const availabilityPending =
     availability.state !== "idle" || (!!date && availability.data?.key !== key);
@@ -86,23 +88,29 @@ export function StudentBookingDialog({
     const timer = setInterval(() => setNow(new Date()), 15_000);
     return () => clearInterval(timer);
   }, [date]);
-  const requestDateReason = date ? bookingDateReason(date, course, now) : null;
+  const requestDateReason = date
+    ? bookingDateReason(date, { ...course, bookingPolicy: policy }, now)
+    : null;
   const dateReason = date
     ? requestDateReason ||
       bookingDateReason(
         date,
         availability.data?.key === key && availability.data.disabledDays
-          ? { ...course, disabledBookingDays: availability.data.disabledDays }
-          : course,
+          ? {
+              ...course,
+              bookingPolicy: policy,
+              disabledBookingDays: availability.data.disabledDays,
+            }
+          : { ...course, bookingPolicy: policy },
         now,
       )
     : null;
   useEffect(() => {
-    if (date && !requestDateReason)
+    if (date)
       availability.load(
         `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
       );
-  }, [date, hours, requestDateReason]);
+  }, [date, hours, today]);
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
     if (fetcher.data.success) {

@@ -12,6 +12,10 @@ import { Link } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 
+import {
+  type BookingWindow,
+  bookingWindowDescription,
+} from "../../app-settings/booking-window";
 import { MobileDayEvents } from "./mobile-day-events";
 import { MobileMonthGrid } from "./mobile-month-grid";
 
@@ -43,6 +47,7 @@ interface MobileCalendarProps {
   displayedMonth?: Date;
   onMonthChange?: (date: Date) => void;
   bookingDisabledReason?: string | null;
+  bookingWindow?: BookingWindow;
   allowedStartDate: string;
   allowedEndDate: string;
 }
@@ -56,6 +61,7 @@ export function MobileCalendar({
   onDateSelect,
   onEventClick,
   onAddClick,
+  bookingWindow,
   allowedStartDate,
   allowedEndDate,
 }: MobileCalendarProps) {
@@ -177,7 +183,7 @@ export function MobileCalendar({
             {new Date(allowedEndDate).toLocaleDateString("ko-KR")}
           </p>
           <p className="text-muted-foreground mt-2 text-xs">
-            * 매월 25일 이후부터 다음 달 일정을 등록할 수 있습니다.
+            {bookingWindowDescription(bookingWindow)}
           </p>
         </div>
       )}

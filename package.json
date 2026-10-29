@@ -27,7 +27,8 @@
     "postinstall": "node scripts/harden-braces.mjs",
     "verify:worker": "node scripts/verify-worker.mjs",
     "verify:node": "node scripts/verify-node.mjs",
-    "test:booking-policy:ssr": "node tests/booking-policy-ssr.mjs"
+    "test:booking-policy:ssr": "node tests/booking-policy-ssr.mjs",
+    "test:booking-window:ssr": "node tests/booking-window-ssr.mjs"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",

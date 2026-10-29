@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-29T14:56:59.905Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "checks": [
+    "booking window SQL and browser date boundaries agree at Korean midnight, month-end, leap-year and year-end",
+    "booking-window settings reject mixed modes, invalid bounds, missing values and foreign/student writes",
+    "invalid window rolls back a whole settings save and preserves the six-field clock policy",
+    "rolling final-day discovery and booking agree and reject tomorrow outside a today-only window",
+    "policy shortening preserves and exposes existing reservations and admins retain direct registration",
+    "rolling windows still enforce course end dates, lead time and the current policy on each write",
+    "authenticated booking waits for settings save and enforces the newly committed shorter window"
+  ],
+  "passed": 7,
+  "allFixturesRemoved": true,
+  "businessDataUnchanged": true
+}

@@ -11,6 +11,7 @@ import {
   disabledBookingTimesFromForm,
   parseDisabledBookingTimes,
 } from "../app/features/app-settings/booking-times.ts";
+import * as bookingWindow from "../app/features/app-settings/booking-window.ts";
 import { desktopBookingSlots } from "../app/features/schedules/utils/desktop-booking.ts";
 import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
 import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
@@ -105,6 +106,11 @@ test("settings route validates all choices before one tenant-scoped atomic write
     new URL("../app/features/admin/api/settings/update.tsx", import.meta.url),
     {
       "../../../app-settings/booking-policy": bookingPolicy,
+      "../../../app-settings/booking-policy.server": {
+        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      },
+      "../../../app-settings/booking-window": bookingWindow,
+      "../../app-settings/booking-window": bookingWindow,
       "../../app-settings/booking-policy.server": {
         getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
       },
@@ -178,7 +184,7 @@ test("settings route validates all choices before one tenant-scoped atomic write
     "/admin/settings",
   );
   assert.equal(writes.length, 1);
-  assert.equal(writes[0].rows.length, 4);
+  assert.equal(writes[0].rows.length, 5);
   assert.ok(
     writes[0].rows.every((row: any) => row.organization_id === "org-a"),
   );
@@ -203,6 +209,11 @@ test("availability failures retain restrictions and settings query failures neve
     ),
     {
       "../../../app-settings/booking-policy": bookingPolicy,
+      "../../../app-settings/booking-policy.server": {
+        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      },
+      "../../../app-settings/booking-window": bookingWindow,
+      "../../app-settings/booking-window": bookingWindow,
       "../../app-settings/booking-policy.server": {
         getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
       },
@@ -251,7 +262,14 @@ test("availability failures retain restrictions and settings query failures neve
         },
       },
     },
-    { URL },
+    {
+      URL,
+      Date: class extends Date {
+        constructor(value?: string | number) {
+          super(value ?? "2026-10-23T00:00:00Z");
+        }
+      },
+    },
   );
   const request = new Request(
     "http://localhost/api/schedules/availability?date=2026-10-24&hours=3",

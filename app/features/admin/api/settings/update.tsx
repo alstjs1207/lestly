@@ -18,6 +18,11 @@ import {
   BOOKING_POLICY_KEY,
   bookingPolicySchema,
 } from "../../../app-settings/booking-policy";
+import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
+import {
+  BOOKING_WINDOW_KEY,
+  bookingWindowFromForm,
+} from "../../../app-settings/booking-window";
 import { requireAdminRole } from "../../guards.server";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -33,6 +38,18 @@ export async function action({ request }: Route.ActionArgs) {
     return typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : NaN;
   };
   const maxConcurrentStudents = numberField("max_concurrent_students");
+  let bookingWindow;
+  try {
+    // A form opened before the upgrade must preserve the current window.
+    bookingWindow = formData.has("bookingWindowMode")
+      ? bookingWindowFromForm(formData)
+      : (await getBookingPolicy(client, { organizationId })).bookingWindow;
+  } catch {
+    return data(
+      { error: "예약 오픈 방식을 확인하거나 설정을 새로 불러와 주세요." },
+      { status: 400 },
+    );
+  }
   const parsed = bookingPolicySchema.safeParse({
     durationMinutes: String(formData.get("durationMinutes") ?? "")
       .trim()
@@ -44,6 +61,7 @@ export async function action({ request }: Route.ActionArgs) {
     lastStart: formData.get("lastStart"),
     startIntervalMinutes: numberField("startIntervalMinutes"),
     leadMinutes: numberField("leadMinutes"),
+    bookingWindow,
   });
   if (
     !parsed.success ||
@@ -73,6 +91,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
+    const { bookingWindow: window, ...timePolicy } = parsed.data;
     const { error } = await client.from("settings").upsert(
       [
         {
@@ -83,7 +102,7 @@ export async function action({ request }: Route.ActionArgs) {
         {
           organization_id: organizationId,
           setting_key: BOOKING_POLICY_KEY,
-          setting_value: parsed.data,
+          setting_value: timePolicy,
         },
         {
           organization_id: organizationId,
@@ -94,6 +113,11 @@ export async function action({ request }: Route.ActionArgs) {
           organization_id: organizationId,
           setting_key: DISABLED_BOOKING_DAYS_KEY,
           setting_value: { value: disabledDays },
+        },
+        {
+          organization_id: organizationId,
+          setting_key: BOOKING_WINDOW_KEY,
+          setting_value: window,
         },
       ],
       { onConflict: "organization_id,setting_key" },

@@ -1,4 +1,5 @@
 import {
+  type BookingPolicy,
   DEFAULT_BOOKING_POLICY,
   bookingStartTimes,
 } from "../../app-settings/booking-policy.ts";
@@ -7,35 +8,23 @@ import {
  *
  * Business logic for student schedule registration and cancellation rules.
  */
-import { fromKST, nowKST, toKST } from "./kst.ts";
+import {
+  bookingWindowRange,
+  isBookingDateInWindow,
+} from "../../app-settings/booking-window.ts";
+import { fromKST, nowKST, toKST, toKSTDateString } from "./kst.ts";
 
-/**
- * Check if a student can register a schedule for a given date
- *
- * Rules:
- * - Can register for the current month
- * - After the 25th, can also register for the next month
- */
-export function canStudentRegisterSchedule(date: Date): boolean {
-  const now = nowKST();
-  const target = toKST(date);
-
-  // Same month and year - allowed
-  if (target.year === now.year && target.month === now.month) {
-    return true;
-  }
-
-  // After 25th, can register for next month
-  if (now.day >= 25) {
-    const nextMonth = now.month === 11 ? 0 : now.month + 1;
-    const nextYear = now.month === 11 ? now.year + 1 : now.year;
-
-    if (target.year === nextYear && target.month === nextMonth) {
-      return true;
-    }
-  }
-
-  return false;
+/** Check the organization's booking window using the Korean start date. */
+export function canStudentRegisterSchedule(
+  date: Date,
+  policy: BookingPolicy = DEFAULT_BOOKING_POLICY,
+  now = new Date(),
+): boolean {
+  return isBookingDateInWindow(
+    toKSTDateString(date),
+    policy.bookingWindow,
+    now,
+  );
 }
 
 /**
@@ -57,33 +46,12 @@ export function canStudentCancelSchedule(scheduleDate: Date): boolean {
   return scheduleValue > todayValue;
 }
 
-/**
- * Get the allowed registration date range for students
- *
- * Returns the start and end dates that a student can register schedules for.
- */
-export function getStudentAllowedDateRange(): {
-  startDate: Date;
-  endDate: Date;
-} {
-  const now = nowKST();
-
-  // Start date is always the first of the current month (KST)
-  const startDate = fromKST(now.year, now.month, 1);
-
-  // End date depends on whether we're past the 25th
-  let endDate: Date;
-  if (now.day >= 25) {
-    // Can register until the end of next month (KST)
-    const nextMonth = now.month === 11 ? 0 : now.month + 1;
-    const nextYear = now.month === 11 ? now.year + 1 : now.year;
-    endDate = fromKST(nextYear, nextMonth + 1, 0, 23, 59, 59);
-  } else {
-    // Can only register until the end of current month (KST)
-    endDate = fromKST(now.year, now.month + 1, 0, 23, 59, 59);
-  }
-
-  return { startDate, endDate };
+/** Inclusive calendar date bounds; past times are checked separately. */
+export function getStudentAllowedDateRange(
+  policy: BookingPolicy = DEFAULT_BOOKING_POLICY,
+  now = new Date(),
+) {
+  return bookingWindowRange(policy.bookingWindow, now);
 }
 
 /**

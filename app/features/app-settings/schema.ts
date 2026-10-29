@@ -25,6 +25,7 @@ import { organizations } from "~/features/organizations/schema";
  * Stores organization-specific settings as key-value pairs.
  * - max_concurrent_students: Maximum number of students allowed in the same time slot
  * - booking_policy: Minute durations, start range/interval and booking cutoff
+ * - booking_window: Monthly opening day or rolling days ahead
  * - schedule_duration_hours: Legacy compatibility key
  * - time_slot_interval_minutes: Legacy compatibility key
  */
@@ -47,7 +48,7 @@ export const settings = pgTable(
       for: "select",
       to: authenticatedRole,
       as: "permissive",
-      using: sql`is_org_member(${table.organization_id}) AND ${table.setting_key} IN ('max_concurrent_students', 'schedule_duration_hours', 'time_slot_interval_minutes', 'disabled_booking_start_times', 'disabled_booking_weekdays', 'booking_policy')`,
+      using: sql`is_org_member(${table.organization_id}) AND ${table.setting_key} IN ('max_concurrent_students', 'schedule_duration_hours', 'time_slot_interval_minutes', 'disabled_booking_start_times', 'disabled_booking_weekdays', 'booking_policy', 'booking_window')`,
     }),
     // RLS Policy: ADMIN can read all settings in their organization
     pgPolicy("admin-select-org-settings-policy", {

@@ -1,3 +1,5 @@
+import type { BookingWindow } from "../app/features/app-settings/booking-window.ts";
+
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -8,6 +10,7 @@ import {
 } from "../app/features/schedules/utils/calendar-month.ts";
 import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
 import { toKSTDateString } from "../app/features/schedules/utils/kst.ts";
+import { getStudentAllowedDateRange } from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { parseStudentScheduleDate } from "../app/features/schedules/utils/student-week.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
@@ -20,7 +23,7 @@ const schedule = {
   program: null,
 };
 
-function fixture() {
+function fixture(window: BookingWindow = { mode: "monthly", openingDay: 25 }) {
   const nextFilters: [string, unknown][] = [];
   let range: { startDate: Date; endDate: Date } | undefined;
   const upcomingQuery = {
@@ -71,6 +74,7 @@ function fixture() {
         month: number;
         nextSchedule: typeof schedule | null;
         disabledBookingDays: number[];
+        allowedEndDate: string;
       };
     }>;
   }>(
@@ -80,7 +84,10 @@ function fixture() {
     ),
     {
       "../../app-settings/booking-policy.server": {
-        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+        getBookingPolicy: async () => ({
+          ...bookingPolicy.DEFAULT_BOOKING_POLICY,
+          bookingWindow: window,
+        }),
       },
       "../../app-settings/booking-policy": bookingPolicy,
       "react-router": { data: (body: unknown) => ({ body }) },
@@ -115,10 +122,7 @@ function fixture() {
         },
       },
       "./student-schedule-rules": {
-        getStudentAllowedDateRange: () => ({
-          startDate: fixedNow,
-          endDate: new Date("2027-01-31T15:00:00Z"),
-        }),
+        getStudentAllowedDateRange,
       },
       "./student-week": { parseStudentScheduleDate },
     },
@@ -177,4 +181,14 @@ test("default selected day uses the Korean year at the UTC New Year boundary", a
   assert.equal(body.selectedDate, "2027-01-01");
   assert.equal(body.year, 2027);
   assert.equal(body.month, 1);
+});
+
+test("calendar loader uses the organization window without truncating existing schedules outside it", async () => {
+  const f = fixture({ mode: "rolling", daysAhead: 2 });
+  const { body } = await f.loadStudentCalendar(
+    new Request("https://lestly.test/my-schedules?date=2027-01-31"),
+  );
+  assert.equal(body.allowedEndDate, "2027-01-03T14:59:59.999Z");
+  assert.equal(body.nextSchedule?.schedule_id, 5);
+  assert.equal(body.selectedDate, "2027-01-31");
 });

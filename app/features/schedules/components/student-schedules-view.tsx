@@ -6,6 +6,10 @@ import { Link, useSearchParams } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 
+import {
+  bookingWindowDescription,
+  bookingWindowRange,
+} from "../../app-settings/booking-window";
 import { toKST } from "../utils/kst";
 import {
   type LearningSchedule,
@@ -45,15 +49,7 @@ export function StudentSchedulesView({
   data: StudentSchedulesData;
   list?: boolean;
 }) {
-  const {
-    schedules,
-    programs,
-    year,
-    month,
-    allowedStartDate,
-    allowedEndDate,
-    canBook,
-  } = data;
+  const { schedules, programs, year, month, canBook } = data;
   const [params, setParams] = useSearchParams();
   const requestedDate = params.get("date");
   const selectedDate =
@@ -67,6 +63,7 @@ export function StudentSchedulesView({
   const [booking, setBooking] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [now, setNow] = useState(new Date(data.now));
+  const allowed = bookingWindowRange(data.bookingPolicy?.bookingWindow, now);
   const course = {
     classStartDate: data.classStartDate,
     classEndDate: data.classEndDate,
@@ -282,12 +279,13 @@ export function StudentSchedulesView({
       {list && (
         <div className="text-muted-foreground space-y-2 rounded-xl border border-violet-100 bg-violet-50/60 p-4 text-sm leading-relaxed dark:border-violet-900/40 dark:bg-violet-950/20">
           <p>
-            신규 예약 가능 기간 · {formatLearningDate(allowedStartDate, true)} ~{" "}
-            {formatLearningDate(allowedEndDate, true)}
+            신규 예약 가능 기간 ·{" "}
+            {formatLearningDate(allowed.startDate.toISOString(), true)} ~{" "}
+            {formatLearningDate(allowed.endDate.toISOString(), true)}
           </p>
           <p>
-            다음 달 신규 예약은 매월 25일에 열려요. 지난 수업과 미리 등록된
-            수업은 월을 바꿔 확인할 수 있어요.
+            {bookingWindowDescription(data.bookingPolicy?.bookingWindow)} 지난
+            수업과 미리 등록된 수업은 월을 바꿔 확인할 수 있어요.
           </p>
           {(data.classStartDate || data.classEndDate) && (
             <p>

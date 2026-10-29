@@ -66,6 +66,7 @@ const settings = await render(
   {
     studentTypes: types,
     maxConcurrentStudents: 5,
+    now: "2026-10-29T00:00:00Z",
     bookingPolicy: {
       durationMinutes: [180, 360, 540],
       defaultDurationMinutes: 180,
@@ -73,6 +74,7 @@ const settings = await render(
       lastStart: "20:00",
       startIntervalMinutes: 30,
       leadMinutes: 0,
+      bookingWindow: { mode: "monthly", openingDay: 25 },
     },
     scheduleDurationHours: 3,
     timeSlotIntervalMinutes: 30,
