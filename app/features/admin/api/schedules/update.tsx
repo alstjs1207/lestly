@@ -8,15 +8,16 @@ import {
   getScheduleById,
   validateScheduleBatch,
 } from "~/features/schedules/queries";
-import { nowKST, toKST } from "~/features/schedules/utils/kst";
+import { nowKST, toKST, toKSTDateString } from "~/features/schedules/utils/kst";
 import { shiftScheduleOccurrences } from "~/features/schedules/utils/schedule-validation";
 import {
-  DURATION_OPTIONS,
   applyTimeToDate,
   calculateEndTime,
   parseDateString,
 } from "~/features/schedules/utils/student-schedule-rules";
 
+import { submittedDuration } from "../../../app-settings/booking-policy";
+import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
 import { requireAdminRole } from "../../guards.server";
 import { getStudentById } from "../../queries";
 
@@ -34,7 +35,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const programId = programIdStr ? parseInt(programIdStr) : null;
   const dateStr = formData.get("date") as string;
   const startTimeStr = formData.get("start_time") as string;
-  const durationValue = formData.get("duration") as string;
+  const bookingPolicy = await getBookingPolicy(client, { organizationId });
   const updateScope = formData.get("update_scope") as "single" | "future";
 
   // Get current schedule
@@ -56,16 +57,38 @@ export async function action({ request, params }: Route.ActionArgs) {
     );
   }
 
-  // Get duration hours from form selection (1타임=3시간)
-  const selectedDuration = DURATION_OPTIONS.find(
-    (opt) => opt.value === durationValue,
-  );
-  const durationHours = selectedDuration?.hours || 3; // fallback to 3 hours
-
+  let durationMinutes: number;
+  try {
+    durationMinutes = submittedDuration(
+      formData,
+      bookingPolicy,
+      (Date.parse(currentSchedule.end_time) -
+        Date.parse(currentSchedule.start_time)) /
+        60_000,
+    );
+  } catch {
+    return data(
+      { success: false, error: "허용된 수업 길이를 선택해 주세요." },
+      { status: 400 },
+    );
+  }
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(dateStr ?? "") ||
+    !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(startTimeStr ?? "")
+  )
+    return data(
+      { success: false, error: "날짜와 시간을 확인해 주세요." },
+      { status: 400 },
+    );
   // Parse date and time (use parseDateString to avoid UTC timezone issue)
   const date = parseDateString(dateStr);
   const startTime = applyTimeToDate(date, startTimeStr);
-  const endTime = calculateEndTime(startTime, durationHours);
+  if (toKSTDateString(startTime) !== dateStr)
+    return data(
+      { success: false, error: "날짜를 확인해 주세요." },
+      { status: 400 },
+    );
+  const endTime = calculateEndTime(startTime, durationMinutes / 60);
 
   const nextScheduleKST = toKST(startTime);
   const nextScheduleValue =

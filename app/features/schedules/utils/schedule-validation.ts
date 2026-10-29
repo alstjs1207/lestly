@@ -33,6 +33,28 @@ export function schedulesOverlap(
   return left.startTime < right.endTime && left.endTime > right.startTime;
 }
 
+/** Peak occupancy on the half-open candidate interval; touching ends share no seat. */
+export function peakConcurrentCount(
+  candidate: Pick<ScheduleCandidate, "startTime" | "endTime">,
+  intervals: Pick<ScheduleCandidate, "startTime" | "endTime">[],
+): number {
+  const events = new Map<number, number>();
+  for (const row of intervals) {
+    if (!schedulesOverlap(candidate, row)) continue;
+    const start = Math.max(+row.startTime, +candidate.startTime);
+    const end = Math.min(+row.endTime, +candidate.endTime);
+    events.set(start, (events.get(start) ?? 0) + 1);
+    events.set(end, (events.get(end) ?? 0) - 1);
+  }
+  let current = 0,
+    peak = 0;
+  for (const [, delta] of [...events].sort(([a], [b]) => a - b)) {
+    current += delta;
+    peak = Math.max(peak, current);
+  }
+  return peak;
+}
+
 /**
  * Shift a recurring series relative to the edited occurrence while preserving
  * the spacing between every occurrence. All shifted rows use the newly selected
@@ -115,11 +137,12 @@ export function validateScheduleCandidatesAgainstExisting(
       };
     }
 
-    if (overlappingSchedules.length >= maxCount) {
+    const peakCount = peakConcurrentCount(candidate, overlappingSchedules);
+    if (peakCount >= maxCount) {
       return {
         allowed: false,
         reason: "capacity",
-        currentCount: overlappingSchedules.length,
+        currentCount: peakCount,
         maxCount,
         candidate,
       };

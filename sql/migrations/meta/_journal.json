@@ -225,6 +225,20 @@
       "when": 1793318400002,
       "tag": "0031_student_type_conflict_response",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793404800000,
+      "tag": "0032_booking_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793404800001,
+      "tag": "0033_booking_policy_fresh_snapshot",
+      "breakpoints": true
     }
   ]
 }

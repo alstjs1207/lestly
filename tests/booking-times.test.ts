@@ -5,12 +5,15 @@ import {
   DISABLED_BOOKING_DAYS_KEY,
   disabledBookingDaysFromForm,
 } from "../app/features/app-settings/booking-days.ts";
+import * as bookingPolicy from "../app/features/app-settings/booking-policy.ts";
 import {
   BOOKING_START_TIMES,
   disabledBookingTimesFromForm,
   parseDisabledBookingTimes,
 } from "../app/features/app-settings/booking-times.ts";
 import { desktopBookingSlots } from "../app/features/schedules/utils/desktop-booking.ts";
+import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
+import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
 // Exercise the real route handlers with explicit dependencies and no live writes.
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
@@ -40,10 +43,10 @@ test("admin time form supports all, none, partial and rejects malformed times", 
     "09:00",
     "20:00",
   ]);
-  for (const value of [null, "09:00", {}, [9], ["20:30"]])
+  for (const value of [null, "09:00", {}, [9], ["24:00"]])
     assert.throws(() => parseDisabledBookingTimes(value));
 });
-test("student slots hide closed starts even during a capacity RPC fallback", () => {
+test("student slots hide closed starts and prevent booking while availability is unavailable", () => {
   const result = desktopBookingSlots("2026-10-24", 3, course, [], now, {
     key: "2026-10-24:3",
     slots: null,
@@ -54,7 +57,10 @@ test("student slots hide closed starts even during a capacity RPC fallback", () 
     result.some((slot) => ["09:00", "12:30", "20:00"].includes(slot.time)),
     false,
   );
-  assert.equal(result.find((slot) => slot.time === "12:00")?.reason, null);
+  assert.equal(
+    result.find((slot) => slot.time === "12:00")?.label,
+    "예약 불가",
+  );
   assert.equal(
     desktopBookingSlots("2026-10-24", 9, course, [], now, {
       key: "2026-10-24:9",
@@ -98,6 +104,12 @@ test("settings route validates all choices before one tenant-scoped atomic write
   }>(
     new URL("../app/features/admin/api/settings/update.tsx", import.meta.url),
     {
+      "../../../app-settings/booking-policy": bookingPolicy,
+      "../../app-settings/booking-policy.server": {
+        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      },
+      "../utils/student-schedule-rules": { parseDateString },
+      "../utils/kst": { toKSTDateString: realKstDate },
       "react-router": {
         data: (body: unknown, init: unknown) => ({ body, init }),
         redirect: (url: string) => ({ redirect: url }),
@@ -142,8 +154,8 @@ test("settings route validates all choices before one tenant-scoped atomic write
       days.forEach((day) => body.append("disabled_weekdays", day));
     }
     body.set("max_concurrent_students", "5");
-    body.set("schedule_duration_hours", "3");
-    body.set("time_slot_interval_minutes", "30");
+    for (const [k, v] of Object.entries(bookingPolicy.DEFAULT_BOOKING_POLICY))
+      body.set(k, Array.isArray(v) ? v.join(",") : String(v));
     return new Request("http://localhost/api/admin/settings", {
       method: "POST",
       body,
@@ -166,21 +178,21 @@ test("settings route validates all choices before one tenant-scoped atomic write
     "/admin/settings",
   );
   assert.equal(writes.length, 1);
-  assert.equal(writes[0].rows.length, 5);
+  assert.equal(writes[0].rows.length, 4);
   assert.ok(
     writes[0].rows.every((row: any) => row.organization_id === "org-a"),
   );
   assert.deepEqual(
-    Array.from(writes[0].rows[3].setting_value.value),
+    Array.from(writes[0].rows[2].setting_value.value),
     BOOKING_START_TIMES,
   );
-  assert.equal(writes[0].rows[4].setting_key, DISABLED_BOOKING_DAYS_KEY);
-  assert.deepEqual(Array.from(writes[0].rows[4].setting_value.value), [6, 0]);
+  assert.equal(writes[0].rows[3].setting_key, DISABLED_BOOKING_DAYS_KEY);
+  assert.deepEqual(Array.from(writes[0].rows[3].setting_value.value), [6, 0]);
   await action({ request: request(BOOKING_START_TIMES, []) });
-  assert.deepEqual(Array.from(writes[1].rows[4].setting_value.value), []);
+  assert.deepEqual(Array.from(writes[1].rows[3].setting_value.value), []);
 });
 
-test("availability fallback retains closed starts and settings query failures never enable everything", async () => {
+test("availability failures retain restrictions and settings query failures never enable everything", async () => {
   let fail = false;
   const { loader } = loadMockedModule<{
     loader: (args: { request: Request }) => Promise<any>;
@@ -190,6 +202,12 @@ test("availability fallback retains closed starts and settings query failures ne
       import.meta.url,
     ),
     {
+      "../../../app-settings/booking-policy": bookingPolicy,
+      "../../app-settings/booking-policy.server": {
+        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      },
+      "../utils/student-schedule-rules": { parseDateString },
+      "../utils/kst": { toKSTDateString: realKstDate },
       "react-router": { data: (body: unknown) => body },
       "~/core/lib/supa-client.server": {
         default: () => [

@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-28T23:54:49.211Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "checks": [
+    "minute policy drives non-hour-dividing slots, exact lengths, day-end starts and legacy hour RPC compatibility",
+    "policy constraints reject malformed privileged writes; student and foreign admin cannot change or read another policy",
+    "lead-time cutoff, off-grid time blocks and weekdays agree between discovery and writes without rewriting reservations",
+    "adjacent reservations use one concurrent place and real overlap rejects inserts and multi-row updates atomically",
+    "recurring batch moves validate final positions rather than another occurrence's old position",
+    "attendance restoration uses peak occupancy and preserves a cancelled lesson after capacity failure",
+    "two connections serialize competing inserts and reject the last-seat overbooking",
+    "authenticated booking enforces the policy committed while it waits for the organization lock"
+  ],
+  "passed": 8,
+  "allFixturesRemoved": true,
+  "businessDataUnchanged": true
+}

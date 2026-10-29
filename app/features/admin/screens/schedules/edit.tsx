@@ -23,7 +23,9 @@ import {
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getActivePrograms } from "~/features/programs/queries";
 import { getScheduleById } from "~/features/schedules/queries";
+import { toKSTDateString } from "~/features/schedules/utils/kst";
 
+import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
 import ScheduleForm from "../../components/schedule-form";
 import { requireAdminRole } from "../../guards.server";
 import { getActiveStudents } from "../../queries";
@@ -31,6 +33,7 @@ import { getActiveStudents } from "../../queries";
 export async function loader({ request, params }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
+  const bookingPolicy = await getBookingPolicy(client, { organizationId });
 
   const [schedule, students, programs] = await Promise.all([
     getScheduleById(client, {
@@ -40,14 +43,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     getActivePrograms(client, { organizationId }),
   ]);
 
-  // Check if schedule is in the past (compare date only, not time)
-  const scheduleDate = new Date(schedule.start_time);
-  const today = new Date();
-  scheduleDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  const isPast = scheduleDate < today;
+  const isPast =
+    toKSTDateString(new Date(schedule.start_time)) <
+    toKSTDateString(new Date());
 
-  return { schedule, students, programs, isPast };
+  return { schedule, students, programs, isPast, bookingPolicy };
 }
 
 export default function ScheduleEditScreen({
@@ -58,18 +58,17 @@ export default function ScheduleEditScreen({
 
   const startTime = new Date(schedule.start_time);
   const endTime = new Date(schedule.end_time);
-  const timeStr = `${String(startTime.getHours()).padStart(2, "0")}:${String(startTime.getMinutes()).padStart(2, "0")}`;
-
-  // Use local date format to avoid timezone issues
-  const year = startTime.getFullYear();
-  const month = String(startTime.getMonth() + 1).padStart(2, "0");
-  const day = String(startTime.getDate()).padStart(2, "0");
-  const dateStr = `${year}-${month}-${day}`;
-
+  const timeStr = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(startTime);
+  const dateStr = toKSTDateString(startTime);
   // Calculate duration from start and end time
-  const durationHours =
-    (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-  const durationSlots = String(Math.round(durationHours / 3)); // 3시간 = 1타임
+  const durationSlots = String(
+    (endTime.getTime() - startTime.getTime()) / 60_000,
+  );
 
   return (
     <div className="space-y-6">
@@ -174,6 +173,7 @@ export default function ScheduleEditScreen({
             </div>
           ) : (
             <ScheduleForm
+              bookingPolicy={loaderData.bookingPolicy}
               mode="edit"
               students={students}
               programs={programs}

@@ -98,7 +98,7 @@ test("rolling-deployment capacity fallback preserves local conflicts and date re
     slots: null,
   });
   assert.equal(result.find((s) => s.time === "13:00")?.label, "내 수업");
-  assert.equal(result.find((s) => s.time === "16:00")?.reason, null);
+  assert.match(result.find((s) => s.time === "16:00")?.reason ?? "", /불러오지 못/);
   assert.ok(
     desktopBookingSlots("2026-11-01", 3, course, [], now, undefined).every(
       (s) => s.reason?.includes("25일"),

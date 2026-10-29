@@ -12,6 +12,10 @@ import { fileURLToPath } from "node:url";
 
 import { loadMockedModule } from "../../tests/helpers/mocked-module.ts";
 import { checkAttendance } from "./attendance.mjs";
+import {
+  checkBookingPolicy,
+  checkBookingPolicyMigration,
+} from "./booking-policy.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
 import {
@@ -206,6 +210,7 @@ try {
     let sql = await readFile(path, "utf8");
     if (entry.idx === 29) await checkStudentMetadataMigration(db, sql);
     if (entry.idx === 30) await checkStudentTypePolicyMigration(db, sql);
+    if (entry.idx === 32) await checkBookingPolicyMigration(db, sql);
     sql = sql.replace(
       /^CREATE EXTENSION IF NOT EXISTS pg_(cron|net).*;$/gm,
       "",
@@ -2020,6 +2025,18 @@ try {
     adminA,
     adminB,
     studentA,
+  });
+  await checkBookingPolicy({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+    studentB,
   });
   await checkAttendance({
     db,
