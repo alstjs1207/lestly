@@ -62,7 +62,7 @@ export function attendanceFailure(error: unknown): {
       ? String(error.message)
       : "";
   if (/attendance_not_authorized/.test(message))
-    return { status: 403, error: "이 학원의 출결을 처리할 권한이 없습니다." };
+    return { status: 403, error: "이 조직의 출결을 처리할 권한이 없습니다." };
   if (/attendance_conflict|attendance_schedule_changed/.test(message))
     return {
       status: 409,

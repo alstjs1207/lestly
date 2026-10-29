@@ -11,6 +11,8 @@ import {
 import {
   type LearningSchedule,
   formatLearningDate,
+  formatLearningMinutes,
+  learningLocation,
   scheduleHours,
   scheduleTimeRange,
 } from "../utils/learning-records";
@@ -20,7 +22,8 @@ export function ScheduleInformation({
 }: {
   schedule: LearningSchedule;
 }) {
-  const address = schedule.program?.location_address;
+  const location = learningLocation(schedule.program);
+  const address = location.mapAddress;
   return (
     <div className="space-y-4 text-sm">
       <h3 className="text-base font-semibold">
@@ -33,14 +36,18 @@ export function ScheduleInformation({
         <dd>
           {scheduleTimeRange(schedule)}
           <span className="text-muted-foreground mt-1 block">
-            총 {scheduleHours(schedule)}시간
+            총 {formatLearningMinutes(scheduleHours(schedule) * 60)}
           </span>
         </dd>
         <dt className="text-muted-foreground">담당 강사</dt>
-        <dd>{schedule.program?.instructor?.name || "학원에 확인해주세요"}</dd>
-        <dt className="text-muted-foreground">장소</dt>
+        <dd>
+          {schedule.program?.instructor?.name || "수업 운영자에게 확인해주세요"}
+        </dd>
+        <dt className="text-muted-foreground">
+          {location.online ? "접속 안내" : "장소"}
+        </dt>
         <dd className="break-words">
-          {address || "학원에 확인해주세요"}
+          {location.label}
           {address && (
             <a
               className="mt-1 block text-violet-700 underline dark:text-violet-300"
@@ -54,8 +61,8 @@ export function ScheduleInformation({
         </dd>
       </dl>
       <div className="text-muted-foreground rounded-xl bg-violet-50 p-3 leading-relaxed dark:bg-violet-950/30">
-        준비물·장소·예약 변경 문의는 학원의 담당 강사에게 평소 이용하는 연락
-        방법으로 문의해주세요.
+        준비물·장소·예약 변경 문의는 담당 강사에게 평소 이용하는 연락 방법으로
+        문의해주세요.
       </div>
     </div>
   );

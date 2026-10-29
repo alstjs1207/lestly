@@ -96,7 +96,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (!(await getAuthUser(client))) {
     return data(
-      { error: "탈퇴 처리된 계정입니다. 학원 관리자에게 문의해 주세요." },
+      { error: "탈퇴 처리된 계정입니다. 수업 운영자에게 문의해 주세요." },
       { status: 403, headers },
     );
   }

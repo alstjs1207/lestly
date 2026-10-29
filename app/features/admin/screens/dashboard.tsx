@@ -136,7 +136,9 @@ export default function AdminDashboardScreen({
         <Link to="/admin/students">
           <Card className="hover:bg-muted/50 h-full transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-0 md:pb-2">
-              <CardTitle className="text-sm font-medium">정상 수강생</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                수강 중인 수강생
+              </CardTitle>
               <UsersIcon className="size-4 text-green-500" />
             </CardHeader>
             <CardContent>

@@ -1,6 +1,10 @@
 import { useState } from "react";
 
-import { formatLearningDate, learningHeatmap } from "../utils/learning-records";
+import {
+  formatLearningDate,
+  formatLearningMinutes,
+  learningHeatmap,
+} from "../utils/learning-records";
 
 export function LearningHeatmap({
   days,
@@ -14,8 +18,7 @@ export function LearningHeatmap({
     "bg-violet-500 dark:bg-violet-500",
     "bg-violet-700 dark:bg-violet-300",
   ];
-  const level = (hours: number) =>
-    hours >= 9 ? 3 : hours >= 6 ? 2 : hours > 0 ? 1 : 0;
+  const level = (count: number) => Math.min(3, count);
   const current = days.find((d) => d.date === selected);
   return (
     <section
@@ -29,7 +32,7 @@ export function LearningHeatmap({
       <div
         className="grid grid-cols-[16px_repeat(12,minmax(0,1fr))] gap-1"
         role="group"
-        aria-label="날짜별 종료된 수업 시간"
+        aria-label="날짜별 출석 확인된 종료 수업 참여 횟수"
       >
         <span aria-hidden="true" />
         {Array.from({ length: 12 }, (_, week) => (
@@ -53,7 +56,7 @@ export function LearningHeatmap({
             </span>
             {Array.from({ length: 12 }, (_, week) => {
               const day = days[week * 7 + weekday];
-              const label = `${formatLearningDate(`${day.date}T00:00:00+09:00`, true)} · ${day.future ? "아직 오지 않은 날" : `수업 ${day.hours}시간`}`;
+              const label = `${formatLearningDate(`${day.date}T00:00:00+09:00`, true)} · ${day.future ? "아직 오지 않은 날" : `수업 ${day.count}회 · 총 ${formatLearningMinutes(day.minutes)}`}`;
               return (
                 <button
                   key={day.date}
@@ -63,7 +66,7 @@ export function LearningHeatmap({
                   aria-label={label}
                   aria-pressed={selected === day.date}
                   onClick={() => setSelected(day.date)}
-                  className={`aspect-square max-h-7 min-h-3 w-full rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 md:aspect-auto md:h-5 ${colors[level(day.hours)]} ${day.future ? "opacity-30" : "hover:ring-2 hover:ring-violet-400"} ${selected === day.date ? "ring-2 ring-violet-600" : ""}`}
+                  className={`aspect-square max-h-7 min-h-3 w-full rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 md:aspect-auto md:h-5 ${colors[level(day.count)]} ${day.future ? "opacity-30" : "hover:ring-2 hover:ring-violet-400"} ${selected === day.date ? "ring-2 ring-violet-600" : ""}`}
                 />
               );
             })}
@@ -71,9 +74,9 @@ export function LearningHeatmap({
         ))}
       </div>
       <div className="text-muted-foreground mt-4 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span>하루 수업 시간</span>
+        <span>하루 참여 횟수</span>
         <div className="flex flex-wrap gap-2">
-          {["없음", "6시간 미만", "6~9시간", "9시간+"].map((label, index) => (
+          {["없음", "1회", "2회", "3회 이상"].map((label, index) => (
             <span key={label} className="flex items-center gap-1">
               <span className={`size-2.5 rounded-sm ${colors[index]}`} />
               {label}
@@ -86,7 +89,7 @@ export function LearningHeatmap({
         role="status"
       >
         {current
-          ? `${current.date} · 종료된 수업 ${current.hours}시간`
+          ? `${current.date} · 수업 ${current.count}회 · 총 ${formatLearningMinutes(current.minutes)}`
           : "수업이 있던 날을 표시해요. 쉬는 날도 자연스러운 배움의 일부예요."}
       </p>
     </section>

@@ -118,7 +118,7 @@ export function StudentSchedulesView({
   const openBooking = () => {
     const message = canBook
       ? bookingDateReason(selectedDate, course, now)
-      : "예약 가능한 수강생 계정인지 학원에 확인해주세요.";
+      : "예약 가능한 수강생 계정인지 수업 운영자에게 확인해주세요.";
     if (message) {
       setStatus(message);
       return;

@@ -41,7 +41,7 @@ const en: Translation = {
       organizationDashboard: "Organization dashboard",
       totalStudents: "Total Students",
       activeStudents: "Active Students",
-      graduated: "Graduated",
+      graduated: "Enrollment ended",
       todaysClasses: "Today's Classes",
       allStudents: "All students",
       currentlyEnrolled: "Currently enrolled",

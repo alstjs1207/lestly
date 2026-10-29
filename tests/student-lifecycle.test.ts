@@ -360,7 +360,7 @@ test("student detail exposes graduate/withdraw only where eligible and restore o
           React.createElement(
             "button",
             null,
-            withdrawn ? "탈퇴자 재원 복귀" : "졸업생 재원 복귀",
+            withdrawn ? "탈퇴자 수강 재개" : "졸업생 수강 재개",
           ),
       },
       "../../components/student-state-dialog": {
@@ -368,7 +368,7 @@ test("student detail exposes graduate/withdraw only where eligible and restore o
           React.createElement(
             "button",
             null,
-            kind === "graduate" ? "졸업 처리" : "탈퇴 처리",
+            kind === "graduate" ? "수강 종료 처리" : "탈퇴 처리",
           ),
       },
       "../../components/student-total-hours": { StudentTotalHours: box },
@@ -396,9 +396,9 @@ test("student detail exposes graduate/withdraw only where eligible and restore o
         },
       }),
     );
-    assert.equal(html.includes("졸업 처리"), state === "NORMAL");
+    assert.equal(html.includes("수강 종료 처리"), state === "NORMAL");
     assert.equal(html.includes("탈퇴 처리"), state !== "DELETED");
-    assert.equal(html.includes("재원 복귀"), state !== "NORMAL");
-    if (state === "DELETED") assert.ok(html.includes("탈퇴자 재원 복귀"));
+    assert.equal(html.includes("수강 재개"), state !== "NORMAL");
+    if (state === "DELETED") assert.ok(html.includes("탈퇴자 수강 재개"));
   }
 });

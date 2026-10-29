@@ -457,7 +457,8 @@ export default function ScheduleForm({
             </div>
             {isRecurring && (
               <p className="text-muted-foreground text-xs">
-                수강생의 수업 종료일까지 매주 같은 요일에 등록됩니다.
+                수강생의 수강 종료일까지 매주 같은 요일에 등록됩니다. 클래스의
+                총 회차로 제한하지 않습니다.
               </p>
             )}
             <input

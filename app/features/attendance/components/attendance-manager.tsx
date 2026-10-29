@@ -243,7 +243,7 @@ function AttendanceEditor({
         </div>
         <p className="text-muted-foreground text-xs">
           {pendingOnly
-            ? "재원생의 시작된 수업 중 미확인 예약만 오래된 순으로 표시합니다. "
+            ? "수강 중인 수강생의 시작된 수업 중 미확인 예약만 오래된 순으로 표시합니다. "
             : ""}
           {totalCount > 50
             ? "출결 상태와 일괄 처리는 현재 페이지 최대 50건 기준입니다. "
@@ -255,7 +255,7 @@ function AttendanceEditor({
         <div className="rounded-xl border border-dashed px-4 py-12 text-center">
           <p>
             {pendingOnly
-              ? "재원생의 미확인 수업이 없습니다."
+              ? "수강 중인 수강생의 미확인 수업이 없습니다."
               : "이 날짜에 등록된 예약이 없습니다."}
           </p>
           {page > 1 && (

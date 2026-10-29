@@ -22,6 +22,7 @@ import {
   type LearningSchedule,
   formatLearningDate,
   formatLearningTime,
+  learningLocation,
 } from "../utils/learning-records";
 import { type CourseDates, bookingDateReason } from "../utils/student-booking";
 
@@ -29,6 +30,7 @@ export interface BookingProgram {
   program_id: number;
   title: string;
   location_address?: string | null;
+  location_type?: string | null;
 }
 
 export function StudentBookingPanel({
@@ -93,7 +95,7 @@ export function StudentBookingPanel({
   const busy = submitting || disabled;
   const requestDateReason = canBook
     ? bookingDateReason(date, { ...course, bookingPolicy: policy }, now)
-    : "예약 가능한 수강생 계정인지 학원에 확인해주세요.";
+    : "예약 가능한 수강생 계정인지 수업 운영자에게 확인해주세요.";
   const key = `${date}:${hours}`;
   const today = toKSTDateString(now);
   const dateReason =
@@ -224,10 +226,10 @@ export function StudentBookingPanel({
               {confirmed?.title ?? selectedProgram?.title ?? "내 수업"}
             </p>
           )}
-          {selectedProgram?.location_address && (
+          {selectedProgram && (
             <p className="text-muted-foreground mt-2 flex items-start gap-1 text-xs leading-relaxed">
               <MapPin className="mt-0.5 size-3 shrink-0" />
-              {selectedProgram.location_address}
+              {learningLocation(selectedProgram).label}
             </p>
           )}
         </div>
@@ -413,7 +415,7 @@ export function StudentBookingPanel({
             />
             <span>
               이 수업은 이미 취소 기한이 지났어요. 예약 후 직접 취소할 수
-              없으며, 변경은 학원에 문의해야 함을 확인했어요.
+              없으며, 변경은 수업 운영자에게 문의해야 함을 확인했어요.
             </span>
           </label>
         )}

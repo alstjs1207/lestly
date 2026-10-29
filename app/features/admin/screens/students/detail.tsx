@@ -81,8 +81,8 @@ const stateLabels: Record<
   string,
   { label: string; variant: "default" | "secondary" | "destructive" }
 > = {
-  NORMAL: { label: "정상", variant: "default" },
-  GRADUATE: { label: "졸업", variant: "secondary" },
+  NORMAL: { label: "수강 중", variant: "default" },
+  GRADUATE: { label: "수강 종료", variant: "secondary" },
   DELETED: { label: "탈퇴", variant: "destructive" },
 };
 
@@ -309,7 +309,7 @@ export default function StudentDetailScreen({
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground text-sm">학부모 정보</p>
+              <p className="text-muted-foreground text-sm">보호자 정보</p>
               <p className="font-medium">
                 {student.parent_name || "-"}{" "}
                 {student.parent_phone && `(${student.parent_phone})`}

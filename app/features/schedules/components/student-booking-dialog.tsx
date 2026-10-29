@@ -261,7 +261,7 @@ export function StudentBookingDialog({
               </div>
               {!availabilityPending && visibleSlots.length === 0 && (
                 <p role="status" className="text-muted-foreground mt-3 text-sm">
-                  신청 가능한 시작 시간이 없어요. 학원에 문의해주세요.
+                  신청 가능한 시작 시간이 없어요. 수업 운영자에게 문의해주세요.
                 </p>
               )}
               <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
@@ -345,7 +345,7 @@ export function StudentBookingDialog({
             />
             <span>
               이 수업은 이미 취소 기한이 지났어요. 예약 후 직접 취소할 수
-              없으며, 변경은 학원에 문의해야 함을 확인했어요.
+              없으며, 변경은 수업 운영자에게 문의해야 함을 확인했어요.
             </span>
           </label>
         )}

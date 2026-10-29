@@ -5,7 +5,30 @@
 
 공통화 단계별 계획: [소규모 수업 운영 공통화](docs/service-generalization-plan.md)
 
-수강생 운영 정책안: [졸업과 학원 탈퇴](docs/student-lifecycle-policy.md)
+수강생 운영 정책안: [수강 종료와 탈퇴](docs/student-lifecycle-policy.md)
+
+## Phase 6 일반 수업 화면 공통화
+
+소규모 클래스·과외에서도 자연스럽게 사용할 수 있도록 기존 기능과 데이터를 유지하며 화면을 정리했다.
+
+- 학원 문의 표현을 수업 운영자·담당 강사 표현으로 정리했다.
+- 재원·졸업·재원 복귀 표시는 수강 중·수강 종료·수강 재개로 변경했다.
+  내부 `NORMAL`·`GRADUATE`·`DELETED` 코드와 예약 제한·예정 예약 취소·복구 정책은 유지한다.
+- 보호자 정보는 선택 입력 영역으로 접고, 기존 값이 있으면 펼쳐서 보여준다. 접힌 상태에서도 기존 값은 저장 폼에 포함된다.
+- 온라인 수업은 접속 안내를 표시하고 주소·지도 링크를 숨긴다. 오프라인 지도는 유지한다.
+- 학습 기록 히트맵은 출석 확인된 종료 수업의 하루 참여 횟수로 색상을 표시하고 실제 시간을 분 단위로 안내한다.
+- 클래스의 수업 시간·총 회차·모집 정원은 소개 정보이며, 실제 예약 길이·동시 인원은 조직 설정을 따른다는 안내를 추가했다.
+
+기본 1년 수강 기간·반복 등록 방식·클래스별 정책은 이번 단계에서 변경하지 않았다.
+자세한 범위와 검증·배포 기록은 [공통화 계획 Phase 6](docs/service-generalization-plan.md#phase-6)을 참고한다.
+
+```bash
+npm run typecheck
+npm run test:unit
+npm run test:db
+npm run build
+npm run test:generalization:ssr
+```
 
 ---
 
