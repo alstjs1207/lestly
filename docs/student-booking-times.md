@@ -10,7 +10,7 @@
 - 화면을 열어 둔 뒤 설정이 바뀌어도 실제 예약 시 DB 트리거가 최신 설정으로 검증한다. 직접 RPC를 호출해도 수강생에게 `schedule_time_disabled` 오류를 반환한다.
 - 관리자 설정의 숫자 값과 시간 목록은 한 번의 upsert로 저장하여 부분 저장을 방지한다.
 
-분 단위 예약 정책 확장은 `0032_booking_policy.sql` 적용이 필요하다. 구현·검증 상태와 실제 적용 순서는 [공통화 계획의 Phase 3](service-generalization-plan.md#phase-3)을 따른다. 현재 목록에 없는 이전 차단 시각도 보존한다.
+분 단위 예약 정책 확장은 `0032_booking_policy.sql` → `0033_booking_policy_fresh_snapshot.sql` → 새 앱 순서로 적용한다. 구현·검증 상태는 [공통화 계획의 Phase 3](service-generalization-plan.md#phase-3)을 따른다. 현재 목록에 없는 이전 차단 시각도 보존한다.
 
 ## 최초 적용 순서
 
