@@ -6,6 +6,7 @@ import * as policy from "../app/features/app-settings/booking-policy.ts";
 import * as times from "../app/features/app-settings/booking-times.ts";
 import * as window from "../app/features/app-settings/booking-window.ts";
 import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
+import * as settingsSections from "../app/features/app-settings/settings-sections.ts";
 import * as kst from "../app/features/schedules/utils/kst.ts";
 import * as rules from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
@@ -57,6 +58,7 @@ test("settings write one exclusive window atomically and legacy open forms prese
       "~/features/app-settings/schema": {
         SETTING_KEYS: { MAX_CONCURRENT_STUDENTS: "max_concurrent_students" },
       },
+      "../../../app-settings/settings-sections": settingsSections,
       "../../../app-settings/booking-policy": policy,
       "../../../app-settings/booking-window": window,
       "../../../app-settings/cancellation-policy": cancellation,

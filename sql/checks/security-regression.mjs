@@ -25,6 +25,7 @@ import {
   checkCancellationPolicy,
 } from "./cancellation-policy.mjs";
 import { checkClassBookingPolicy } from "./class-booking-policy.mjs";
+import { checkSettingsSections } from "./settings-sections.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
 import {
@@ -2123,6 +2124,21 @@ try {
     adminA,
     studentA,
     managedStudent,
+  });
+
+  await checkSettingsSections({
+    db,
+    check,
+    asRole,
+    blocked,
+    source: await readFile(
+      new URL("0038_settings_section_saves.sql", migrationRoot),
+      "utf8",
+    ),
+    orgA,
+    orgB,
+    adminA,
+    studentA,
   });
 
   console.log(

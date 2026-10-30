@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-30T09:13:58.935Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "checks": [
+    "class_defaults saves only its own settings without touching other rows, classes or reservations",
+    "booking_times saves only its own settings without touching other rows, classes or reservations",
+    "booking_window saves only its own settings without touching other rows, classes or reservations",
+    "booking_days saves only its own settings without touching other rows, classes or reservations",
+    "cancellation_policy saves only its own settings without touching other rows, classes or reservations",
+    "different sections merge latest saved policy values in either order",
+    "invalid section payloads and cross-section injection roll back all writes",
+    "empty restriction arrays explicitly clear only the selected section",
+    "students, anonymous users and another tenant admin cannot save settings sections",
+    "first scoped save creates only necessary settings and uses class defaults without propagating to existing classes",
+    "scoped save RPC retains booking lock discipline and authenticated-only execution",
+    "concurrent class_defaults then booking_times preserves both saved sections after lock wait",
+    "concurrent booking_times then class_defaults preserves both saved sections after lock wait"
+  ],
+  "passed": 13,
+  "allFixturesRemoved": true,
+  "allBusinessDataUnchanged": true
+}
