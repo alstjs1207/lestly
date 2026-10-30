@@ -36,7 +36,7 @@ export function BookingWindowFields({
     : null;
   return (
     <fieldset disabled={busy} className="min-w-0 space-y-4">
-      <legend className="mb-3 font-semibold">예약 오픈 방식</legend>
+      <legend className="sr-only">예약 오픈 방식</legend>
       <div className="grid gap-3 sm:grid-cols-2">
         {(
           [

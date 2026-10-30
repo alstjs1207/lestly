@@ -27,6 +27,7 @@ import {
   CANCELLATION_POLICY_KEY,
   cancellationPolicyFromForm,
 } from "../../../app-settings/cancellation-policy";
+import { settingsSectionFromForm } from "../../../app-settings/settings-sections";
 import { requireAdminRole } from "../../guards.server";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -36,6 +37,44 @@ export async function action({ request }: Route.ActionArgs) {
   const { organizationId } = await requireAdminRole(client);
 
   const formData = await request.formData();
+
+  if (formData.has("section")) {
+    let submission;
+    try {
+      submission = settingsSectionFromForm(formData);
+    } catch {
+      return data(
+        { success: false, error: "이 영역의 입력값을 확인해 주세요." },
+        { status: 400 },
+      );
+    }
+    try {
+      const { error } = await client.rpc("save_booking_settings_section", {
+        p_org: organizationId,
+        p_section: submission.section,
+        p_values: submission.values,
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error("Failed to update settings section", error);
+      const code = (error as { code?: string })?.code;
+      const status =
+        code === "42501"
+          ? 403
+          : ["22023", "P0001", "23514", "22P02"].includes(code ?? "")
+            ? 400
+            : 500;
+      return data(
+        {
+          success: false,
+          section: submission.section,
+          error: "저장하지 못했습니다. 입력값을 확인하고 다시 시도해 주세요.",
+        },
+        { status },
+      );
+    }
+    return data({ success: true, section: submission.section, error: null });
+  }
 
   const numberField = (key: string) => {
     const raw = formData.get(key);

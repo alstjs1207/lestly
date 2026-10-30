@@ -1115,6 +1115,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      save_booking_settings_section: {
+        Args: { p_org: string; p_section: string; p_values: Json }
+        Returns: undefined
+      }
       get_student_program_booking_availability: {
         Args: { p_organization_id: string; p_program_id: number; p_date: string; p_minutes: number }
         Returns: { start_time: string; available: boolean; reason: string }[]

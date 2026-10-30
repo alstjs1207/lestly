@@ -87,7 +87,7 @@ export function BookingTimeSettings({
       )}
       <p className="text-muted-foreground text-xs">
         수업 시작 시각에만 적용되며, 이미 등록된 일정과 수업 종료 시각에는
-        영향을 주지 않습니다. 아래 설정 저장을 누르면 반영됩니다.
+        영향을 주지 않습니다. 이 영역의 저장 버튼을 누르면 반영됩니다.
       </p>
     </fieldset>
   );

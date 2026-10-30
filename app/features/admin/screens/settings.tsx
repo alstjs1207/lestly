@@ -1,17 +1,5 @@
 import type { Route } from "./+types/settings";
 
-import { useFetcher } from "react-router";
-
-import { Button } from "~/core/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/core/components/ui/card";
-import { Input } from "~/core/components/ui/input";
-import { Label } from "~/core/components/ui/label";
 import makeServerClient from "~/core/lib/supa-client.server";
 import {
   DISABLED_BOOKING_DAYS_KEY,
@@ -40,11 +28,7 @@ import {
   cancellationPolicySchema,
 } from "../../app-settings/cancellation-policy";
 import { getStudentTypes } from "../../organizations/student-types.server";
-import { BookingDaySettings } from "../components/booking-day-settings";
-import { BookingPolicyFields } from "../components/booking-policy-fields";
-import { BookingWindowFields } from "../components/booking-window-fields";
-import { CancellationPolicyFields } from "../components/cancellation-policy-fields";
-import { StudentTypeSettings } from "../components/student-type-settings";
+import { SettingsView } from "../components/settings-view";
 import { requireAdminRole } from "../guards.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -115,93 +99,5 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
-  const { maxConcurrentStudents, disabledBookingTimes, disabledBookingDays } =
-    loaderData;
-  const fetcher = useFetcher<{ error?: string }>();
-  const isSubmitting = fetcher.state !== "idle";
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">설정</h1>
-        <p className="text-muted-foreground">시스템 설정을 관리합니다.</p>
-      </div>
-
-      <StudentTypeSettings types={loaderData.studentTypes} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>일정 설정</CardTitle>
-          <CardDescription>일정 등록 관련 설정을 변경합니다.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <fetcher.Form
-            method="post"
-            action="/api/admin/settings"
-            className="space-y-6"
-          >
-            {fetcher.data?.error && (
-              <p
-                className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm"
-                role="alert"
-              >
-                {fetcher.data.error}
-              </p>
-            )}
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="max_concurrent_students">
-                  새 클래스 기본 정원
-                </Label>
-                <Input
-                  id="max_concurrent_students"
-                  name="max_concurrent_students"
-                  type="number"
-                  min="1"
-                  max="100"
-                  defaultValue={maxConcurrentStudents}
-                />
-                <p className="text-muted-foreground text-xs">
-                  새 클래스 생성 시 채울 정원입니다. 기존 클래스의 정원과 예약은
-                  변경되지 않습니다.
-                </p>
-              </div>
-            </div>
-            <CancellationPolicyFields
-              key={JSON.stringify(loaderData.bookingPolicy.cancellationPolicy)}
-              policy={loaderData.bookingPolicy.cancellationPolicy}
-              busy={isSubmitting}
-            />
-            <BookingWindowFields
-              key={JSON.stringify(loaderData.bookingPolicy.bookingWindow)}
-              window={loaderData.bookingPolicy.bookingWindow}
-              now={loaderData.now}
-              busy={isSubmitting}
-            />
-            <BookingPolicyFields
-              key={JSON.stringify([
-                loaderData.bookingPolicy,
-                disabledBookingTimes,
-              ])}
-              policy={loaderData.bookingPolicy}
-              disabledTimes={disabledBookingTimes}
-              busy={isSubmitting}
-            />
-
-            <BookingDaySettings
-              key={`days:${disabledBookingDays.join(",")}`}
-              disabledDays={disabledBookingDays}
-              busy={isSubmitting}
-            />
-
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "저장 중..." : "설정 저장"}
-              </Button>
-            </div>
-          </fetcher.Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <SettingsView loaderData={loaderData} />;
 }

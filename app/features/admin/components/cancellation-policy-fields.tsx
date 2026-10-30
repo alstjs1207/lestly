@@ -20,7 +20,7 @@ export function CancellationPolicyFields({
   );
   return (
     <fieldset disabled={busy} className="min-w-0 space-y-4">
-      <legend className="mb-3 font-semibold">수강생 예약 취소 기한</legend>
+      <legend className="sr-only">수강생 예약 취소 기한</legend>
       <div className="grid gap-3 sm:grid-cols-2">
         {(
           [

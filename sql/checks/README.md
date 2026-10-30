@@ -54,3 +54,7 @@ Drizzle snapshots predate several manually maintained migrations.
 클래스 정책으로 전환한다. 이후 클래스 기본값 복사·비전파, 클래스 필수 연결,
 시간·정원 분리, 출결 복원, 반복 RPC 원자성, 권한·인덱스 등 최신 정책 14개를 검사한다.
 0036부터 예약의 클래스 FK는 NOT NULL/RESTRICT이며 예약이 있는 클래스를 삭제할 수 없다.
+
+0038은 영역별 저장 RPC만 추가한다. 기존 120개에 영역 저장 11개를 더해
+범위별 갱신·부분 실패 롤백·다른 영역 보존·권한·기본값 복사를 검사한다.
+실제 두 연결의 동시 저장은 `20261030_verify_settings_sections.mjs`에서 검증한다.

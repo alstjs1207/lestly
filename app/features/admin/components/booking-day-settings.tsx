@@ -13,7 +13,7 @@ export function BookingDaySettings({
   const [closed, setClosed] = useState(disabledDays);
   return (
     <fieldset disabled={busy} className="space-y-3">
-      <legend className="text-sm font-semibold">수강생 신청 차단 요일</legend>
+      <legend className="sr-only">수강생 신청 차단 요일</legend>
       <input type="hidden" name="booking_days_present" value="1" />
       <p className="text-muted-foreground text-sm leading-relaxed">
         수업을 받지 않는 요일을 선택해주세요. 선택한 요일은 매주 수강생의 신규
@@ -74,7 +74,7 @@ export function BookingDaySettings({
         </p>
       )}
       <p className="text-muted-foreground text-xs">
-        한국 시간의 수업 시작 요일을 기준으로 적용됩니다. 아래 설정 저장을
+        한국 시간의 수업 시작 요일을 기준으로 적용됩니다. 이 영역의 저장 버튼을
         누르면 반영됩니다.
       </p>
     </fieldset>

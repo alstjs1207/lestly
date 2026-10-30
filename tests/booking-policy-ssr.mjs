@@ -69,6 +69,33 @@ assert.match(settings, /10:00~10:40/);
 assert.match(settings, /name="durationMinutes"[^>]*value="40, 50, 90"/);
 assert.match(settings, /name="leadMinutes"[^>]*value="60"/);
 assert.match(settings, /12:30/);
+const sectionForms =
+  settings.split("<script")[0].match(/<form\b[\s\S]*?<\/form>/g) ?? [];
+const scopeForms = sectionForms.filter((markup) =>
+  markup.includes('name="section"'),
+);
+assert.equal(scopeForms.length, 5);
+const scopeForm = (id) =>
+  scopeForms.find((markup) => markup.includes(`name="section" value="${id}"`));
+assert.match(scopeForm("class_defaults"), /name="durationMinutes"/);
+assert.doesNotMatch(
+  scopeForm("class_defaults"),
+  /name="firstStart"|name="cancellationMode"/,
+);
+assert.match(scopeForm("booking_times"), /name="firstStart"/);
+assert.doesNotMatch(
+  scopeForm("booking_times"),
+  /name="durationMinutes"|name="max_concurrent_students"/,
+);
+assert.match(scopeForm("booking_window"), /예약 기간 저장/);
+assert.doesNotMatch(
+  scopeForm("booking_window"),
+  /name="cancellationMode"|name="durationMinutes"/,
+);
+assert.match(scopeForm("booking_days"), /휴무 요일 저장/);
+assert.match(scopeForm("cancellation_policy"), /취소 기한 저장/);
+assert.match(settings, /설정 영역 바로가기/);
+assert.match(settings, /다른 영역에 입력 중인 내용은 유지됩니다/);
 const fixture = {
   year: 2026,
   month: 10,
