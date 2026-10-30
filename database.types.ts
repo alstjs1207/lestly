@@ -642,17 +642,18 @@ export type Database = {
       }
       programs: {
         Row: {
+          booking_duration_minutes: number[]
           cover_image_url: string | null
           created_at: string
           curriculum: Json | null
           description: string | null
-          duration_minutes: number | null
+          duration_minutes: number
           instructor_id: number | null
           is_public: boolean | null
           level: Database["public"]["Enums"]["program_level"] | null
           location_address: string | null
           location_type: string | null
-          max_capacity: number | null
+          max_capacity: number
           organization_id: string
           price: number | null
           program_id: number
@@ -665,17 +666,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          booking_duration_minutes?: number[]
           cover_image_url?: string | null
           created_at?: string
           curriculum?: Json | null
           description?: string | null
-          duration_minutes?: number | null
+          duration_minutes?: number
           instructor_id?: number | null
           is_public?: boolean | null
           level?: Database["public"]["Enums"]["program_level"] | null
           location_address?: string | null
           location_type?: string | null
-          max_capacity?: number | null
+          max_capacity?: number
           organization_id: string
           price?: number | null
           program_id?: never
@@ -688,17 +690,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          booking_duration_minutes?: number[]
           cover_image_url?: string | null
           created_at?: string
           curriculum?: Json | null
           description?: string | null
-          duration_minutes?: number | null
+          duration_minutes?: number
           instructor_id?: number | null
           is_public?: boolean | null
           level?: Database["public"]["Enums"]["program_level"] | null
           location_address?: string | null
           location_type?: string | null
-          max_capacity?: number | null
+          max_capacity?: number
           organization_id?: string
           price?: number | null
           program_id?: never
@@ -902,7 +905,7 @@ export type Database = {
           is_exception: boolean
           organization_id: string
           parent_schedule_id: number | null
-          program_id: number | null
+          program_id: number
           rrule: string | null
           schedule_id: number
           start_time: string
@@ -921,7 +924,7 @@ export type Database = {
           is_exception?: boolean
           organization_id: string
           parent_schedule_id?: number | null
-          program_id?: number | null
+          program_id: number
           rrule?: string | null
           schedule_id?: never
           start_time: string
@@ -940,7 +943,7 @@ export type Database = {
           is_exception?: boolean
           organization_id?: string
           parent_schedule_id?: number | null
-          program_id?: number | null
+          program_id?: number
           rrule?: string | null
           schedule_id?: never
           start_time?: string
@@ -1112,6 +1115,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_student_program_booking_availability: {
+        Args: { p_organization_id: string; p_program_id: number; p_date: string; p_minutes: number }
+        Returns: { start_time: string; available: boolean; reason: string }[]
+      }
+      read_program_booking_policy: {
+        Args: { p_org: string; p_program: number }
+        Returns: Json
+      }
+      program_peak_occupancy: {
+        Args: { p_org: string; p_program: number; p_start: string; p_end: string; p_exclude?: number[] }
+        Returns: number
+      }
       save_student_types: {
         Args: { p_org: string; p_types: Json; p_expected_types: Json }
         Returns: undefined

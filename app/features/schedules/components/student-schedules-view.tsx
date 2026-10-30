@@ -1,4 +1,5 @@
 import type { BookingPolicy } from "../../app-settings/booking-policy";
+import type { BookingProgram } from "./student-booking-panel";
 
 import { CalendarDays, List, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -25,11 +26,7 @@ import { StudentWeeklySchedules } from "./student-weekly-schedules";
 
 export interface StudentSchedulesData {
   schedules: LearningSchedule[];
-  programs: {
-    program_id: number;
-    title: string;
-    location_address?: string | null;
-  }[];
+  programs: BookingProgram[];
   year: number;
   month: number;
   now: string;

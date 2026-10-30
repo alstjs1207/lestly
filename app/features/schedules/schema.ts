@@ -30,7 +30,7 @@ import { profiles } from "~/features/users/schema";
  * Schedules Table
  *
  * Stores schedule information for students.
- * Each schedule has a start time, end time (3 hours fixed), and optional recurrence rule.
+ * Each schedule stores its actual start/end time and optional recurrence rule.
  */
 export const schedules = pgTable(
   "schedules",
@@ -42,11 +42,10 @@ export const schedules = pgTable(
     organization_id: uuid("organization_id")
       .notNull()
       .references(() => organizations.organization_id, { onDelete: "cascade" }),
-    // Program reference (optional)
-    program_id: bigint("program_id", { mode: "number" }).references(
-      () => programs.program_id,
-      { onDelete: "set null" },
-    ),
+    // Every reservation belongs to a class; existing reservations are preserved.
+    program_id: bigint("program_id", { mode: "number" })
+      .notNull()
+      .references(() => programs.program_id, { onDelete: "restrict" }),
     student_id: uuid("student_id")
       .notNull()
       .references(() => profiles.profile_id, { onDelete: "cascade" }),
@@ -96,6 +95,9 @@ export const schedules = pgTable(
       "schedules_valid_time_range",
       sql`${table.end_time} > ${table.start_time}`,
     ),
+    index("schedules_program_start_active_idx")
+      .on(table.organization_id, table.program_id, table.start_time)
+      .where(sql`${table.cancelled_at} IS NULL`),
     index("schedules_org_start_idx").on(
       table.organization_id,
       table.start_time,

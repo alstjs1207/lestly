@@ -10,6 +10,12 @@ import { data, redirect } from "react-router";
 import { requireMethod } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getBookingPolicy } from "~/features/app-settings/booking-policy.server";
+import { getMaxConcurrentStudents } from "~/features/app-settings/queries";
+import {
+  programBookingDefaults,
+  programBookingSchema,
+} from "~/features/programs/booking-policy";
 import { createProgram } from "~/features/programs/queries";
 
 import { requireAdminRole } from "../../guards.server";
@@ -48,11 +54,35 @@ export async function action({ request }: Route.ActionArgs) {
     location_type: locationType,
     location_address: locationAddress,
     duration_minutes: durationMinutes,
+    booking_duration_minutes: bookingDurations,
     total_sessions: totalSessions,
     max_capacity: maxCapacity,
     is_public: isPublic,
     curriculum,
   } = parsed.data;
+  const [policy, capacity] = await Promise.all([
+    getBookingPolicy(client, { organizationId }),
+    getMaxConcurrentStudents(client, { organizationId }),
+  ]);
+  const defaults = programBookingDefaults(policy, capacity);
+  const booking = programBookingSchema.safeParse({
+    duration_minutes: durationMinutes ?? defaults.duration_minutes,
+    booking_duration_minutes: bookingDurations ?? [
+      ...new Set([
+        ...defaults.booking_duration_minutes,
+        durationMinutes ?? defaults.duration_minutes,
+      ]),
+    ],
+    max_capacity: maxCapacity ?? defaults.max_capacity,
+  });
+  if (!booking.success)
+    return data(
+      {
+        error:
+          "수업 시간과 정원을 확인해 주세요. 기본 수업 시간은 허용 목록에 포함해야 합니다.",
+      },
+      { status: 400, headers },
+    );
   const image = await validateCatalogImage(formData.get("cover_image"));
   if (!image.success) {
     return data({ error: image.error }, { status: 400, headers });
@@ -75,10 +105,10 @@ export async function action({ request }: Route.ActionArgs) {
       cover_image_url: null, // 파일 업로드 후 업데이트
       location_type: locationType || "offline",
       location_address: locationAddress || null,
-      duration_minutes: durationMinutes ?? 120,
+      ...booking.data,
       total_sessions: totalSessions ?? 4,
       curriculum,
-      max_capacity: maxCapacity || null,
+
       is_public: isPublic,
     });
   } catch (err: unknown) {

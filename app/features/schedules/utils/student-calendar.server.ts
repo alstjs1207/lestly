@@ -106,6 +106,7 @@ export async function loadStudentCalendar(
       allowedStartDate: allowed.startDate.toISOString(),
       allowedEndDate: allowed.endDate.toISOString(),
       canBook:
+        programs.length > 0 &&
         !!membership &&
         (!profile.class_end_date ||
           profile.class_end_date >= toKSTDateString(now)),

@@ -61,10 +61,17 @@ export function BookingPolicyFields({
   );
   return (
     <fieldset disabled={busy} className="min-w-0 space-y-6">
-      <legend className="mb-3 font-semibold">예약 시간 규칙</legend>
+      <legend className="mb-3 font-semibold">
+        클래스 기본 시간과 공통 예약 규칙
+      </legend>
+      <p className="text-muted-foreground text-sm">
+        수업 길이는 새 클래스 생성 시 복사하는 기본값입니다. 기존 클래스에는
+        반영되지 않습니다. 시작 시각·간격·접수 마감과 휴무일·예약 기간·취소
+        정책은 모든 클래스에 공통으로 적용됩니다.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="durationMinutes">허용할 수업 길이 (분)</Label>
+          <Label htmlFor="durationMinutes">새 클래스 허용 수업 길이 (분)</Label>
           <Input
             id="durationMinutes"
             name="durationMinutes"
@@ -77,7 +84,12 @@ export function BookingPolicyFields({
             1~1440분, 최대 24개를 쉼표로 구분해 주세요.
           </p>
         </div>
-        {field("defaultDurationMinutes", "기본 수업 길이 (분)", 1, 1440)}
+        {field(
+          "defaultDurationMinutes",
+          "새 클래스 기본 수업 길이 (분)",
+          1,
+          1440,
+        )}
         {field("startIntervalMinutes", "시작 시간 간격 (분)", 1, 1440)}
         {(
           [

@@ -76,7 +76,15 @@ const fixture = {
   selectedDate: "2026-10-27",
   nextSchedule: null,
   schedules: [],
-  programs: [],
+  programs: [
+    {
+      program_id: 1,
+      title: "분 단위 클래스",
+      duration_minutes: 40,
+      booking_duration_minutes: [40, 50, 90],
+      max_capacity: 2,
+    },
+  ],
   classStartDate: "2026-10-01",
   classEndDate: "2026-11-30",
   allowedStartDate: "2026-10-26T00:00:00+09:00",
@@ -101,7 +109,15 @@ const common = {
       phone: null,
     },
   ],
-  programs: [],
+  programs: [
+    {
+      program_id: 1,
+      title: "분 단위 클래스",
+      duration_minutes: 40,
+      booking_duration_minutes: [40, 50, 90],
+      max_capacity: 2,
+    },
+  ],
 };
 const create = await render(
   "features/admin/screens/schedules/create",
@@ -120,7 +136,7 @@ const edit = await render(
     schedule: {
       schedule_id: 10,
       student_id: "test-student",
-      program_id: null,
+      program_id: 1,
       start_time: "2099-01-01T21:15:00+09:00",
       end_time: "2099-01-02T00:15:00+09:00",
       student: { name: "샘플 수강생" },
@@ -131,6 +147,49 @@ const edit = await render(
 assert.match(edit, /3시간 \(기존\)/);
 assert.match(edit, /21:15 \(기존\)/);
 assert.match(edit, /name="duration_minutes"/);
+const ownClass = await render(
+  "features/admin/screens/schedules/create",
+  "/admin/schedules/new",
+  {
+    ...common,
+    programs: [
+      {
+        program_id: 1,
+        title: "클래스 자체 90분",
+        subtitle: null,
+        duration_minutes: 90,
+        booking_duration_minutes: [90, 120],
+        max_capacity: 2,
+      },
+    ],
+  },
+);
+assert.match(ownClass, /name="duration_minutes"/);
+assert.match(ownClass, /1시간 30분/);
+assert.doesNotMatch(ownClass, /40분/);
+const noClass = await render(
+  "features/admin/screens/schedules/create",
+  "/admin/schedules/new",
+  { ...common, programs: [] },
+);
+assert.match(noClass, /예약할 활성 클래스가 없습니다/);
+assert.match(noClass, /href="\/admin\/programs\/new"/);
+assert.doesNotMatch(noClass, /name="duration_minutes"/);
+const newClass = await render(
+  "features/admin/screens/programs/create",
+  "/admin/programs/new",
+  {
+    instructors: [],
+    defaults: {
+      duration_minutes: 50,
+      booking_duration_minutes: [50, 90],
+      max_capacity: 7,
+    },
+  },
+);
+assert.match(newClass, /name="duration_minutes"[^>]*value="50"/);
+assert.match(newClass, /name="max_capacity"[^>]*value="7"/);
+assert.match(newClass, /기존 클래스는 유지/);
 console.log(
   "Booking policy SSR passed: settings preview, minute bookings, admin create and unchanged legacy duration/start.",
 );

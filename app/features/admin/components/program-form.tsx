@@ -43,6 +43,7 @@ interface ProgramFormProps {
     location_type?: string;
     location_address?: string;
     duration_minutes?: number;
+    booking_duration_minutes?: number[];
     total_sessions?: number;
     curriculum?: CurriculumItem[];
     max_capacity?: number;
@@ -59,6 +60,23 @@ export default function ProgramForm({
   const isSubmitting = fetcher.state !== "idle";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [defaultDuration, setDefaultDuration] = useState(
+    String(defaultValues?.duration_minutes ?? 180),
+  );
+  const [extraDurations, setExtraDurations] = useState(
+    (defaultValues?.booking_duration_minutes ?? [])
+      .filter((n) => n !== defaultValues?.duration_minutes)
+      .join(", "),
+  );
+  const allowedDurations = [
+    ...new Set([
+      Number(defaultDuration),
+      ...extraDurations
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map(Number),
+    ]),
+  ];
   // 커리큘럼 동적 필드 상태
   const [curriculum, setCurriculum] = useState<CurriculumItem[]>(
     defaultValues?.curriculum || [],
@@ -130,6 +148,11 @@ export default function ProgramForm({
           {fetcher.data.error}
         </p>
       )}
+      <input
+        type="hidden"
+        name="booking_duration_minutes"
+        value={JSON.stringify(allowedDurations)}
+      />
       {/* JSONB 필드를 hidden input으로 전송 */}
       <input
         type="hidden"
@@ -300,6 +323,11 @@ export default function ProgramForm({
       {/* 수업 정보 섹션 */}
       <div className="space-y-4">
         <h3 className="border-b pb-2 text-lg font-semibold">수업 정보</h3>
+        <p className="text-muted-foreground text-sm">
+          수업 시간과 정원은 이 클래스의 실제 예약에 적용됩니다. 새 클래스에는
+          조직 기본값을 채우며, 저장 후 조직 기본값을 바꿔도 기존 클래스는
+          유지됩니다.
+        </p>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label htmlFor="location_type">수업 형태</Label>
@@ -318,25 +346,43 @@ export default function ProgramForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="duration_minutes">1회 수업 시간 (분)</Label>
+            <Label htmlFor="duration_minutes">기본 수업 시간 (분) *</Label>
             <Input
               id="duration_minutes"
               name="duration_minutes"
               type="number"
-              min="30"
-              step="30"
-              defaultValue={defaultValues?.duration_minutes || 120}
+              min="1"
+              max="1440"
+              step="1"
+              required
+              value={defaultDuration}
+              onChange={(e) => setDefaultDuration(e.target.value)}
               aria-describedby="program-duration-help"
             />
             <p
               id="program-duration-help"
               className="text-muted-foreground text-xs"
             >
-              클래스 소개용 시간입니다. 예약 가능한 수업 길이는 조직의 예약 시간
-              규칙에서 별도로 설정합니다.
+              예약 시 처음 선택되는 수업 길이입니다.
             </p>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="extra_durations">추가 허용 수업 길이 (분)</Label>
+            <Input
+              id="extra_durations"
+              value={extraDurations}
+              onChange={(e) => setExtraDurations(e.target.value)}
+              placeholder="예: 60, 90, 120"
+              aria-describedby="extra-durations-help"
+            />
+            <p
+              id="extra-durations-help"
+              className="text-muted-foreground text-xs"
+            >
+              쉼표로 구분합니다. 기본 수업 시간은 자동으로 포함됩니다.
+            </p>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="total_sessions">총 회차</Label>
             <Input
@@ -357,13 +403,15 @@ export default function ProgramForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="max_capacity">모집 정원</Label>
+            <Label htmlFor="max_capacity">수업 정원 *</Label>
             <Input
               id="max_capacity"
               name="max_capacity"
               type="number"
               min="1"
-              defaultValue={defaultValues?.max_capacity}
+              max="100"
+              required
+              defaultValue={defaultValues?.max_capacity ?? 5}
               placeholder="5"
               aria-describedby="program-capacity-help"
             />
@@ -371,8 +419,7 @@ export default function ProgramForm({
               id="program-capacity-help"
               className="text-muted-foreground text-xs"
             >
-              클래스 소개용 모집 인원입니다. 실제 예약 인원은 조직 전체 동시
-              수강 인원 설정으로 제한합니다.
+              이 클래스의 같은 시간대 수업에 참여할 수 있는 최대 인원입니다.
             </p>
           </div>
 

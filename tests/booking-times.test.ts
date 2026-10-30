@@ -113,8 +113,10 @@ test("settings route validates all choices before one tenant-scoped atomic write
       },
       "../../../app-settings/booking-window": bookingWindow,
       "../../app-settings/booking-window": bookingWindow,
-      "../../app-settings/booking-policy.server": {
-        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      "../../programs/booking-policy.server": {
+        getProgramBookingPolicy: async () => ({
+          policy: bookingPolicy.DEFAULT_BOOKING_POLICY,
+        }),
       },
       "../utils/student-schedule-rules": { parseDateString },
       "../utils/kst": { toKSTDateString: realKstDate },
@@ -217,8 +219,10 @@ test("availability failures retain restrictions and settings query failures neve
       },
       "../../../app-settings/booking-window": bookingWindow,
       "../../app-settings/booking-window": bookingWindow,
-      "../../app-settings/booking-policy.server": {
-        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      "../../programs/booking-policy.server": {
+        getProgramBookingPolicy: async () => ({
+          policy: bookingPolicy.DEFAULT_BOOKING_POLICY,
+        }),
       },
       "../utils/student-schedule-rules": { parseDateString },
       "../utils/kst": { toKSTDateString: realKstDate },
@@ -275,7 +279,7 @@ test("availability failures retain restrictions and settings query failures neve
     },
   );
   const request = new Request(
-    "http://localhost/api/schedules/availability?date=2026-10-24&hours=3",
+    "http://localhost/api/schedules/availability?program_id=1&date=2026-10-24&hours=3",
   );
   const result = await loader({ request });
   assert.equal(result.slots, null);

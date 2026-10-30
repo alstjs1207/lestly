@@ -24,6 +24,7 @@ import {
   checkCancellationMigration,
   checkCancellationPolicy,
 } from "./cancellation-policy.mjs";
+import { checkClassBookingPolicy } from "./class-booking-policy.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
 import {
@@ -192,7 +193,7 @@ try {
   const journal = JSON.parse(
     await readFile(new URL("meta/_journal.json", migrationRoot), "utf8"),
   );
-  for (const entry of journal.entries) {
+  for (const entry of journal.entries.filter((e) => e.idx < 36)) {
     if (entry.idx === 24) {
       lifecycleBaseline = {
         policies: (
@@ -230,7 +231,7 @@ try {
     }
   }
   console.log(
-    `PASS fresh migration replay (${journal.entries.length} migrations)`,
+    `PASS fresh migration replay (${journal.entries.filter((e) => e.idx < 36).length} historical migrations)`,
   );
 
   await db.query(
@@ -2102,6 +2103,26 @@ try {
     studentA,
     studentB,
     studentEditBaseline,
+  });
+
+  await checkClassBookingPolicy({
+    db,
+    check,
+    asRole,
+    blocked,
+    attendancePatch: await readFile(
+      new URL("0037_preserve_existing_class_attendance.sql", migrationRoot),
+      "utf8",
+    ),
+    source: await readFile(
+      new URL("0036_class_booking_policy.sql", migrationRoot),
+      "utf8",
+    ),
+    orgA,
+    orgB,
+    adminA,
+    studentA,
+    managedStudent,
   });
 
   console.log(

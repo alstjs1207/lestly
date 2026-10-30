@@ -21,7 +21,13 @@ const nextSchedule = {
   start_time: "2026-10-27T01:00:00Z",
   end_time: "2026-10-27T04:00:00Z",
   attendance_status: "PENDING",
-  program: { program_id: 1, title: "SSR 예약 검증 수업" },
+  program: {
+    program_id: 1,
+    title: "SSR 예약 검증 수업",
+    duration_minutes: 180,
+    booking_duration_minutes: [180, 360, 540],
+    max_capacity: 5,
+  },
 };
 const fixture = {
   year: 2026,

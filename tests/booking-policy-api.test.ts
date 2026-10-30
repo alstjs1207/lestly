@@ -37,13 +37,19 @@ function adminRoute(update = false) {
         ],
       },
       "../../../app-settings/booking-policy": policy,
-      "../../../app-settings/booking-policy.server": {
-        getBookingPolicy: async (
+      "../../../programs/booking-policy.server": {
+        getProgramBookingPolicy: async (
           _: unknown,
-          { organizationId }: { organizationId: string },
+          {
+            organizationId,
+            programId,
+          }: { organizationId: string; programId: number },
         ) => {
           assert.equal(organizationId, "org-a");
-          return custom;
+          if (!Number.isSafeInteger(programId) || programId < 1)
+            throw new Error("schedule_program_required");
+          if (programId !== 1) throw new Error("schedule_program_not_eligible");
+          return { policy: custom };
         },
       },
       "../../guards.server": {
@@ -67,6 +73,7 @@ function adminRoute(update = false) {
         validateScheduleBatch: async () => ({ allowed: true }),
         getScheduleById: async () => ({
           schedule_id: 1,
+          program_id: 1,
           start_time: "2099-01-01T21:15:00+09:00",
           end_time: "2099-01-02T00:15:00+09:00",
         }),
@@ -77,6 +84,7 @@ function adminRoute(update = false) {
     const form = new FormData();
     for (const [k, v] of Object.entries({
       student_id: "fixture",
+      program_id: "1",
       date: "2099-01-01",
       start_time: "09:50",
       ...values,
@@ -130,4 +138,14 @@ test("editing an existing removed duration preserves its exact length without al
   );
   assert.equal((await f.run({ duration_minutes: "120" })).init.status, 400);
   assert.equal(f.writes.length, 1);
+});
+
+test("admin booking requires an eligible class before any write and a class change cannot retain an unlisted legacy length", async () => {
+  const f = adminRoute();
+  for (const program_id of ["", "0", "1junk", "999"])
+    assert.equal(
+      (await f.run({ duration_minutes: "40", program_id })).init.status,
+      400,
+    );
+  assert.equal(f.writes.length, 0);
 });

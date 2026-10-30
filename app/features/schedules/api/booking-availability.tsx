@@ -11,8 +11,8 @@ import {
 } from "~/features/app-settings/queries";
 import { getUserProfile } from "~/features/users/queries";
 
-import { getBookingPolicy } from "../../app-settings/booking-policy.server";
 import { isBookingDateInWindow } from "../../app-settings/booking-window";
+import { getProgramBookingPolicy } from "../../programs/booking-policy.server";
 import { toKSTDateString } from "../utils/kst";
 import { parseDateString } from "../utils/student-schedule-rules";
 
@@ -37,10 +37,26 @@ export async function loader({ request }: Route.LoaderArgs) {
     ? Number(params.get("minutes"))
     : Number(params.get("hours")) * 60;
   const hours = minutes / 60;
-  const bookingPolicy = await getBookingPolicy(client, {
-    organizationId: member.organization_id,
-  });
-  const key = `${date}:${hours}`;
+  const programId = Number(params.get("program_id"));
+  const key = `${programId}:${date}:${hours}`;
+  let bookingPolicy;
+  try {
+    ({ policy: bookingPolicy } = await getProgramBookingPolicy(client, {
+      organizationId: member.organization_id,
+      programId,
+    }));
+  } catch (error) {
+    if (
+      !["schedule_program_required", "schedule_program_not_eligible"].includes(
+        (error as Error).message,
+      )
+    )
+      throw error;
+    return data(
+      { key, slots: null, error: "예약할 활성 클래스를 선택해 주세요." },
+      { status: 400, headers },
+    );
+  }
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
     !Number.isInteger(minutes) ||
@@ -60,9 +76,10 @@ export async function loader({ request }: Route.LoaderArgs) {
       { headers },
     );
   const { data: slots, error: availabilityError } = await client.rpc(
-    "get_student_booking_availability_minutes",
+    "get_student_program_booking_availability",
     {
       p_organization_id: member.organization_id,
+      p_program_id: programId,
       p_date: date,
       p_minutes: minutes,
     },

@@ -151,7 +151,7 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
             <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="max_concurrent_students">
-                  조직 전체 동시 수강 인원
+                  새 클래스 기본 정원
                 </Label>
                 <Input
                   id="max_concurrent_students"
@@ -162,8 +162,8 @@ export default function SettingsScreen({ loaderData }: Route.ComponentProps) {
                   defaultValue={maxConcurrentStudents}
                 />
                 <p className="text-muted-foreground text-xs">
-                  모든 클래스의 같은 시간대 예약을 합산합니다. 클래스별 모집
-                  정원과는 별도인 조직 전체 제한입니다.
+                  새 클래스 생성 시 채울 정원입니다. 기존 클래스의 정원과 예약은
+                  변경되지 않습니다.
                 </p>
               </div>
             </div>
