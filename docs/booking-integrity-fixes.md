@@ -1,3 +1,5 @@
+> **이력 문서**: 현재 정책은 [OpenSpec 명세](../openspec/README.md)를 따른다. 이 문서는 당시 계획·구현·검증 기록이며 현재 지원 여부나 미해결 결함의 기준으로 단독 사용하지 않는다.
+
 # 예약 처리 정합성 수정
 
 2026년 10월 30일. [상태별 조사](/Users/msyu/study/lestly/docs/booking-state-audit-2026-10-30.md)와 [연속 동작 조사](/Users/msyu/study/lestly/docs/reservation-transitions-audit-2026-10-30.md)에서 확인한 9개 항목을 수정한다. 대상 앱 브랜치는 `preview`이며 `main`에는 병합하지 않는다.

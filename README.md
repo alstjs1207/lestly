@@ -1,5 +1,17 @@
 # Lestly
 
+AI 작업 진입점: [AGENTS.md](AGENTS.md). 현재 정책과 기능 상태: [OpenSpec](openspec/README.md). 미확정·미지원·검증 공백: [목록](openspec/known-gaps.md).
+
+```sh
+npm ci
+npm run spec:context -- booking
+npm run spec:check
+npm run verify:local
+```
+
+Node 24.x를 사용한다. 아래 기존 소개·정책·릴리스 설명에는 과거 내용이 포함되어 있으며 현재 계약은 OpenSpec 명세가 기준이다. 상세 분석·검증 범위는 [초기 분석 기록](openspec/baseline-audit.md)을 따른다.
+
+
 소규모 클래스 및 샵 운영자를 위한 예약·상담·수강생 관리 SaaS
 클래스 홍보, 상담 접수, 수강생 관리, 스케줄 운영을 하나의 서비스로 제공하는 플랫폼
 

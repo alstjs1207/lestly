@@ -1,0 +1,1128 @@
+{
+  "version": 1,
+  "baseline": {
+    "branch": "preview",
+    "commit": "6647fb055b406bd8176ebb8f1ce31ad5ea6b90e5",
+    "date": "2026-10-30"
+  },
+  "domains": [
+    {
+      "id": "identity",
+      "title": "인증·초대·계정",
+      "commands": ["npm run test:unit", "npm run test:db"],
+      "requirements": [
+        {
+          "id": "AUTH-001",
+          "sources": [
+            "app/core/lib/supa-client.server.ts",
+            "app/core/layouts/private.layout.tsx",
+            "sql/migrations/0025_student_edit_fast_path.sql"
+          ],
+          "tests": [
+            "tests/auth-user.test.ts",
+            "tests/authenticated-profile.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/core/lib/supa-client.server.ts",
+              "contains": "get_account_auth_context"
+            }
+          ]
+        },
+        {
+          "id": "AUTH-002",
+          "sources": [
+            "app/features/auth/screens/admin-signup.tsx",
+            "app/features/auth/screens/admin-signup-profile.tsx",
+            "app/features/auth/screens/admin-organization-setup.tsx"
+          ],
+          "tests": [],
+          "verification": "source-reviewed",
+          "anchors": [
+            {
+              "path": "app/features/auth/screens/admin-organization-setup.tsx",
+              "contains": "organizationSchema"
+            }
+          ]
+        },
+        {
+          "id": "AUTH-003",
+          "sources": [
+            "app/features/admin/api/students/invite.tsx",
+            "app/features/admin/lib/student-invite.server.ts",
+            "app/features/auth/screens/social/complete.tsx",
+            "sql/migrations/0017_student_invite_contact_email.sql"
+          ],
+          "tests": [
+            "tests/student-invite.test.ts",
+            "sql/checks/security-regression.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/api/students/invite.tsx",
+              "contains": "hashStudentInviteToken"
+            }
+          ]
+        },
+        {
+          "id": "AUTH-004",
+          "sources": [
+            "app/features/auth/lib/social-oauth.ts",
+            "app/features/users/api/connect-provider.tsx",
+            "app/features/users/api/disconnect-provider.tsx",
+            "sql/migrations/0017_student_invite_contact_email.sql"
+          ],
+          "tests": [
+            "tests/email-optional-auth.test.ts",
+            "sql/checks/security-regression.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/auth/lib/social-oauth.ts",
+              "contains": "getSocialOAuthOptions"
+            }
+          ]
+        },
+        {
+          "id": "AUTH-005",
+          "sources": [
+            "app/features/users/api/edit-profile.tsx",
+            "app/core/lib/avatar-validation.ts",
+            "app/features/users/api/delete-account.tsx"
+          ],
+          "tests": [
+            "tests/avatar-validation.test.ts",
+            "tests/request-security.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/users/api/edit-profile.tsx",
+              "contains": "getAvatarValidationError"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "access-control",
+      "title": "조직 권한·보안",
+      "commands": ["npm run test:unit", "npm run test:db"],
+      "requirements": [
+        {
+          "id": "SEC-001",
+          "sources": [
+            "app/features/admin/guards.server.ts",
+            "app/features/organizations/schema.ts",
+            "app/core/lib/privileged-auth.server.ts"
+          ],
+          "tests": [
+            "tests/privileged-auth.test.ts",
+            "sql/checks/security-regression.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/guards.server.ts",
+              "contains": "requireAdminRole"
+            }
+          ]
+        },
+        {
+          "id": "SEC-002",
+          "sources": [
+            "sql/migrations/0016_tenant_security_and_schedule_stats.sql",
+            "sql/migrations/0019_security_boundaries.sql",
+            "app/features/admin/guards.server.ts"
+          ],
+          "tests": [
+            "sql/checks/security-regression.mjs",
+            "tests/edge-authorization.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0016_tenant_security_and_schedule_stats.sql",
+              "contains": "FOREIGN"
+            }
+          ]
+        },
+        {
+          "id": "SEC-003",
+          "sources": [
+            "app/core/lib/guards.server.ts",
+            "app/core/lib/request-security.ts"
+          ],
+          "tests": ["tests/request-security.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/core/lib/guards.server.ts",
+              "contains": "requireSameOrigin"
+            }
+          ]
+        },
+        {
+          "id": "SEC-004",
+          "sources": [
+            "supabase/functions/_shared/worker-auth.ts",
+            "supabase/functions/send-alimtalk/index.ts",
+            "sql/migrations/0020_storage_write_boundaries.sql"
+          ],
+          "tests": [
+            "tests/worker-auth.test.ts",
+            "tests/edge-authorization.test.ts",
+            "sql/checks/security-regression.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "supabase/functions/_shared/worker-auth.ts",
+              "contains": "isWorkerAuthorized"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "student-management",
+      "title": "수강생 관리",
+      "commands": [
+        "npm run test:unit",
+        "npm run test:db",
+        "npm run test:student-types:ssr"
+      ],
+      "requirements": [
+        {
+          "id": "STU-001",
+          "sources": [
+            "app/features/admin/lib/student-fields.ts",
+            "app/features/admin/lib/student-form.server.ts",
+            "sql/migrations/0018_student_management_integrity.sql"
+          ],
+          "tests": [
+            "tests/student-form.test.ts",
+            "tests/student-management.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/lib/student-fields.ts",
+              "contains": "studentFields"
+            }
+          ]
+        },
+        {
+          "id": "STU-002",
+          "sources": [
+            "app/features/admin/lib/student-bulk.ts",
+            "app/features/admin/lib/student-bulk.server.ts",
+            "app/features/admin/screens/students/bulk-create.tsx"
+          ],
+          "tests": ["tests/student-bulk.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/lib/student-bulk.ts",
+              "contains": "MAX_BULK_STUDENTS"
+            }
+          ]
+        },
+        {
+          "id": "STU-003",
+          "sources": [
+            "app/features/organizations/student-type-policy.ts",
+            "app/features/organizations/student-types.ts",
+            "sql/migrations/0031_student_type_conflict_response.sql"
+          ],
+          "tests": [
+            "tests/student-types.test.ts",
+            "sql/checks/student-types.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/organizations/student-type-policy.ts",
+              "contains": "MAX_STUDENT_TYPES"
+            }
+          ]
+        },
+        {
+          "id": "STU-004",
+          "sources": [
+            "app/features/admin/lib/student-class-dates.ts",
+            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+          ],
+          "tests": [
+            "tests/student-form.test.ts",
+            "tests/student-lifecycle.test.ts",
+            "sql/checks/student-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/lib/student-class-dates.ts",
+              "contains": "getDefaultStudentClassDates"
+            }
+          ]
+        },
+        {
+          "id": "STU-005",
+          "sources": [
+            "app/features/admin/lib/student-lifecycle.server.ts",
+            "sql/migrations/0024_student_lifecycle.sql",
+            "sql/migrations/0027_attendance.sql"
+          ],
+          "tests": [
+            "tests/student-lifecycle.test.ts",
+            "sql/checks/student-lifecycle.mjs",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/lib/student-lifecycle.server.ts",
+              "contains": "changeStudentState"
+            }
+          ]
+        },
+        {
+          "id": "STU-006",
+          "sources": [
+            "sql/migrations/0024_student_lifecycle.sql",
+            "app/features/admin/lib/student-lifecycle.server.ts"
+          ],
+          "tests": [
+            "tests/student-lifecycle.test.ts",
+            "sql/checks/student-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0024_student_lifecycle.sql",
+              "contains": "student_account_access"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "title": "클래스·강사",
+      "commands": ["npm run test:unit", "npm run test:db"],
+      "requirements": [
+        {
+          "id": "CAT-001",
+          "sources": [
+            "app/features/class/queries.ts",
+            "app/features/programs/queries.ts",
+            "sql/migrations/0036_class_booking_policy.sql"
+          ],
+          "tests": [
+            "tests/class-booking-policy.test.ts",
+            "sql/checks/security-regression.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/class/queries.ts",
+              "contains": "getPublicProgramBySlug"
+            }
+          ]
+        },
+        {
+          "id": "CAT-002",
+          "sources": [
+            "app/features/programs/booking-policy.ts",
+            "sql/migrations/0036_class_booking_policy.sql"
+          ],
+          "tests": [
+            "tests/class-booking-policy.test.ts",
+            "sql/checks/class-booking-policy.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/programs/booking-policy.ts",
+              "contains": "programBookingSchema"
+            }
+          ]
+        },
+        {
+          "id": "CAT-003",
+          "sources": [
+            "app/features/admin/api/programs/delete.tsx",
+            "app/features/programs/queries.ts",
+            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+          ],
+          "tests": [
+            "tests/class-booking-policy.test.ts",
+            "sql/checks/class-booking-policy.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/api/programs/delete.tsx",
+              "contains": "hasSchedules"
+            }
+          ]
+        },
+        {
+          "id": "CAT-004",
+          "sources": [
+            "app/features/admin/lib/catalog-form.server.ts",
+            "app/features/schedules/utils/learning-records.ts",
+            "app/features/class/components/class-location.tsx"
+          ],
+          "tests": [
+            "tests/catalog-form.test.ts",
+            "tests/service-generalization-ssr.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/lib/catalog-form.server.ts",
+              "contains": "MAX_CATALOG_IMAGE_BYTES"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "booking",
+      "title": "학생 예약·취소",
+      "commands": [
+        "npm run test:unit",
+        "npm run test:db",
+        "npm run test:booking-policy:ssr",
+        "npm run test:booking-window:ssr",
+        "npm run test:schedules:ssr"
+      ],
+      "requirements": [
+        {
+          "id": "BOOK-001",
+          "sources": [
+            "app/features/schedules/utils/booking-organization.server.ts",
+            "app/features/schedules/api/create-schedule.tsx"
+          ],
+          "tests": [
+            "tests/booking-organization.test.ts",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/schedules/utils/booking-organization.server.ts",
+              "contains": "getStudentBookingOrganization"
+            }
+          ]
+        },
+        {
+          "id": "BOOK-002",
+          "sources": [
+            "app/features/app-settings/booking-window.ts",
+            "sql/migrations/0034_booking_window.sql"
+          ],
+          "tests": [
+            "tests/booking-window.test.ts",
+            "tests/booking-window-api.test.ts",
+            "sql/checks/booking-window.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/app-settings/booking-window.ts",
+              "contains": "bookingWindowRange"
+            }
+          ]
+        },
+        {
+          "id": "BOOK-003",
+          "sources": [
+            "app/features/app-settings/booking-policy.ts",
+            "app/features/schedules/api/create-schedule.tsx",
+            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+          ],
+          "tests": [
+            "tests/booking-policy.test.ts",
+            "tests/booking-policy-api.test.ts",
+            "tests/booking-times.test.ts",
+            "sql/checks/booking-policy.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/app-settings/booking-policy.ts",
+              "contains": "bookingStartTimes"
+            }
+          ]
+        },
+        {
+          "id": "BOOK-004",
+          "sources": [
+            "app/features/app-settings/booking-days.ts",
+            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+          ],
+          "tests": [
+            "tests/booking-days.test.ts",
+            "sql/checks/booking-policy.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/app-settings/booking-days.ts",
+              "contains": "parseDisabledBookingDays"
+            }
+          ]
+        },
+        {
+          "id": "BOOK-005",
+          "sources": [
+            "app/features/schedules/utils/schedule-validation.ts",
+            "sql/migrations/0036_class_booking_policy.sql",
+            "sql/migrations/0037_preserve_existing_class_attendance.sql"
+          ],
+          "tests": [
+            "tests/schedule-validation.test.ts",
+            "tests/class-booking-policy.test.ts",
+            "sql/checks/class-booking-policy.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/schedules/utils/schedule-validation.ts",
+              "contains": "peakConcurrentCount"
+            }
+          ]
+        },
+        {
+          "id": "BOOK-006",
+          "sources": [
+            "app/features/app-settings/cancellation-policy.ts",
+            "app/features/schedules/api/delete-schedule.tsx",
+            "sql/migrations/0035_cancellation_policy.sql"
+          ],
+          "tests": [
+            "tests/cancellation-policy.test.ts",
+            "tests/student-schedule-cancel.test.ts",
+            "sql/checks/cancellation-policy.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/app-settings/cancellation-policy.ts",
+              "contains": "canCancelWithPolicy"
+            }
+          ]
+        },
+        {
+          "id": "BOOK-007",
+          "sources": [
+            "app/features/schedules/api/create-schedule.tsx",
+            "app/features/schedules/components/student-booking-panel.tsx",
+            "app/features/schedules/utils/desktop-booking.ts",
+            "sql/migrations/0035_cancellation_policy.sql"
+          ],
+          "tests": [
+            "tests/class-booking-policy.test.ts",
+            "tests/cancellation-policy.test.ts",
+            "sql/checks/cancellation-policy.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/schedules/api/create-schedule.tsx",
+              "contains": "book_student_schedule_with_policy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recurring-schedules",
+      "title": "관리자 반복 예약",
+      "commands": ["npm run test:unit", "npm run test:db"],
+      "requirements": [
+        {
+          "id": "SER-001",
+          "sources": [
+            "app/features/admin/api/schedules/create.tsx",
+            "app/features/admin/components/schedule-form.tsx",
+            "sql/migrations/0016_tenant_security_and_schedule_stats.sql"
+          ],
+          "tests": [
+            "tests/booking-integrity.test.ts",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/api/schedules/create.tsx",
+              "contains": "create_admin_schedule_series"
+            }
+          ]
+        },
+        {
+          "id": "SER-002",
+          "sources": [
+            "app/features/admin/api/schedules/update.tsx",
+            "app/features/admin/components/schedule-form.tsx",
+            "app/features/schedules/utils/schedule-validation.ts"
+          ],
+          "tests": [
+            "tests/booking-integrity.test.ts",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/api/schedules/update.tsx",
+              "contains": "update_admin_schedule_batch"
+            }
+          ]
+        },
+        {
+          "id": "SER-003",
+          "sources": [
+            "sql/migrations/0039_booking_lifecycle_integrity.sql",
+            "app/features/admin/api/schedules/delete.tsx",
+            "app/features/schedules/queries.ts"
+          ],
+          "tests": [
+            "tests/booking-integrity.test.ts",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0039_booking_lifecycle_integrity.sql",
+              "contains": "detach_reassigned_schedule"
+            }
+          ]
+        },
+        {
+          "id": "SER-004",
+          "sources": [
+            "app/features/admin/api/schedules/update.tsx",
+            "app/features/admin/screens/schedules/edit.tsx",
+            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+          ],
+          "tests": [
+            "tests/booking-integrity.test.ts",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/api/schedules/update.tsx",
+              "contains": "nextScheduleValue"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attendance",
+      "title": "출결 관리",
+      "commands": [
+        "npm run test:unit",
+        "npm run test:db",
+        "npm run test:attendance:ssr"
+      ],
+      "requirements": [
+        {
+          "id": "ATT-001",
+          "sources": [
+            "app/features/attendance/lib/attendance.ts",
+            "sql/migrations/0027_attendance.sql",
+            "sql/migrations/0036_class_booking_policy.sql"
+          ],
+          "tests": ["tests/attendance.test.ts", "sql/checks/attendance.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/attendance/lib/attendance.ts",
+              "contains": "parseAttendanceChanges"
+            }
+          ]
+        },
+        {
+          "id": "ATT-002",
+          "sources": [
+            "app/features/attendance/lib/attendance.ts",
+            "sql/migrations/0027_attendance.sql",
+            "sql/migrations/0036_class_booking_policy.sql"
+          ],
+          "tests": ["tests/attendance.test.ts", "sql/checks/attendance.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/attendance/lib/attendance.ts",
+              "contains": "parseAttendanceChanges"
+            }
+          ]
+        },
+        {
+          "id": "ATT-003",
+          "sources": [
+            "sql/migrations/0037_preserve_existing_class_attendance.sql",
+            "sql/migrations/0036_class_booking_policy.sql",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "tests": [
+            "tests/class-booking-policy.test.ts",
+            "sql/checks/attendance.mjs",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0037_preserve_existing_class_attendance.sql",
+              "contains": "enforce_schedule_occupancy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "organization-settings",
+      "title": "조직 설정",
+      "commands": [
+        "npm run test:unit",
+        "npm run test:db",
+        "npm run test:booking-policy:ssr"
+      ],
+      "requirements": [
+        {
+          "id": "SET-001",
+          "sources": [
+            "app/features/app-settings/settings-sections.ts",
+            "app/features/admin/api/settings/update.tsx",
+            "app/features/admin/components/settings-view.tsx"
+          ],
+          "tests": [
+            "tests/settings-sections.test.ts",
+            "tests/booking-policy-ssr.mjs",
+            "sql/checks/settings-sections.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/app-settings/settings-sections.ts",
+              "contains": "settingsSectionFromForm"
+            }
+          ]
+        },
+        {
+          "id": "SET-002",
+          "sources": [
+            "sql/migrations/0038_settings_section_saves.sql",
+            "app/features/admin/api/settings/update.tsx"
+          ],
+          "tests": [
+            "tests/settings-sections.test.ts",
+            "sql/checks/settings-sections.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0038_settings_section_saves.sql",
+              "contains": "save_booking_settings_section"
+            }
+          ]
+        },
+        {
+          "id": "SET-003",
+          "sources": [
+            "app/features/admin/components/settings-view.tsx",
+            "app/features/admin/components/settings-section.tsx"
+          ],
+          "tests": [
+            "tests/settings-sections.test.ts",
+            "tests/booking-policy-ssr.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/components/settings-view.tsx",
+              "contains": "forceMount"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "notifications",
+      "title": "알림과 기기 푸시",
+      "commands": ["npm run test:unit", "npm run test:db"],
+      "requirements": [
+        {
+          "id": "NOT-001",
+          "sources": [
+            "app/features/admin/guards.server.ts",
+            "app/features/notifications/screens/templates.tsx",
+            "app/features/notifications/queries.ts",
+            "app/features/super-admin/screens/templates.tsx"
+          ],
+          "tests": [
+            "sql/checks/security-regression.mjs",
+            "tests/notification-route.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/admin/guards.server.ts",
+              "contains": "requireNotificationsEnabled"
+            }
+          ]
+        },
+        {
+          "id": "NOT-002",
+          "sources": [
+            "sql/migrations/0039_booking_lifecycle_integrity.sql",
+            "sql/migrations/0024_student_lifecycle.sql"
+          ],
+          "tests": [
+            "tests/booking-integrity.test.ts",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0039_booking_lifecycle_integrity.sql",
+              "contains": "invalidate_schedule_notices"
+            }
+          ]
+        },
+        {
+          "id": "NOT-003",
+          "sources": [
+            "app/features/notifications/api/email-cron.tsx",
+            "sql/migrations/0024_student_lifecycle.sql"
+          ],
+          "tests": [
+            "tests/email-idempotency.test.ts",
+            "tests/worker-auth.test.ts",
+            "sql/checks/booking-lifecycle.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/notifications/api/email-cron.tsx",
+              "contains": "idempotencyKey"
+            }
+          ]
+        },
+        {
+          "id": "NOT-004",
+          "sources": [
+            "app/features/notifications/api/in-app-notifications.tsx"
+          ],
+          "tests": ["tests/notification-route.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/notifications/api/in-app-notifications.tsx",
+              "contains": "read_by"
+            }
+          ]
+        },
+        {
+          "id": "NOT-005",
+          "sources": [
+            "app/features/notifications/push/validation.ts",
+            "app/features/notifications/push/store.server.ts",
+            "app/features/notifications/push/dispatch.server.ts",
+            "public/push-sw.js"
+          ],
+          "tests": [
+            "tests/web-push.test.ts",
+            "tests/push-routes.test.ts",
+            "tests/push-client.test.ts",
+            "sql/checks/security-regression.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/notifications/push/validation.ts",
+              "contains": "isAllowedPushEndpoint"
+            }
+          ]
+        },
+        {
+          "id": "NOT-006",
+          "sources": ["app/features/notifications/api/test-send.tsx"],
+          "tests": [],
+          "verification": "source-reviewed",
+          "anchors": [
+            {
+              "path": "app/features/notifications/api/test-send.tsx",
+              "contains": "DAILY_TEST_LIMIT"
+            }
+          ]
+        },
+        {
+          "id": "NOT-007",
+          "sources": ["app/features/cron/api/mailer.tsx"],
+          "tests": [],
+          "verification": "source-reviewed",
+          "anchors": [
+            {
+              "path": "app/features/cron/api/mailer.tsx",
+              "contains": "queue_name"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "learning",
+      "title": "학습 기록",
+      "commands": [
+        "npm run test:unit",
+        "npm run test:schedules:ssr",
+        "npm run test:generalization:ssr"
+      ],
+      "requirements": [
+        {
+          "id": "LEARN-001",
+          "sources": [
+            "app/features/schedules/utils/student-hours.ts",
+            "app/features/schedules/utils/learning-records.ts",
+            "app/features/schedules/utils/student-learning.server.ts"
+          ],
+          "tests": [
+            "tests/student-hours.test.ts",
+            "tests/student-learning.test.ts",
+            "sql/checks/attendance.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/schedules/utils/student-hours.ts",
+              "contains": "getStudentHoursTotals"
+            }
+          ]
+        },
+        {
+          "id": "LEARN-002",
+          "sources": [
+            "app/features/schedules/utils/learning-records.ts",
+            "app/features/schedules/utils/student-week.ts",
+            "app/features/schedules/utils/student-calendar.server.ts"
+          ],
+          "tests": [
+            "tests/student-learning.test.ts",
+            "tests/student-week.test.ts",
+            "tests/student-week-loader.test.ts",
+            "tests/mobile-calendar.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/schedules/utils/learning-records.ts",
+              "contains": "learningHeatmap"
+            }
+          ]
+        },
+        {
+          "id": "LEARN-003",
+          "sources": [
+            "app/features/users/utils/reflections.ts",
+            "app/features/users/components/coaching/reflection-journal.tsx"
+          ],
+          "tests": ["tests/student-learning.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/users/utils/reflections.ts",
+              "contains": "reflectionStorageKey"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "public-service",
+      "title": "공개 서비스 경계",
+      "commands": ["npm run test:unit", "npm run test:db"],
+      "requirements": [
+        {
+          "id": "PUB-001",
+          "sources": ["app/features/class/api/consult-request.tsx"],
+          "tests": ["tests/consult-route.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/class/api/consult-request.tsx",
+              "contains": "503"
+            }
+          ]
+        },
+        {
+          "id": "PUB-002",
+          "sources": [
+            "app/features/contact/screens/contact-us.tsx",
+            "app/features/legal/screens/policy.tsx"
+          ],
+          "tests": [],
+          "verification": "source-reviewed",
+          "anchors": [
+            {
+              "path": "app/features/contact/screens/contact-us.tsx",
+              "contains": "isHcaptchaTokenValid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payments",
+      "title": "결제 데모",
+      "commands": ["npm run test:unit"],
+      "requirements": [
+        {
+          "id": "PAY-001",
+          "sources": [
+            "app/features/payments/lib/payment-demo.server.ts",
+            "app/features/payments/screens/checkout.tsx",
+            "app/features/payments/screens/success.tsx"
+          ],
+          "tests": ["tests/payment-demo.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/payments/lib/payment-demo.server.ts",
+              "contains": "isPaymentDemoEnabled"
+            }
+          ]
+        },
+        {
+          "id": "PAY-002",
+          "sources": [
+            "app/features/payments/lib/payment-demo.server.ts",
+            "app/features/payments/screens/success.tsx",
+            "app/features/payments/queries.ts"
+          ],
+          "tests": ["tests/payment-demo.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/payments/lib/payment-demo.server.ts",
+              "contains": "isValidDemoOrder"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "title": "런타임과 운영 경계",
+      "commands": [
+        "npm run test:unit",
+        "npm run test:db",
+        "npm run typecheck",
+        "npm run build",
+        "npm run test:ssr"
+      ],
+      "requirements": [
+        {
+          "id": "PLAT-001",
+          "sources": [
+            "scripts/node-runtime-policy.ts",
+            "app/routes.ts",
+            "app/core/screens/redirect-to-login.tsx"
+          ],
+          "tests": [
+            "tests/node-runtime-policy.test.ts",
+            "tests/dependency-hardening.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "scripts/node-runtime-policy.ts",
+              "contains": "minimumNodeVersion"
+            }
+          ]
+        },
+        {
+          "id": "PLAT-002",
+          "sources": ["app/entry.server.tsx"],
+          "tests": ["tests/ssr-stream.test.ts"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/entry.server.tsx",
+              "contains": "handleRequest"
+            }
+          ]
+        },
+        {
+          "id": "PLAT-003",
+          "sources": [
+            "sql/checks/security-regression.mjs",
+            "sql/operations/20261030_apply_booking_lifecycle.mjs",
+            "docs/booking-integrity-fixes.md"
+          ],
+          "tests": ["sql/checks/booking-lifecycle.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/checks/security-regression.mjs",
+              "contains": "checkBookingLifecycle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spec-governance",
+      "title": "정책 관리",
+      "commands": ["npm run spec:check", "npm run test:unit"],
+      "requirements": [
+        {
+          "id": "SPEC-001",
+          "sources": ["scripts/spec-tools.mjs", "openspec/policy-map.json"],
+          "tests": ["tests/spec-tools.test.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "scripts/spec-tools.mjs",
+              "contains": "checkPolicies"
+            }
+          ]
+        },
+        {
+          "id": "SPEC-002",
+          "sources": ["scripts/spec-tools.mjs", "openspec/source-index.json"],
+          "tests": ["tests/spec-tools.test.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "scripts/spec-tools.mjs",
+              "contains": "makeIndex"
+            }
+          ]
+        },
+        {
+          "id": "SPEC-003",
+          "sources": [
+            "scripts/spec-tools.mjs",
+            ".github/workflows/policy-checks.yml"
+          ],
+          "tests": ["tests/spec-tools.test.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "scripts/spec-tools.mjs",
+              "contains": "assertChangeEvidence"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

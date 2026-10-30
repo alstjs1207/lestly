@@ -1,0 +1,42 @@
+name: Policy and regression checks
+
+on:
+  pull_request:
+  push:
+    branches: [preview, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: policy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy-and-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENSPEC_TELEMETRY: "0"
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_ANON_KEY: local-ci-anon-placeholder
+      SUPABASE_SERVICE_ROLE_KEY: local-ci-service-role-placeholder
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_ANON_KEY: local-ci-anon-placeholder
+      SESSION_SECRET: local-ci-session-placeholder-not-a-deployment-secret
+      VITE_APP_NAME: Lestly
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Check policy change evidence
+        if: github.event_name == 'pull_request'
+        env:
+          POLICY_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: npm run spec:changed -- "$POLICY_BASE_SHA"
+      - run: npm run verify:local

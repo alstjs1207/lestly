@@ -364,7 +364,7 @@ export async function checkBookingLifecycle(ctx) {
               return {
                 transitionAllowed: true,
                 ongoingAbsenceRestoredAfterLeaving: true,
-                policyQuestion: "ongoing-attendance-restore",
+                policyDecision: "attendance-correction-after-leaving-confirmed",
               };
             }
             await blocked(

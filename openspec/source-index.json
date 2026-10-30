@@ -1,0 +1,3452 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": ".github/workflows/policy-checks.yml",
+      "domains": [
+        "spec-governance"
+      ]
+    },
+    {
+      "path": ".nvmrc",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/app.css",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/calendar-skeleton.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/fetcher-form-button.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/footer.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/form-button.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/form-error.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/form-success.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/lang-switcher.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/logout-menu-item.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/mdx-typography.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/navigation-bar.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/theme-switcher.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/alert.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/avatar.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/badge.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/button.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/card.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/checkbox.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/collapsible.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/dialog.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/dropdown-menu.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/empty-state.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/input-otp.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/input.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/label.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/progress.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/select.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/separator.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/sheet.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/sidebar.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/skeleton.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/sonner.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/table.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/tabs.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/textarea.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/components/ui/tooltip.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/db/drizzle-client.server.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/db/helpers.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/hooks/use-local-storage.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/hooks/use-mobile.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/layouts/navigation.layout.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/layouts/private.layout.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/layouts/public.layout.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/analytics.client.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/authenticated-profile.server.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/avatar-validation.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/guards.server.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/i18next.server.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/i18next.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/privileged-auth.server.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/query-utils.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/request-body.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/request-security.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/resend-client.server.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/site-origin.server.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/supa-admin-client.server.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/supa-browser-client.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/supa-client.server.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/theme-session.server.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/utils.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/lib/web-url.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/lib/worker-auth.server.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "app/core/screens/404.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/screens/app-error.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/screens/error.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/screens/redirect-to-login.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/screens/robots.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/core/screens/sitemap.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/debug/analytics.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/debug/sentry.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/entry.client.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/entry.server.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/instructors/create.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/instructors/delete.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/instructors/update.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/organization/update.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/programs/create.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/programs/delete.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/programs/update.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/schedules/create.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/schedules/delete.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/schedules/update.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/settings/update.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/student-types.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/students/bulk-create.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/students/create.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/students/delete.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/students/graduate.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/students/invite.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/students/restore.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/api/students/update.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/admin-calendar-inner.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/admin-calendar.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/admin-mobile-calendar.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/admin-mobile-day-events.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/admin-mobile-nav.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/admin-setup-checklist.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/admin-sidebar.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/booking-day-settings.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/booking-policy-fields.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/booking-time-settings.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/booking-window-fields.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/cancellation-policy-fields.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/instructor-form.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/program-form.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/schedule-form.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/settings-section.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/settings-view.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/student-form.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/student-invite-dialog.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/student-restore-dialog.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/student-state-dialog.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/student-total-hours.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/student-type-settings.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/guards.server.ts",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "app/features/admin/layouts/admin.layout.tsx",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/catalog-form.server.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-bulk-draft.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-bulk.server.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-bulk.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-class-dates.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-display.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-fields.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-form.server.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-invite.server.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-invite.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-lifecycle.server.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/lib/student-save.server.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/queries.ts",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/account.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/dashboard.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/instructors/create.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/instructors/edit.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/instructors/list.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/organization.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/programs/create.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/programs/detail.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/programs/edit.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/programs/list.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/schedules/calendar.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/schedules/create.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/schedules/edit.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/schedules/list.tsx",
+      "domains": [
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/settings.tsx",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/students/bulk-create.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/students/create.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/students/detail.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/students/edit.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/students/list.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/screens/today.tsx",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/utils/mobile-calendar.ts",
+      "domains": [
+        "platform",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/admin/utils/student-schedule-overview.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/booking-days.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/booking-policy.server.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/booking-policy.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/booking-times.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/booking-window.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/cancellation-policy.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/queries.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/schema.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/settings-sections.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/app-settings/types.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/attendance/api/history.tsx",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "app/features/attendance/components/attendance-manager.tsx",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "app/features/attendance/lib/attendance.ts",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "app/features/attendance/queries.server.ts",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "app/features/attendance/schema.ts",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "app/features/attendance/screens/attendance.tsx",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "app/features/auth/api/resend.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/components/auth-login-buttons.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/components/logos/apple.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/components/logos/github.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/components/logos/google.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/components/logos/kakao.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/lib/queries.server.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/lib/social-oauth.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/admin-organization-setup.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/admin-signup-profile.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/admin-signup-verify.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/admin-signup.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/confirm.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/email-verified.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/forgot-password.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/login.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/logout.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/magic-link.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/new-password.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/otp/complete.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/otp/start.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/set-password.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/social/complete.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/social/start.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/auth/screens/student-invite.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/class/api/consult-request.tsx",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/components/class-curriculum.tsx",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/components/class-footer.tsx",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/components/class-hero.tsx",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/components/class-instructor.tsx",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/components/class-location.tsx",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/consult-validation.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/queries.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/screens/class-detail.tsx",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/contact/screens/contact-us.tsx",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/cron/api/mailer.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/instructors/queries.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/instructors/schema.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/legal/docs/privacy-policy.mdx",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/legal/docs/terms-of-service.mdx",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/legal/screens/policy.tsx",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/notifications/api/alimtalk-cron.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/api/email-cron.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/api/in-app-notifications.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/api/push-cron.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/api/push-session.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/api/push-subscription.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/api/test-send.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/components/notification-bell.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/components/push-preferences.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/components/push-session-sync.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/hooks/use-in-app-notifications.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/push/client.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/push/config.server.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/push/device.server.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/push/dispatch.server.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/push/schema.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/push/store.server.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/push/validation.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/queries.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/schema.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/screens/detail.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/screens/list.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/screens/templates.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/organizations/queries.ts",
+      "domains": [
+        "access-control",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/organizations/schema.ts",
+      "domains": [
+        "access-control",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/organizations/student-type-policy.ts",
+      "domains": [
+        "access-control",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/organizations/student-types.server.ts",
+      "domains": [
+        "access-control",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/organizations/student-types.ts",
+      "domains": [
+        "access-control",
+        "student-management"
+      ]
+    },
+    {
+      "path": "app/features/payments/lib/payment-demo.server.ts",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "app/features/payments/queries.ts",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "app/features/payments/schema.ts",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "app/features/payments/screens/checkout.tsx",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "app/features/payments/screens/failure.tsx",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "app/features/payments/screens/payments.tsx",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "app/features/payments/screens/success.tsx",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "app/features/programs/booking-policy.server.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/programs/booking-policy.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/programs/queries.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/programs/schema.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "app/features/schedules/api/booking-availability.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/api/create-schedule.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/api/delete-schedule.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/learning-heatmap.tsx",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/learning-schedule-detail.tsx",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/mobile-calendar.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/mobile-day-events.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/mobile-month-grid.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/student-booking-dialog.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/student-booking-panel.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/student-calendar-inner.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/student-schedule-manager.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/student-schedules-view.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/components/student-weekly-schedules.tsx",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/schedules/queries.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/schema.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/screens/calendar.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/screens/my-schedules.tsx",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/booking-organization.server.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/calendar-month.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/desktop-booking.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/kst.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/learning-records.ts",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/rrule-helper.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/schedule-validation.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/student-booking.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/student-calendar.server.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/student-hours.ts",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/student-learning.server.ts",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/student-schedule-rules.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/student-streak.ts",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/schedules/utils/student-week.ts",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/settings/api/set-locale.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/features/settings/api/set-theme.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/features/super-admin/components/super-admin-sidebar.tsx",
+      "domains": [
+        "access-control",
+        "notifications",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/super-admin/layouts/super-admin.layout.tsx",
+      "domains": [
+        "access-control",
+        "notifications",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/super-admin/queries.ts",
+      "domains": [
+        "access-control",
+        "notifications",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/super-admin/screens/dashboard.tsx",
+      "domains": [
+        "access-control",
+        "notifications",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/super-admin/screens/org-dashboard.tsx",
+      "domains": [
+        "access-control",
+        "notifications",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/super-admin/screens/templates.tsx",
+      "domains": [
+        "access-control",
+        "notifications",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/users/api/change-email.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/api/change-password.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/api/connect-provider.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/api/delete-account.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/api/disconnect-provider.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/api/edit-profile.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/achievement-strip.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/ai-insight-banner.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/annual-learning-chart.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/condition-schedule-card.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/course-period-card.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/goal-progress-card.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/header-section.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/learning-home.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/learning-records.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/motivation-card.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/reflection-journal.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/coaching/today-todo-card.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/connect-provider-buttons.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/components/dashboard-sidebar.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/forms/change-email-form.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/components/forms/change-password-form.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/components/forms/connect-social-accounts-form.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/components/forms/delete-account-form.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/components/forms/edit-profile-form.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/components/sidebar-main.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/sidebar-projects.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/sidebar-team-switcher.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/sidebar-user.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/components/student-dashboard-shell.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/layouts/dashboard.layout.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/queries.ts",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/schema.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/screens/account.tsx",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "app/features/users/screens/coaching-dashboard.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/screens/dashboard.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/screens/learning-records.tsx",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/features/users/utils/reflections.ts",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "app/i18n.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/locales/en.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/locales/es.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/locales/ko.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/locales/types.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/root.tsx",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "app/routes.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "components.json",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "database.types.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "drizzle.config.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "e2e/admin/dashboard.spec.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "e2e/admin/instructors.spec.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "e2e/admin/programs.spec.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "e2e/admin/signup.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/admin/students.spec.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "e2e/auth/forgot-password.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/auth/login.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/auth/magic-link.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/settings/settings.spec.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "e2e/users/change-email.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/users/change-password.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/users/delete-profile.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/users/edit-profile.spec.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "e2e/utils/test-helpers.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "instrument.server.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "mdx.d.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "package.json",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "playwright.config.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "public/manifest.webmanifest",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "public/push-sw.js",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "public/scripts/prerendered-theme.js",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "react-router.config.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "scripts/harden-braces.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "scripts/node-runtime-policy.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "scripts/spec-tools.mjs",
+      "domains": [
+        "spec-governance"
+      ]
+    },
+    {
+      "path": "scripts/verify-local.mjs",
+      "domains": [
+        "spec-governance"
+      ]
+    },
+    {
+      "path": "scripts/verify-node.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "scripts/verify-worker.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/checks/attendance.mjs",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "sql/checks/booking-lifecycle.mjs",
+      "domains": [
+        "attendance",
+        "booking",
+        "notifications",
+        "recurring-schedules",
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/checks/booking-policy.mjs",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/checks/booking-window.mjs",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/checks/cancellation-policy.mjs",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "sql/checks/class-booking-policy.mjs",
+      "domains": [
+        "booking",
+        "catalog",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/checks/security-concurrency.mjs",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "sql/checks/security-deployment.mjs",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "sql/checks/security-regression.mjs",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "sql/checks/settings-sections.mjs",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/checks/student-lifecycle-performance.mjs",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/checks/student-lifecycle.mjs",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/checks/student-metadata.mjs",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/checks/student-types.mjs",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/checks/tenant_integrity.sql",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "sql/functions/get_current_profile_id.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/get_user_organization_id.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/handle_sign_up.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/is_admin.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/is_org_admin.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/is_same_organization.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/is_super_admin.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/set_updated_at.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/functions/welcome_email.sql",
+      "domains": [
+        "access-control",
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/migrations/0000_worried_vision.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0001_great_junta.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0002_useful_skreet.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0003_graceful_patch.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0004_cool_leopardon.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0005_blushing_fantastic_four.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0005_super_admin.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0007_normal_aqueduct.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0008_public_instructor_policy.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0009_add_updated_at_triggers.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0010_notifications.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0011_alimtalk_cron.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0012_notifications_grants.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0013_alimtalk_sending_status.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0014_email_notifications.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "catalog",
+        "identity",
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/migrations/0015_optional_student_email_and_invites.sql",
+      "domains": [
+        "identity",
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0016_tenant_security_and_schedule_stats.sql",
+      "domains": [
+        "access-control",
+        "booking",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "sql/migrations/0017_student_invite_contact_email.sql",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "sql/migrations/0018_student_management_integrity.sql",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0019_security_boundaries.sql",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "sql/migrations/0020_storage_write_boundaries.sql",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "sql/migrations/0021_student_learning_experience.sql",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "sql/migrations/0022_student_booking_times.sql",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "sql/migrations/0023_instructor_web_push.sql",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/migrations/0024_student_lifecycle.sql",
+      "domains": [
+        "identity",
+        "notifications",
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0025_student_edit_fast_path.sql",
+      "domains": [
+        "identity",
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0026_preserve_student_state_on_edit.sql",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0027_attendance.sql",
+      "domains": [
+        "attendance",
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "sql/migrations/0028_student_booking_weekdays.sql",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "sql/migrations/0029_student_metadata.sql",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0030_organization_student_types.sql",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0031_student_type_conflict_response.sql",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0032_booking_policy.sql",
+      "domains": [
+        "attendance",
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/migrations/0033_booking_policy_fresh_snapshot.sql",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "sql/migrations/0034_booking_window.sql",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/migrations/0035_cancellation_policy.sql",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/migrations/0036_class_booking_policy.sql",
+      "domains": [
+        "attendance",
+        "booking",
+        "catalog"
+      ]
+    },
+    {
+      "path": "sql/migrations/0037_preserve_existing_class_attendance.sql",
+      "domains": [
+        "attendance",
+        "booking"
+      ]
+    },
+    {
+      "path": "sql/migrations/0038_settings_section_saves.sql",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/migrations/0039_booking_lifecycle_integrity.sql",
+      "domains": [
+        "booking",
+        "notifications",
+        "recurring-schedules"
+      ]
+    },
+    {
+      "path": "sql/operations/20261018_schedule_performance.sql",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261022_apply_security.mjs",
+      "domains": [
+        "access-control",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261022_student_phone_conflicts.sql",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261023_apply_booking_times.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261023_apply_student_learning.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261024_apply_web_push.mjs",
+      "domains": [
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261024_verify_web_push.mjs",
+      "domains": [
+        "notifications",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261025_apply_student_lifecycle.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261025_preserve_student_state.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261025_simplify_student_edit.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261025_student_lifecycle_preflight.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261025_verify_student_lifecycle.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261026_apply_attendance.mjs",
+      "domains": [
+        "attendance",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261027_apply_booking_weekdays.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261028_apply_student_generalization.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261028_apply_student_type_conflict_response.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261028_verify_student_generalization.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261029_apply_booking_policy.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261029_apply_booking_snapshot.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261029_apply_booking_window.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261029_verify_booking_deployment.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261029_verify_booking_policy.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261029_verify_booking_window.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_apply_booking_lifecycle.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_apply_cancellation_policy.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_apply_class_booking_policy.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_apply_settings_sections.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_verify_booking_lifecycle.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_verify_cancellation_policy.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_verify_class_booking_policy.mjs",
+      "domains": [
+        "booking",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261030_verify_settings_sections.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "supabase/functions/_shared/worker-auth.ts",
+      "domains": [
+        "access-control",
+        "notifications"
+      ]
+    },
+    {
+      "path": "supabase/functions/send-alimtalk/index.ts",
+      "domains": [
+        "access-control",
+        "notifications"
+      ]
+    },
+    {
+      "path": "tests/attendance-ssr.mjs",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "tests/attendance.test.ts",
+      "domains": [
+        "attendance"
+      ]
+    },
+    {
+      "path": "tests/auth-user.test.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "tests/authenticated-profile.test.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "tests/avatar-validation.test.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "tests/booking-days.test.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/booking-integrity.test.ts",
+      "domains": [
+        "attendance",
+        "booking",
+        "notifications",
+        "recurring-schedules",
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/booking-organization.test.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "tests/booking-policy-api.test.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/booking-policy-ssr.mjs",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/booking-policy.test.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/booking-times.test.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/booking-window-api.test.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/booking-window-ssr.mjs",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/booking-window.test.ts",
+      "domains": [
+        "booking",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/cancellation-policy.test.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "tests/catalog-form.test.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "tests/class-booking-api.test.ts",
+      "domains": [
+        "booking",
+        "catalog"
+      ]
+    },
+    {
+      "path": "tests/class-booking-policy.test.ts",
+      "domains": [
+        "booking",
+        "catalog",
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/consult-request.test.ts",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/consult-route.test.ts",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/dependency-hardening.test.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "tests/desktop-booking.test.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "tests/edge-authorization.test.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "tests/email-idempotency.test.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "tests/email-optional-auth.test.ts",
+      "domains": [
+        "identity"
+      ]
+    },
+    {
+      "path": "tests/helpers/mocked-module.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "tests/helpers/reservation-db-bridge.mjs",
+      "domains": [
+        "attendance",
+        "booking",
+        "notifications",
+        "recurring-schedules",
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/mobile-calendar.test.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "tests/node-runtime-policy.test.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "tests/notification-route.test.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "tests/payment-demo.test.ts",
+      "domains": [
+        "payments"
+      ]
+    },
+    {
+      "path": "tests/privileged-auth.test.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "tests/push-client.test.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "tests/push-routes.test.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "tests/query-performance.test.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "tests/request-security.test.ts",
+      "domains": [
+        "access-control"
+      ]
+    },
+    {
+      "path": "tests/schedule-validation.test.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "tests/service-generalization-ssr.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "tests/settings-sections.test.ts",
+      "domains": [
+        "organization-settings"
+      ]
+    },
+    {
+      "path": "tests/spec-tools.test.mjs",
+      "domains": [
+        "spec-governance"
+      ]
+    },
+    {
+      "path": "tests/ssr-stream.test.ts",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "tests/student-booking-push.test.ts",
+      "domains": [
+        "booking",
+        "notifications"
+      ]
+    },
+    {
+      "path": "tests/student-bulk.test.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/student-form.test.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/student-hours.test.ts",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "tests/student-invite.test.ts",
+      "domains": [
+        "identity",
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/student-learning.test.ts",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "tests/student-lifecycle.test.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/student-management.test.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/student-schedule-cancel.test.ts",
+      "domains": [
+        "booking"
+      ]
+    },
+    {
+      "path": "tests/student-schedule-overview.test.ts",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "tests/student-schedules-ssr.mjs",
+      "domains": [
+        "booking",
+        "learning"
+      ]
+    },
+    {
+      "path": "tests/student-streak.test.ts",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "tests/student-types-ssr.mjs",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/student-types.test.ts",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
+      "path": "tests/student-week-loader.test.ts",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "tests/student-week.test.ts",
+      "domains": [
+        "learning"
+      ]
+    },
+    {
+      "path": "tests/web-push.test.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "tests/worker-auth.test.ts",
+      "domains": [
+        "access-control",
+        "identity"
+      ]
+    },
+    {
+      "path": "transactional-emails/emails/change-email.tsx",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "transactional-emails/emails/confirm-email.tsx",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "transactional-emails/emails/invite-student.tsx",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "transactional-emails/emails/magic-link.tsx",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "transactional-emails/emails/notification.tsx",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "transactional-emails/emails/reset-password.tsx",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "transactional-emails/emails/welcome.tsx",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "transactional-emails/package.json",
+      "domains": [
+        "identity",
+        "notifications"
+      ]
+    },
+    {
+      "path": "tsconfig.json",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "vite.config.ts",
+      "domains": [
+        "platform"
+      ]
+    }
+  ]
+}
