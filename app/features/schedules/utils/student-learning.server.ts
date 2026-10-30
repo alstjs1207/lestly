@@ -23,11 +23,13 @@ export async function getLearningSchedules(
     startDate,
     endDate,
     completedBefore,
+    organizationId,
   }: {
     studentId: string;
     startDate?: Date;
     endDate?: Date;
     completedBefore?: Date;
+    organizationId?: string;
   },
 ) {
   return fetchAllRows((from, to) => {
@@ -39,6 +41,7 @@ export async function getLearningSchedules(
       .order("start_time", { ascending: false })
       .order("schedule_id", { ascending: false });
     if (startDate) query = query.gte("start_time", startDate.toISOString());
+    if (organizationId) query = query.eq("organization_id", organizationId);
     if (endDate) query = query.lt("start_time", endDate.toISOString());
     if (completedBefore)
       query = query.lte("end_time", completedBefore.toISOString());

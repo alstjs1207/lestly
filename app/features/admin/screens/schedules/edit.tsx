@@ -127,7 +127,7 @@ export default function ScheduleEditScreen({
                         선택한 일정만 삭제
                       </label>
                     </div>
-                    {schedule.parent_schedule_id && (
+                    {(schedule.parent_schedule_id || schedule.rrule) && (
                       <div className="flex items-center space-x-2">
                         <input
                           type="radio"
@@ -184,7 +184,7 @@ export default function ScheduleEditScreen({
                 date: dateStr,
                 start_time: timeStr,
                 duration: durationSlots,
-                is_recurring: !!schedule.parent_schedule_id,
+                is_recurring: !!schedule.parent_schedule_id || !!schedule.rrule,
               }}
             />
           )}

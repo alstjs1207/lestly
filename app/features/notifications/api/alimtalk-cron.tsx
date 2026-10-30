@@ -170,6 +170,7 @@ export async function action({ request }: Route.ActionArgs) {
             .eq("schedule_id", schedule.schedule_id)
             .eq("alimtalk_template_code", setting.kakao_template_code)
             .eq("reminder_generated", true)
+            .is("delivery_cancelled_at", null)
             .maybeSingle();
 
           if (existing) continue; // Already sent
@@ -295,6 +296,7 @@ export async function action({ request }: Route.ActionArgs) {
           .eq("schedule_id", schedule.schedule_id)
           .eq("alimtalk_template_code", setting.kakao_template_code)
           .eq("reminder_generated", true)
+          .is("delivery_cancelled_at", null)
           .maybeSingle();
 
         if (existing) continue;
