@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-30T07:42:27.208Z",
+  "project": "smbpzlzbvplhtpqggrjf",
+  "checks": [
+    "same-class capacity blocks excess; different class has an independent seat",
+    "authenticated availability uses selected class duration/capacity and rejects foreign classes",
+    "student booking requires class and exact cancellation acknowledgement",
+    "class/org changes preserve reservation times and cancellation snapshots without propagation",
+    "reserved classes cannot be deleted",
+    "lower class capacity does not block attendance confirmation for already active reservations",
+    "simultaneous bookings serialize and exactly one occupies the last same-class seat",
+    "another class remains available at the same time after a competing class fills"
+  ],
+  "passed": 8,
+  "allFixturesRemoved": true,
+  "businessDataUnchanged": true
+}

@@ -296,7 +296,7 @@ export default function ProgramDetailScreen({
                 </p>
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">모집 정원</p>
+                <p className="text-muted-foreground text-sm">수업 정원</p>
                 <p className="font-medium">
                   {program.max_capacity ? `${program.max_capacity}명` : "-"}
                 </p>
@@ -317,9 +317,10 @@ export default function ProgramDetailScreen({
               </div>
             </div>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              수업 시간·총 회차·모집 정원은 클래스 소개 정보입니다. 예약 가능한
-              길이와 동시 인원은 조직 설정을 따르며, 반복 예약은 수강생의 수강
-              종료일까지 생성됩니다.
+              허용 수업 길이:{" "}
+              {program.booking_duration_minutes.map((n) => `${n}분`).join(", ")}
+              . 정원은 이 클래스의 같은 시간대 수업에 적용됩니다. 총 회차는 소개
+              정보이며, 반복 예약은 수강생의 수강 종료일까지 생성됩니다.
             </p>
             {program.location_type === "offline" &&
               program.location_address && (

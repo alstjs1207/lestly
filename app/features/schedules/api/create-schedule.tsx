@@ -16,12 +16,12 @@ import {
   bookingStartTimes,
   submittedDuration,
 } from "../../app-settings/booking-policy";
-import { getBookingPolicy } from "../../app-settings/booking-policy.server";
 import {
   canCancelWithPolicy,
   cancellationPolicySchema,
   sameCancellationPolicy,
 } from "../../app-settings/cancellation-policy";
+import { getProgramBookingPolicy } from "../../programs/booking-policy.server";
 import { toKSTDateString } from "../utils/kst";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -71,7 +71,27 @@ export async function action({ request }: Route.ActionArgs) {
 
   const dateStr = formData.get("date") as string;
   const startTimeStr = formData.get("start_time") as string;
-  const policy = await getBookingPolicy(client, { organizationId });
+  const programIdStr = formData.get("program_id") as string | null;
+  const programId =
+    programIdStr && /^[1-9]\d*$/.test(programIdStr) ? Number(programIdStr) : 0;
+  let policy;
+  try {
+    ({ policy } = await getProgramBookingPolicy(client, {
+      organizationId,
+      programId,
+    }));
+  } catch (error) {
+    if (
+      !["schedule_program_required", "schedule_program_not_eligible"].includes(
+        (error as Error).message,
+      )
+    )
+      throw error;
+    return data(
+      { success: false, error: "예약할 활성 클래스를 선택해 주세요." },
+      { status: 400, headers },
+    );
+  }
   let minutes: number;
   try {
     minutes = submittedDuration(formData, policy);
@@ -81,8 +101,6 @@ export async function action({ request }: Route.ActionArgs) {
       { status: 400, headers },
     );
   }
-  const programIdStr = formData.get("program_id") as string | null;
-  const programId = programIdStr ? parseInt(programIdStr) : null;
 
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(dateStr || "") ||
@@ -185,7 +203,7 @@ export async function action({ request }: Route.ActionArgs) {
       schedule_day_disabled:
         "이 요일은 휴무일로 신규 예약을 받지 않습니다. 다른 날짜를 선택해주세요.",
       schedule_time_not_allowed:
-        "조직의 수업 길이와 시작 시간 설정이 변경됐습니다. 시간을 다시 선택해주세요.",
+        "클래스의 수업 길이 또는 시작 시간 설정이 변경됐습니다. 시간을 다시 선택해주세요.",
       schedule_student_conflict: "이미 같은 시간대에 등록한 일정이 있습니다.",
       schedule_capacity_exceeded: "동시간대 정원이 찼습니다.",
       schedule_outside_course: "수강 기간에 포함된 날짜를 선택해주세요.",

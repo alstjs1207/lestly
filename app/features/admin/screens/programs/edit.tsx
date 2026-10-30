@@ -1,7 +1,7 @@
 import type { Route } from "./+types/edit";
 
-import { Link } from "react-router";
 import { ChevronLeftIcon } from "lucide-react";
+import { Link } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -35,7 +35,9 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   return { program, instructors };
 }
 
-export default function ProgramEditScreen({ loaderData }: Route.ComponentProps) {
+export default function ProgramEditScreen({
+  loaderData,
+}: Route.ComponentProps) {
   const { program, instructors } = loaderData;
 
   return (
@@ -47,8 +49,10 @@ export default function ProgramEditScreen({ loaderData }: Route.ComponentProps) 
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">클래스 수정</h1>
-          <p className="hidden md:block text-muted-foreground">{program.title}의 정보를 수정합니다.</p>
+          <h1 className="text-xl font-bold md:text-2xl">클래스 수정</h1>
+          <p className="text-muted-foreground hidden md:block">
+            {program.title}의 정보를 수정합니다.
+          </p>
         </div>
       </div>
 
@@ -76,7 +80,8 @@ export default function ProgramEditScreen({ loaderData }: Route.ComponentProps) 
               cover_image_url: program.cover_image_url || undefined,
               location_type: program.location_type || undefined,
               location_address: program.location_address || undefined,
-              duration_minutes: program.duration_minutes || undefined,
+              duration_minutes: program.duration_minutes,
+              booking_duration_minutes: program.booking_duration_minutes,
               total_sessions: program.total_sessions || undefined,
               curriculum: (program.curriculum as any[]) || undefined,
               max_capacity: program.max_capacity || undefined,

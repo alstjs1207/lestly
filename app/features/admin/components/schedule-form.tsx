@@ -29,6 +29,10 @@ import {
   bookingStartTimes,
   formatDuration,
 } from "../../app-settings/booking-policy";
+import {
+  type ProgramBookingFields,
+  resolveProgramBookingPolicy,
+} from "../../programs/booking-policy";
 
 interface Student {
   profile_id: string;
@@ -37,7 +41,7 @@ interface Student {
   phone: string | null;
 }
 
-interface Program {
+interface Program extends ProgramBookingFields {
   program_id: number;
   title: string;
   subtitle: string | null;
@@ -63,7 +67,7 @@ export default function ScheduleForm({
   mode,
   students,
   programs = [],
-  bookingPolicy = DEFAULT_BOOKING_POLICY,
+  bookingPolicy: organizationPolicy = DEFAULT_BOOKING_POLICY,
   defaultValues,
 }: ScheduleFormProps) {
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
@@ -80,12 +84,33 @@ export default function ScheduleForm({
   );
   const [selectedDate, setSelectedDate] = useState(defaultValues?.date || "");
   const [selectedDuration, setSelectedDuration] = useState(
-    defaultValues?.duration || String(bookingPolicy.defaultDurationMinutes),
+    defaultValues?.duration ||
+      String(
+        programs.find(
+          (p) =>
+            p.program_id ===
+            (defaultValues?.program_id ?? programs[0]?.program_id),
+        )?.duration_minutes ?? organizationPolicy.defaultDurationMinutes,
+      ),
   );
   const [selectedProgramId, setSelectedProgramId] = useState(
     defaultValues?.program_id?.toString() ||
-      (programs.length === 1 ? programs[0].program_id.toString() : ""),
+      (programs[0]?.program_id.toString() ?? ""),
   );
+  const selectedProgram = programs.find(
+    (program) => String(program.program_id) === selectedProgramId,
+  );
+  const bookingPolicy = selectedProgram
+    ? resolveProgramBookingPolicy(organizationPolicy, selectedProgram)
+    : organizationPolicy;
+  useEffect(() => {
+    setSelectedDuration(
+      defaultValues?.program_id === Number(selectedProgramId) &&
+        defaultValues?.duration
+        ? defaultValues.duration
+        : String(bookingPolicy.defaultDurationMinutes),
+    );
+  }, [selectedProgramId]);
   const [studentQuery, setStudentQuery] = useState("");
   const [hasTouchedStudents, setHasTouchedStudents] = useState(false);
 
@@ -147,6 +172,7 @@ export default function ScheduleForm({
   const DURATION_OPTIONS = bookingDurationOptions(bookingPolicy);
   if (
     defaultValues?.duration &&
+    defaultValues?.program_id === Number(selectedProgramId) &&
     !DURATION_OPTIONS.some((d) => d.value === defaultValues.duration)
   )
     DURATION_OPTIONS.push({
@@ -162,9 +188,7 @@ export default function ScheduleForm({
         .map((student) => student.name),
     [selectedStudents, students],
   );
-  const selectedProgram = programs.find(
-    (program) => program.program_id.toString() === selectedProgramId,
-  );
+
   const selectedDurationLabel = DURATION_OPTIONS.find(
     (option) => option.value === selectedDuration,
   )?.label;
@@ -189,6 +213,12 @@ export default function ScheduleForm({
         action={actionUrl}
         className="space-y-6 pb-36 md:pb-0"
       >
+        {selectedProgram && (
+          <p className="text-muted-foreground text-sm">
+            {selectedProgram.title} · 같은 시간대 최대{" "}
+            {selectedProgram.max_capacity}명
+          </p>
+        )}
         <div className="grid gap-6 md:grid-cols-2">
           {mode === "create" ? (
             <div className="space-y-2 md:col-span-2">
@@ -312,7 +342,7 @@ export default function ScheduleForm({
                 onValueChange={setSelectedProgramId}
                 required
               >
-                <SelectTrigger id="duration" className="h-11 w-full md:h-9">
+                <SelectTrigger id="program_id" className="h-11 w-full md:h-9">
                   <SelectValue placeholder="클래스 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -539,7 +569,8 @@ export default function ScheduleForm({
                 isSubmitting ||
                 (mode === "create" && selectedStudents.size === 0) ||
                 !selectedTime ||
-                !selectedDate
+                !selectedDate ||
+                !selectedProgram
               }
             >
               {isSubmitting

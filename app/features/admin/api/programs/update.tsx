@@ -10,6 +10,7 @@ import { data, redirect } from "react-router";
 import { requireMethod } from "~/core/lib/guards.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { programBookingSchema } from "~/features/programs/booking-policy";
 import { updateProgram } from "~/features/programs/queries";
 
 import { requireAdminRole } from "../../guards.server";
@@ -56,6 +57,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     location_type: locationType,
     location_address: locationAddress,
     duration_minutes: durationMinutes,
+    booking_duration_minutes: bookingDurations,
     total_sessions: totalSessions,
     max_capacity: maxCapacity,
     is_public: isPublic,
@@ -69,7 +71,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   // Check the selected tenant before touching its public storage path.
   const { data: currentRecord, error: targetError } = await client
     .from("programs")
-    .select("program_id")
+    .select("program_id,duration_minutes,booking_duration_minutes,max_capacity")
     .eq("program_id", programId)
     .eq("organization_id", organizationId)
     .maybeSingle();
@@ -80,6 +82,20 @@ export async function action({ request, params }: Route.ActionArgs) {
     );
   }
 
+  const booking = programBookingSchema.safeParse({
+    duration_minutes: durationMinutes ?? currentRecord.duration_minutes,
+    booking_duration_minutes:
+      bookingDurations ?? currentRecord.booking_duration_minutes,
+    max_capacity: maxCapacity ?? currentRecord.max_capacity,
+  });
+  if (!booking.success)
+    return data(
+      {
+        error:
+          "수업 시간과 정원을 확인해 주세요. 기본 수업 시간은 허용 목록에 포함해야 합니다.",
+      },
+      { status: 400, headers },
+    );
   // 커버 이미지 처리
   let coverImageUrl: string | null = null;
   const existingCoverImageUrl = parsed.data.existing_cover_image_url;
@@ -122,10 +138,10 @@ export async function action({ request, params }: Route.ActionArgs) {
         cover_image_url: coverImageUrl,
         location_type: locationType || "offline",
         location_address: locationAddress || null,
-        duration_minutes: durationMinutes ?? 120,
+        ...booking.data,
         total_sessions: totalSessions ?? 4,
         curriculum,
-        max_capacity: maxCapacity || null,
+
         is_public: isPublic,
       },
     });

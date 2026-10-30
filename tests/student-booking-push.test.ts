@@ -39,8 +39,10 @@ function setup(rejectBooking = false) {
       import.meta.url,
     ),
     {
-      "../../app-settings/booking-policy.server": {
-        getBookingPolicy: async () => bookingPolicy.DEFAULT_BOOKING_POLICY,
+      "../../programs/booking-policy.server": {
+        getProgramBookingPolicy: async () => ({
+          policy: bookingPolicy.DEFAULT_BOOKING_POLICY,
+        }),
       },
       "../../app-settings/booking-policy": bookingPolicy,
       "../../app-settings/cancellation-policy": cancellation,

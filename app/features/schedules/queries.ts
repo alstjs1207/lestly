@@ -7,12 +7,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
 import { fetchAllRows } from "~/core/lib/query-utils";
-import { getMaxConcurrentStudents } from "~/features/app-settings/queries";
 import { getKSTMonthRange } from "~/features/schedules/utils/calendar-month";
 import { fromKST, nowKST, toKST } from "~/features/schedules/utils/kst";
 import {
   type ScheduleCandidate,
-  peakConcurrentCount,
   validateScheduleCandidatesAgainstExisting,
 } from "~/features/schedules/utils/schedule-validation";
 import { getStudentHoursTotals } from "~/features/schedules/utils/student-hours";
@@ -233,104 +231,6 @@ export async function getScheduleById(
 }
 
 /**
- * Check if a time slot has reached the concurrent limit
- */
-export async function checkConcurrentLimit(
-  client: SupabaseClient<Database>,
-  {
-    organizationId,
-    startTime,
-    endTime,
-    excludeScheduleId,
-  }: {
-    organizationId: string;
-    startTime: Date;
-    endTime: Date;
-    excludeScheduleId?: number;
-  },
-) {
-  const maxConcurrent = await getMaxConcurrentStudents(client, {
-    organizationId,
-  });
-
-  const rows = await fetchAllRows((from, to) =>
-    client
-      .from("schedules")
-      .select("schedule_id,start_time,end_time")
-      .is("cancelled_at", null)
-      .eq("organization_id", organizationId)
-      .lt("start_time", endTime.toISOString())
-      .gt("end_time", startTime.toISOString())
-      .order("schedule_id")
-      .range(from, to),
-  );
-  const count = peakConcurrentCount(
-    { startTime, endTime },
-    rows
-      .filter((s) => s.schedule_id !== excludeScheduleId)
-      .map((s) => ({
-        startTime: new Date(s.start_time),
-        endTime: new Date(s.end_time),
-      })),
-  );
-  return {
-    allowed: count < maxConcurrent,
-    currentCount: count,
-    maxCount: maxConcurrent,
-  };
-}
-
-/**
- * Validate schedule creation by checking concurrent limit and student time conflict in a single query
- */
-export async function validateScheduleCreation(
-  client: SupabaseClient<Database>,
-  {
-    organizationId,
-    studentId,
-    startTime,
-    endTime,
-  }: {
-    organizationId: string;
-    studentId: string;
-    startTime: Date;
-    endTime: Date;
-  },
-) {
-  const maxConcurrent = await getMaxConcurrentStudents(client, {
-    organizationId,
-  });
-
-  const data = await fetchAllRows((from, to) =>
-    client
-      .from("schedules")
-      .select("schedule_id, student_id, start_time, end_time")
-      .is("cancelled_at", null)
-      .eq("organization_id", organizationId)
-      .lt("start_time", endTime.toISOString())
-      .gt("end_time", startTime.toISOString())
-      .order("schedule_id", { ascending: true })
-      .range(from, to),
-  );
-
-  const currentCount = peakConcurrentCount(
-    { startTime, endTime },
-    data.map((s) => ({
-      startTime: new Date(s.start_time),
-      endTime: new Date(s.end_time),
-    })),
-  );
-  const hasConflict = data?.some((s) => s.student_id === studentId) ?? false;
-
-  return {
-    allowed: currentCount < maxConcurrent,
-    currentCount,
-    maxCount: maxConcurrent,
-    hasConflict,
-  };
-}
-
-/**
  * Validate every interval in a recurring or multi-student request.
  * Existing schedules that are about to be updated can be excluded by ID.
  */
@@ -338,15 +238,25 @@ export async function validateScheduleBatch(
   client: SupabaseClient<Database>,
   {
     organizationId,
+    programId,
     candidates,
     excludeScheduleIds = [],
   }: {
     organizationId: string;
+    programId: number;
     candidates: ScheduleCandidate[];
     excludeScheduleIds?: number[];
   },
 ) {
-  const maxCount = await getMaxConcurrentStudents(client, { organizationId });
+  const { data: program, error } = await client
+    .from("programs")
+    .select("max_capacity")
+    .eq("organization_id", organizationId)
+    .eq("program_id", programId)
+    .eq("status", "ACTIVE")
+    .single();
+  if (error) throw error;
+  const maxCount = program.max_capacity;
 
   if (candidates.length === 0) {
     return validateScheduleCandidatesAgainstExisting([], [], maxCount);
@@ -362,7 +272,7 @@ export async function validateScheduleBatch(
   const data = await fetchAllRows((from, to) =>
     client
       .from("schedules")
-      .select("schedule_id, student_id, start_time, end_time")
+      .select("schedule_id, program_id, student_id, start_time, end_time")
       .is("cancelled_at", null)
       .eq("organization_id", organizationId)
       .lt("start_time", latestEnd.toISOString())
@@ -376,6 +286,7 @@ export async function validateScheduleBatch(
     .filter((schedule) => !excludedIds.has(schedule.schedule_id))
     .map((schedule) => ({
       scheduleId: schedule.schedule_id,
+      programId: schedule.program_id,
       studentId: schedule.student_id,
       startTime: new Date(schedule.start_time),
       endTime: new Date(schedule.end_time),
@@ -385,6 +296,7 @@ export async function validateScheduleBatch(
     candidates,
     existingSchedules,
     maxCount,
+    programId,
   );
 }
 

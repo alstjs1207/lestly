@@ -14,7 +14,7 @@ import {
 } from "~/features/schedules/utils/student-schedule-rules";
 
 import { submittedDuration } from "../../../app-settings/booking-policy";
-import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
+import { getProgramBookingPolicy } from "../../../programs/booking-policy.server";
 import { requireAdminRole } from "../../guards.server";
 import { getStudentById } from "../../queries";
 
@@ -43,10 +43,28 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const programIdStr = formData.get("program_id") as string | null;
-  const programId = programIdStr ? parseInt(programIdStr) : null;
+  const programId =
+    programIdStr && /^[1-9]\d*$/.test(programIdStr) ? Number(programIdStr) : 0;
   const dateStr = formData.get("date") as string;
   const startTimeStr = formData.get("start_time") as string;
-  const bookingPolicy = await getBookingPolicy(client, { organizationId });
+  let bookingPolicy;
+  try {
+    ({ policy: bookingPolicy } = await getProgramBookingPolicy(client, {
+      organizationId,
+      programId,
+    }));
+  } catch (error) {
+    if (
+      !["schedule_program_required", "schedule_program_not_eligible"].includes(
+        (error as Error).message,
+      )
+    )
+      throw error;
+    return data(
+      { success: false, error: "예약할 활성 클래스를 선택해 주세요." },
+      { status: 400 },
+    );
+  }
   const isRecurring = formData.get("is_recurring") === "true";
 
   let durationMinutes: number;
@@ -117,6 +135,7 @@ export async function action({ request }: Route.ActionArgs) {
       // Validate every occurrence before inserting any row for this student.
       const validation = await validateScheduleBatch(client, {
         organizationId,
+        programId,
         candidates,
       });
 

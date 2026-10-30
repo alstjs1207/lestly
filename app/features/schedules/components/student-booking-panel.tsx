@@ -14,6 +14,10 @@ import {
   cancellationPolicyDescription,
 } from "../../app-settings/cancellation-policy";
 import {
+  type ProgramBookingFields,
+  resolveProgramBookingPolicy,
+} from "../../programs/booking-policy";
+import {
   type BookingAvailability,
   desktopBookingSlots,
 } from "../utils/desktop-booking";
@@ -26,7 +30,7 @@ import {
 } from "../utils/learning-records";
 import { type CourseDates, bookingDateReason } from "../utils/student-booking";
 
-export interface BookingProgram {
+export interface BookingProgram extends ProgramBookingFields {
   program_id: number;
   title: string;
   location_address?: string | null;
@@ -56,18 +60,25 @@ export function StudentBookingPanel({
 }) {
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const availability = useFetcher<BookingAvailability>();
+  const [program, setProgram] = useState(
+    programs[0] ? String(programs[0].program_id) : "",
+  );
+  const selectedClass = programs.find((p) => String(p.program_id) === program);
+  const organizationPolicy = course.bookingPolicy ?? DEFAULT_BOOKING_POLICY;
+  const classPolicy = selectedClass
+    ? resolveProgramBookingPolicy(organizationPolicy, selectedClass)
+    : organizationPolicy;
   const policy =
-    availability.data?.bookingPolicy ??
-    course.bookingPolicy ??
-    DEFAULT_BOOKING_POLICY;
+    availability.data?.key.startsWith(`${program}:${date}:`) &&
+    availability.data.bookingPolicy
+      ? availability.data.bookingPolicy
+      : classPolicy;
   const DURATION_OPTIONS = bookingDurationOptions(policy);
   const [duration, setDuration] = useState(
     String(policy.defaultDurationMinutes),
   );
   const [time, setTime] = useState("");
-  const [program, setProgram] = useState(
-    programs.length === 1 ? String(programs[0].program_id) : "",
-  );
+
   const [error, setError] = useState("");
   const [acceptNoCancellation, setAcceptNoCancellation] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -96,7 +107,13 @@ export function StudentBookingPanel({
   const requestDateReason = canBook
     ? bookingDateReason(date, { ...course, bookingPolicy: policy }, now)
     : "예약 가능한 수강생 계정인지 수업 운영자에게 확인해주세요.";
-  const key = `${date}:${hours}`;
+  const key = `${program}:${date}:${hours}`;
+  useEffect(() => {
+    setDuration(String(classPolicy.defaultDurationMinutes));
+    setTime("");
+    setAcceptNoCancellation(false);
+    setError("");
+  }, [program]);
   const today = toKSTDateString(now);
   const dateReason =
     requestDateReason ||
@@ -119,7 +136,7 @@ export function StudentBookingPanel({
   const slots = desktopBookingSlots(
     date,
     hours,
-    course,
+    { ...course, programId: Number(program), bookingPolicy: policy },
     schedules,
     now,
     availability.data,
@@ -136,7 +153,7 @@ export function StudentBookingPanel({
   const start = time ? new Date(`${date}T${time}:00+09:00`) : null;
   const noCancellation =
     !!start && !canCancelWithPolicy(start, policy.cancellationPolicy, now);
-  const acceptanceKey = `${date}:${time}:${JSON.stringify(policy.cancellationPolicy)}`;
+  const acceptanceKey = `${program}:${date}:${time}:${JSON.stringify(policy.cancellationPolicy)}`;
   useEffect(() => setAcceptNoCancellation(false), [acceptanceKey]);
   const end = start ? new Date(start.getTime() + hours * 3_600_000) : null;
   const summary =
@@ -148,11 +165,11 @@ export function StudentBookingPanel({
     summary && toKSTDateString(summary.end) !== toKSTDateString(summary.start);
 
   useEffect(() => {
-    if (canBook)
+    if (canBook && selectedClass)
       availability.load(
-        `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
+        `/api/schedules/availability?program_id=${program}&date=${date}&minutes=${Math.round(hours * 60)}`,
       );
-  }, [date, hours, canBook, refresh, refreshKey, today]);
+  }, [program, date, hours, canBook, refresh, refreshKey, today]);
   useEffect(() => {
     onBusyChange(submitting);
     return () => onBusyChange(false);
@@ -397,7 +414,7 @@ export function StudentBookingPanel({
               disabled={availability.state !== "idle"}
               onClick={() =>
                 availability.load(
-                  `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
+                  `/api/schedules/availability?program_id=${program}&date=${date}&minutes=${Math.round(hours * 60)}`,
                 )
               }
             >
@@ -441,7 +458,7 @@ export function StudentBookingPanel({
               !time ||
               !!selectedReason ||
               (noCancellation && !acceptNoCancellation) ||
-              (programs.length > 0 && !selectedProgram)
+              !selectedProgram
             }
             onClick={() => {
               if (
@@ -452,7 +469,7 @@ export function StudentBookingPanel({
                 dateReason ||
                 selectedReason ||
                 (noCancellation && !acceptNoCancellation) ||
-                (programs.length > 0 && !selectedProgram)
+                !selectedProgram
               )
                 return;
               submitted.current = {

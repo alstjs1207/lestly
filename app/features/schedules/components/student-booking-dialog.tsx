@@ -1,3 +1,5 @@
+import type { BookingProgram } from "./student-booking-panel";
+
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 
@@ -20,6 +22,7 @@ import {
   canCancelWithPolicy,
   cancellationPolicyDescription,
 } from "../../app-settings/cancellation-policy";
+import { resolveProgramBookingPolicy } from "../../programs/booking-policy";
 import {
   type BookingAvailability,
   desktopBookingSlots,
@@ -43,7 +46,7 @@ export function StudentBookingDialog({
 }: {
   date: string | null;
   onClose: () => void;
-  programs: { program_id: number; title: string }[];
+  programs: BookingProgram[];
   schedules: LearningSchedule[];
   course: CourseDates;
   onBooked: () => void;
@@ -51,15 +54,24 @@ export function StudentBookingDialog({
   const fetcher = useFetcher<{ success: boolean; error?: string }>();
   const availability = useFetcher<AvailabilityData>();
   const [time, setTime] = useState("");
+  const [program, setProgram] = useState(
+    programs[0] ? String(programs[0].program_id) : "",
+  );
+  const selectedClass = programs.find((p) => String(p.program_id) === program);
+  const organizationPolicy = course.bookingPolicy ?? DEFAULT_BOOKING_POLICY;
+  const classPolicy = selectedClass
+    ? resolveProgramBookingPolicy(organizationPolicy, selectedClass)
+    : organizationPolicy;
   const policy =
-    availability.data?.bookingPolicy ??
-    course.bookingPolicy ??
-    DEFAULT_BOOKING_POLICY;
+    availability.data?.key.startsWith(`${program}:${date}:`) &&
+    availability.data.bookingPolicy
+      ? availability.data.bookingPolicy
+      : classPolicy;
   const DURATION_OPTIONS = bookingDurationOptions(policy);
   const [duration, setDuration] = useState(
     String(policy.defaultDurationMinutes),
   );
-  const [program, setProgram] = useState("");
+
   const [error, setError] = useState("");
   const [acceptNoCancellation, setAcceptNoCancellation] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -77,7 +89,13 @@ export function StudentBookingDialog({
     }
   }, [JSON.stringify(policy)]);
   const busy = fetcher.state !== "idle";
-  const key = `${date}:${hours}`;
+  const key = `${program}:${date}:${hours}`;
+  useEffect(() => {
+    setDuration(String(classPolicy.defaultDurationMinutes));
+    setTime("");
+    setAcceptNoCancellation(false);
+    setError("");
+  }, [program]);
   const today = toKSTDateString(now);
   const slots = availability.data?.key === key ? availability.data.slots : null;
   const availabilityPending =
@@ -86,7 +104,7 @@ export function StudentBookingDialog({
     setTime("");
     setDuration(String(policy.defaultDurationMinutes));
     setError("");
-    setProgram(programs.length === 1 ? String(programs[0].program_id) : "");
+    setProgram(programs[0] ? String(programs[0].program_id) : "");
   }, [date]);
   useEffect(() => {
     if (!date) return;
@@ -112,11 +130,11 @@ export function StudentBookingDialog({
       )
     : null;
   useEffect(() => {
-    if (date)
+    if (date && selectedClass)
       availability.load(
-        `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
+        `/api/schedules/availability?program_id=${program}&date=${date}&minutes=${Math.round(hours * 60)}`,
       );
-  }, [date, hours, today, refresh]);
+  }, [program, date, hours, today, refresh]);
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
     if (fetcher.data.success) {
@@ -134,7 +152,7 @@ export function StudentBookingDialog({
     ? desktopBookingSlots(
         date,
         hours,
-        course,
+        { ...course, programId: Number(program), bookingPolicy: policy },
         schedules,
         now,
         availability.data,
@@ -149,7 +167,7 @@ export function StudentBookingDialog({
   const start = date && time ? new Date(`${date}T${time}:00+09:00`) : null;
   const noCancellation =
     !!start && !canCancelWithPolicy(start, policy.cancellationPolicy, now);
-  const acceptanceKey = `${date}:${time}:${JSON.stringify(policy.cancellationPolicy)}`;
+  const acceptanceKey = `${program}:${date}:${time}:${JSON.stringify(policy.cancellationPolicy)}`;
   useEffect(() => setAcceptNoCancellation(false), [acceptanceKey]);
   const end = start ? new Date(start.getTime() + hours * 3_600_000) : null;
   return (
@@ -319,7 +337,7 @@ export function StudentBookingDialog({
               disabled={availability.state !== "idle"}
               onClick={() =>
                 availability.load(
-                  `/api/schedules/availability?date=${date}&minutes=${Math.round(hours * 60)}`,
+                  `/api/schedules/availability?program_id=${program}&date=${date}&minutes=${Math.round(hours * 60)}`,
                 )
               }
             >
@@ -361,7 +379,7 @@ export function StudentBookingDialog({
               !!selectedReason ||
               (noCancellation && !acceptNoCancellation) ||
               availabilityPending ||
-              (programs.length > 0 && !program)
+              !selectedClass
             }
             onClick={() => {
               if (
@@ -372,7 +390,7 @@ export function StudentBookingDialog({
                 availabilityPending ||
                 dateReason ||
                 (noCancellation && !acceptNoCancellation) ||
-                (programs.length > 0 && !program)
+                !selectedClass
               )
                 return;
               setError("");

@@ -37,6 +37,15 @@ export async function action({ request, params }: Route.ActionArgs) {
 
     await deleteProgram(client, { programId });
   } catch (error) {
+    if ((error as { code?: string })?.code === "23503")
+      return data(
+        {
+          success: false,
+          error:
+            "예약이 있는 클래스는 삭제할 수 없습니다. 보관 상태로 변경해 주세요.",
+        },
+        { status: 409 },
+      );
     console.error("Failed to delete program", error);
     return data(
       {

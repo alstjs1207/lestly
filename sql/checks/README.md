@@ -49,3 +49,8 @@ invite table. Drizzle 0.40 does not represent deferred foreign keys, functions,
 or triggers; those remain explicitly managed in SQL. Review generated
 migrations before applying them, especially because the repository's existing
 Drizzle snapshots predate several manually maintained migrations.
+
+0036 검증은 0035까지의 역사적 회귀 106개를 먼저 실행한 뒤 기존 예약을 보존하며
+클래스 정책으로 전환한다. 이후 클래스 기본값 복사·비전파, 클래스 필수 연결,
+시간·정원 분리, 출결 복원, 반복 RPC 원자성, 권한·인덱스 등 최신 정책 14개를 검사한다.
+0036부터 예약의 클래스 FK는 NOT NULL/RESTRICT이며 예약이 있는 클래스를 삭제할 수 없다.

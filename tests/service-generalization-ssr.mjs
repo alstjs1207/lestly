@@ -143,9 +143,9 @@ const catalog = await render(
   "/admin/programs/new",
   { instructors: [] },
 );
-assert.match(catalog, /클래스 소개용 시간/);
+assert.match(catalog, /이 클래스의 실제 예약에 적용/);
 assert.match(catalog, /반복 예약은 이 횟수가 아닌/);
-assert.match(catalog, /실제 예약 인원은 조직 전체/);
+assert.match(catalog, /같은 시간대 수업에 참여할 수 있는 최대 인원/);
 console.log(
   "Phase 6 built-route SSR passed: online home, ended access, short lesson heatmap, optional guardian data and catalog policy guidance.",
 );

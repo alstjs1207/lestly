@@ -253,6 +253,20 @@
       "when": 1793404800003,
       "tag": "0035_cancellation_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793404800004,
+      "tag": "0036_class_booking_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793404800005,
+      "tag": "0037_preserve_existing_class_attendance",
+      "breakpoints": true
     }
   ]
 }

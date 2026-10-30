@@ -37,7 +37,9 @@ export function desktopBookingSlots(
   now: Date,
   availability: BookingAvailability | undefined,
 ) {
-  const current = availability?.key === `${date}:${hours}`;
+  const current =
+    availability?.key ===
+    `${course.programId === undefined ? "" : `${course.programId}:`}${date}:${hours}`;
   const slots = current ? availability.slots : null;
   const disabledTimes = current ? (availability.disabledTimes ?? []) : [];
   const bookingCourse =

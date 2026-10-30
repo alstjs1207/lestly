@@ -11,6 +11,7 @@ import {
 import { toKSTDateString } from "./kst.ts";
 
 export interface CourseDates {
+  programId?: number;
   classStartDate: string | null;
   classEndDate: string | null;
   disabledBookingDays?: number[];

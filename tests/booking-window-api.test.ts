@@ -192,8 +192,8 @@ function studentRoutes(
       default: () => [client, new Headers()],
       getSessionUser: async () => ({ id: "auth-a" }),
     },
-    "../../app-settings/booking-policy.server": {
-      getBookingPolicy: async () => resolvedPolicy,
+    "../../programs/booking-policy.server": {
+      getProgramBookingPolicy: async () => ({ policy: resolvedPolicy }),
     },
     "../utils/kst": kst,
   };
@@ -237,6 +237,7 @@ function studentRoutes(
     create: async (date: string, values: Record<string, string> = {}) => {
       const form = new FormData();
       form.set("date", date);
+      form.set("program_id", "1");
       form.set("start_time", "09:00");
       form.set("duration_minutes", "180");
       form.set(
@@ -254,7 +255,7 @@ function studentRoutes(
     available: async (date: string) =>
       available.loader({
         request: new Request(
-          `https://lestly.test/api/schedules/availability?date=${date}&minutes=180`,
+          `https://lestly.test/api/schedules/availability?program_id=1&date=${date}&minutes=180`,
         ),
       }),
   };
@@ -275,7 +276,7 @@ test("availability API returns the latest policy for a newly closed date without
   assert.equal(closed.init.headers.get("Cache-Control"), "private, no-store");
   assert.equal(f.calls.length, 0);
   await f.available("2026-11-12");
-  assert.equal(f.calls[0].name, "get_student_booking_availability_minutes");
+  assert.equal(f.calls[0].name, "get_student_program_booking_availability");
 });
 
 test("student booking requires the exact displayed cancellation policy and explicit acknowledgement after cutoff", async () => {

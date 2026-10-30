@@ -62,12 +62,23 @@ export default function ScheduleCreateScreen({
         <CardHeader>
           <CardTitle>일정 정보</CardTitle>
           <CardDescription>
-            * 표시된 항목은 필수 입력 항목입니다. 조직에 설정한 수업 길이를
-            선택할 수 있습니다.
+            * 표시된 항목은 필수 입력 항목입니다. 선택한 클래스에 설정한 수업
+            길이를 선택할 수 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {students.length === 0 ? (
+          {programs.length === 0 ? (
+            <EmptyState
+              icon={UsersIcon}
+              title="예약할 활성 클래스가 없습니다."
+              description="클래스를 먼저 등록하고 활성 상태로 설정해 주세요."
+              action={
+                <Button asChild>
+                  <Link to="/admin/programs/new">클래스 등록하기</Link>
+                </Button>
+              }
+            />
+          ) : students.length === 0 ? (
             <EmptyState
               icon={UsersIcon}
               title="등록 가능한 수강생이 없습니다."

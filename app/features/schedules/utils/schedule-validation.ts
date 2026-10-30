@@ -6,6 +6,7 @@ export interface ScheduleCandidate {
 
 export interface ExistingScheduleInterval extends ScheduleCandidate {
   scheduleId: number;
+  programId?: number;
 }
 
 export interface ScheduleOccurrence {
@@ -97,6 +98,7 @@ export function validateScheduleCandidatesAgainstExisting(
   candidates: ScheduleCandidate[],
   existingSchedules: ExistingScheduleInterval[],
   maxCount: number,
+  programId?: number,
 ): ScheduleBatchValidationResult {
   const acceptedCandidates: ScheduleCandidate[] = [];
 
@@ -120,6 +122,7 @@ export function validateScheduleCandidatesAgainstExisting(
       ...acceptedCandidates.map((accepted, index) => ({
         ...accepted,
         scheduleId: -(index + 1),
+        programId,
       })),
     ].filter((schedule) => schedulesOverlap(schedule, candidate));
 
@@ -137,7 +140,12 @@ export function validateScheduleCandidatesAgainstExisting(
       };
     }
 
-    const peakCount = peakConcurrentCount(candidate, overlappingSchedules);
+    const peakCount = peakConcurrentCount(
+      candidate,
+      overlappingSchedules.filter(
+        (row) => programId === undefined || row.programId === programId,
+      ),
+    );
     if (peakCount >= maxCount) {
       return {
         allowed: false,

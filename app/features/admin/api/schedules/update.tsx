@@ -17,7 +17,7 @@ import {
 } from "~/features/schedules/utils/student-schedule-rules";
 
 import { submittedDuration } from "../../../app-settings/booking-policy";
-import { getBookingPolicy } from "../../../app-settings/booking-policy.server";
+import { getProgramBookingPolicy } from "../../../programs/booking-policy.server";
 import { requireAdminRole } from "../../guards.server";
 import { getStudentById } from "../../queries";
 
@@ -32,10 +32,28 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   const studentId = formData.get("student_id") as string;
   const programIdStr = formData.get("program_id") as string | null;
-  const programId = programIdStr ? parseInt(programIdStr) : null;
+  const programId =
+    programIdStr && /^[1-9]\d*$/.test(programIdStr) ? Number(programIdStr) : 0;
   const dateStr = formData.get("date") as string;
   const startTimeStr = formData.get("start_time") as string;
-  const bookingPolicy = await getBookingPolicy(client, { organizationId });
+  let bookingPolicy;
+  try {
+    ({ policy: bookingPolicy } = await getProgramBookingPolicy(client, {
+      organizationId,
+      programId,
+    }));
+  } catch (error) {
+    if (
+      !["schedule_program_required", "schedule_program_not_eligible"].includes(
+        (error as Error).message,
+      )
+    )
+      throw error;
+    return data(
+      { success: false, error: "예약할 활성 클래스를 선택해 주세요." },
+      { status: 400 },
+    );
+  }
   const updateScope = formData.get("update_scope") as "single" | "future";
 
   // Get current schedule
@@ -62,9 +80,11 @@ export async function action({ request, params }: Route.ActionArgs) {
     durationMinutes = submittedDuration(
       formData,
       bookingPolicy,
-      (Date.parse(currentSchedule.end_time) -
-        Date.parse(currentSchedule.start_time)) /
-        60_000,
+      programId === currentSchedule.program_id
+        ? (Date.parse(currentSchedule.end_time) -
+            Date.parse(currentSchedule.start_time)) /
+            60_000
+        : undefined,
     );
   } catch {
     return data(
@@ -151,6 +171,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
     const validation = await validateScheduleBatch(client, {
       organizationId,
+      programId,
       candidates: shiftedSchedules,
       excludeScheduleIds: shiftedSchedules.map(
         (schedule) => schedule.scheduleId,
@@ -192,6 +213,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   } else {
     const validation = await validateScheduleBatch(client, {
       organizationId,
+      programId,
       candidates: [{ studentId, startTime, endTime }],
       excludeScheduleIds: [parseInt(scheduleId)],
     });

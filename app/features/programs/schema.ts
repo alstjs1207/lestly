@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
   doublePrecision,
   index,
   integer,
@@ -80,15 +81,27 @@ export const programs = pgTable(
     cover_image_url: text("cover_image_url"),
     location_type: text("location_type").default("offline"),
     location_address: text("location_address"),
-    duration_minutes: integer("duration_minutes").default(120),
+    duration_minutes: integer("duration_minutes").notNull(),
+    booking_duration_minutes: integer("booking_duration_minutes")
+      .array()
+      .notNull(),
     total_sessions: integer("total_sessions").default(4),
     curriculum: jsonb().default([]),
-    max_capacity: integer("max_capacity"),
+    max_capacity: integer("max_capacity").notNull(),
     is_public: boolean("is_public").default(false),
     ...timestamps,
   },
   (table) => [
     // DEFERRABLE tenant FK programs_instructor_tenant_fk is maintained in SQL.
+    // Defaults are copied once by guard_program_booking_policy on INSERT.
+    // Duplicate duration validation and row-lock behavior are maintained in SQL.
+    check(
+      "programs_booking_fields_check",
+      sql`${table.duration_minutes} BETWEEN 1 AND 1440 AND ${table.max_capacity} BETWEEN 1 AND 100
+      AND array_ndims(${table.booking_duration_minutes})=1 AND cardinality(${table.booking_duration_minutes}) BETWEEN 1 AND 48
+      AND 0<ALL(${table.booking_duration_minutes}) AND 1440>=ALL(${table.booking_duration_minutes})
+      AND ${table.duration_minutes}=ANY(${table.booking_duration_minutes}) AND array_position(${table.booking_duration_minutes},NULL) IS NULL`,
+    ),
     unique("programs_id_org_unique").on(
       table.program_id,
       table.organization_id,
