@@ -95,6 +95,22 @@ assert.doesNotMatch(
 assert.match(scopeForm("booking_days"), /휴무 요일 저장/);
 assert.match(scopeForm("cancellation_policy"), /취소 기한 저장/);
 assert.match(settings, /설정 영역 바로가기/);
+// All forms stay mounted for mobile tab changes and desktop still renders all sections.
+assert.match(settings, /role="tablist"[^>]*aria-label="설정 영역 선택"/);
+assert.equal(
+  (settings.split("<script")[0].match(/role="tab"/g) ?? []).length,
+  6,
+);
+for (const panel of [
+  "class-defaults",
+  "booking-window",
+  "booking-times",
+  "booking-days",
+  "cancellation-policy",
+  "student-types",
+])
+  assert.match(settings, new RegExp(`data-settings-panel="${panel}"`));
+
 assert.match(settings, /다른 영역에 입력 중인 내용은 유지됩니다/);
 const fixture = {
   year: 2026,

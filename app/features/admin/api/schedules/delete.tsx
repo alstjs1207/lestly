@@ -16,7 +16,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   requireMethod("POST")(request);
 
   const [client] = makeServerClient(request);
-  await requireAdminRole(client);
+  const { organizationId } = await requireAdminRole(client);
 
   const { scheduleId } = params;
   const formData = await request.formData();
@@ -36,11 +36,14 @@ export async function action({ request, params }: Route.ActionArgs) {
       );
     }
 
-    if (deleteScope === "future" && currentSchedule.parent_schedule_id) {
+    if (deleteScope === "future") {
       // Delete all future schedules in the series
       await deleteFutureSchedules(client, {
-        parentScheduleId: currentSchedule.parent_schedule_id,
+        parentScheduleId:
+          currentSchedule.parent_schedule_id ?? currentSchedule.schedule_id,
         fromDate: new Date(currentSchedule.start_time),
+        studentId: currentSchedule.student_id,
+        organizationId,
       });
     } else {
       // Delete single schedule

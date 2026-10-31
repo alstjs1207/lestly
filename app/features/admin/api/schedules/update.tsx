@@ -135,6 +135,8 @@ export async function action({ request, params }: Route.ActionArgs) {
       .from("schedules")
       .select("schedule_id, start_time, end_time")
       .is("cancelled_at", null)
+      .eq("organization_id", organizationId)
+      .eq("student_id", currentSchedule.student_id)
       .or(
         `schedule_id.eq.${rootScheduleId},parent_schedule_id.eq.${rootScheduleId}`,
       )

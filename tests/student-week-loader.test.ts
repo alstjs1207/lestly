@@ -23,9 +23,21 @@ const schedule = {
   program: null,
 };
 
-function fixture(window: BookingWindow = { mode: "monthly", openingDay: 25 }) {
+function fixture(
+  window: BookingWindow = { mode: "monthly", openingDay: 25 },
+  memberships = [
+    {
+      organization_id: "org-a",
+      state: "NORMAL",
+      organizations: { name: "수업 공간 A" },
+    },
+  ],
+  bookable = false,
+) {
   const nextFilters: [string, unknown][] = [];
-  let range: { startDate: Date; endDate: Date } | undefined;
+  let range:
+    | { startDate: Date; endDate: Date; organizationId?: string }
+    | undefined;
   const upcomingQuery = {
     select: () => upcomingQuery,
     is: (key: string, value: unknown) => {
@@ -49,10 +61,11 @@ function fixture(window: BookingWindow = { mode: "monthly", openingDay: 25 }) {
   const memberQuery = {
     select: () => memberQuery,
     eq: () => memberQuery,
-    maybeSingle: async () => ({
-      data: { organization_id: "org-a" },
-      error: null,
-    }),
+    then: (resolve: (value: unknown) => unknown) =>
+      Promise.resolve({
+        data: memberships,
+        error: null,
+      }).then(resolve),
   };
   const client = {
     from: (table: string) =>
@@ -69,6 +82,8 @@ function fixture(window: BookingWindow = { mode: "monthly", openingDay: 25 }) {
       options?: { list: boolean },
     ) => Promise<{
       body: {
+        organizationId: string;
+        canBook: boolean;
         selectedDate: string;
         year: number;
         month: number;
@@ -95,13 +110,17 @@ function fixture(window: BookingWindow = { mode: "monthly", openingDay: 25 }) {
         default: () => [client, new Headers()],
         getSessionUser: async () => ({ id: "user-a" }),
       },
-      "../../programs/queries": { getActivePrograms: async () => [] },
+      "../../programs/queries": {
+        getActivePrograms: async () => (bookable ? [{ program_id: 1 }] : []),
+      },
       "../../app-settings/queries": {
         getDisabledBookingDays: async (
           _: unknown,
           { organizationId }: { organizationId: string },
         ) => {
-          assert.equal(organizationId, "org-a");
+          assert.ok(
+            memberships.some((m) => m.organization_id === organizationId),
+          );
           return [6, 0];
         },
       },
@@ -145,6 +164,7 @@ test("weekly loader honors date links and fetches the entire cross-month week wi
   assert.deepEqual(f.nextFilters, [
     ["cancelled_at", null],
     ["student_id", "student-a"],
+    ["organization_id", "org-a"],
     ["end_time", fixedNow.toISOString()],
   ]);
 });
@@ -191,4 +211,42 @@ test("calendar loader uses the organization window without truncating existing s
   assert.equal(body.allowedEndDate, "2027-01-03T14:59:59.999Z");
   assert.equal(body.nextSchedule?.schedule_id, 5);
   assert.equal(body.selectedDate, "2027-01-31");
+});
+
+test("multi-organization calendar selects an authorized tenant and scopes its schedule queries", async () => {
+  const f = fixture(
+    undefined,
+    [
+      {
+        organization_id: "org-a",
+        state: "NORMAL",
+        organizations: { name: "A" },
+      },
+      {
+        organization_id: "org-b",
+        state: "NORMAL",
+        organizations: { name: "B" },
+      },
+    ],
+    true,
+  );
+  const { body } = await f.loadStudentCalendar(
+    new Request(
+      "https://lestly.test/my-schedules?date=2027-01-01&organization_id=org-b",
+    ),
+  );
+  assert.equal(body.organizationId, "org-b");
+  assert.equal(body.canBook, true);
+  assert.equal(f.getRange().organizationId, "org-b");
+  assert.ok(
+    f.nextFilters.some(
+      ([key, value]) => key === "organization_id" && value === "org-b",
+    ),
+  );
+  await assert.rejects(
+    f.loadStudentCalendar(
+      new Request("https://lestly.test/my-schedules?organization_id=foreign"),
+    ),
+    (e: any) => e.status === 403,
+  );
 });

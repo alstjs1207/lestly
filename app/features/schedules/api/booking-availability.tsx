@@ -13,6 +13,7 @@ import { getUserProfile } from "~/features/users/queries";
 
 import { isBookingDateInWindow } from "../../app-settings/booking-window";
 import { getProgramBookingPolicy } from "../../programs/booking-policy.server";
+import { getStudentBookingOrganization } from "../utils/booking-organization.server";
 import { toKSTDateString } from "../utils/kst";
 import { parseDateString } from "../utils/student-schedule-rules";
 
@@ -23,14 +24,6 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (!user) throw new Response(null, { status: 401, headers });
   const profile = await getUserProfile(client, { userId: user.id });
   if (!profile) throw new Response(null, { status: 403, headers });
-  const { data: member, error } = await client
-    .from("organization_members")
-    .select("organization_id")
-    .eq("profile_id", profile.profile_id)
-    .eq("role", "STUDENT")
-    .eq("state", "NORMAL")
-    .single();
-  if (error || !member) throw new Response(null, { status: 403, headers });
   const params = new URL(request.url).searchParams;
   const date = params.get("date") ?? "";
   const minutes = params.has("minutes")
@@ -38,11 +31,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     : Number(params.get("hours")) * 60;
   const hours = minutes / 60;
   const programId = Number(params.get("program_id"));
+  const organizationId = await getStudentBookingOrganization(client, {
+    profileId: profile.profile_id,
+    programId,
+  });
+  if (!organizationId) throw new Response(null, { status: 403, headers });
   const key = `${programId}:${date}:${hours}`;
   let bookingPolicy;
   try {
     ({ policy: bookingPolicy } = await getProgramBookingPolicy(client, {
-      organizationId: member.organization_id,
+      organizationId,
       programId,
     }));
   } catch (error) {
@@ -65,8 +63,8 @@ export async function loader({ request }: Route.LoaderArgs) {
   )
     return data({ key, slots: null, bookingPolicy }, { status: 400, headers });
   const [disabledTimes, disabledDays] = await Promise.all([
-    getDisabledBookingTimes(client, { organizationId: member.organization_id }),
-    getDisabledBookingDays(client, { organizationId: member.organization_id }),
+    getDisabledBookingTimes(client, { organizationId }),
+    getDisabledBookingDays(client, { organizationId }),
   ]);
   // Still return the newest policy when a previously open date has closed,
   // so open booking panels can explain the updated range and block submission.
@@ -78,7 +76,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { data: slots, error: availabilityError } = await client.rpc(
     "get_student_program_booking_availability",
     {
-      p_organization_id: member.organization_id,
+      p_organization_id: organizationId,
       p_program_id: programId,
       p_date: date,
       p_minutes: minutes,

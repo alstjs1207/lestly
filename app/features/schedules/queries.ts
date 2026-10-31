@@ -386,13 +386,27 @@ export async function deleteSchedule(
  */
 export async function deleteFutureSchedules(
   client: SupabaseClient<Database>,
-  { parentScheduleId, fromDate }: { parentScheduleId: number; fromDate: Date },
+  {
+    parentScheduleId,
+    fromDate,
+    studentId,
+    organizationId,
+  }: {
+    parentScheduleId: number;
+    fromDate: Date;
+    studentId: string;
+    organizationId: string;
+  },
 ) {
   const { error } = await client
     .from("schedules")
     .delete()
     .is("cancelled_at", null)
-    .eq("parent_schedule_id", parentScheduleId)
+    .eq("organization_id", organizationId)
+    .eq("student_id", studentId)
+    .or(
+      `schedule_id.eq.${parentScheduleId},parent_schedule_id.eq.${parentScheduleId}`,
+    )
     .gte("start_time", fromDate.toISOString());
 
   if (error) {

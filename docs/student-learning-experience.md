@@ -1,3 +1,5 @@
+> **이력 문서**: 현재 정책은 [OpenSpec 명세](../openspec/README.md)를 따른다. 이 문서는 당시 계획·구현·검증 기록이며 현재 지원 여부나 미해결 결함의 기준으로 단독 사용하지 않는다.
+
 # 수강생 학습 화면 개선 (2026-10-23)
 
 확정한 시안을 `/dashboard`, `/learning-records`, `/my-schedules`, `/my-schedules/list`에 반영했다. 원본 저장소에서 작업했으며 별도 worktree나 clone은 만들지 않았다.

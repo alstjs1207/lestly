@@ -1,3 +1,5 @@
+> **이력 문서**: 현재 정책은 [OpenSpec 명세](../openspec/README.md)를 따른다. 이 문서는 당시 계획·구현·검증 기록이며 현재 지원 여부나 미해결 결함의 기준으로 단독 사용하지 않는다.
+
 # Node.js runtime security baseline — 2026-10-22
 
 - Advisory: https://nodejs.org/en/blog/vulnerability/october-2026-security-releases

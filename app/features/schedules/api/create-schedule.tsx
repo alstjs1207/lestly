@@ -22,6 +22,7 @@ import {
   sameCancellationPolicy,
 } from "../../app-settings/cancellation-policy";
 import { getProgramBookingPolicy } from "../../programs/booking-policy.server";
+import { getStudentBookingOrganization } from "../utils/booking-organization.server";
 import { toKSTDateString } from "../utils/kst";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -50,23 +51,6 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  // Get user's organization membership
-  const { data: membership } = await client
-    .from("organization_members")
-    .select("organization_id")
-    .eq("profile_id", profile.profile_id)
-    .eq("role", "STUDENT")
-    .eq("state", "NORMAL")
-    .single();
-
-  if (!membership) {
-    return data(
-      { success: false, error: "소속된 조직이 없습니다." },
-      { status: 400 },
-    );
-  }
-
-  const organizationId = membership.organization_id;
   const formData = await request.formData();
 
   const dateStr = formData.get("date") as string;
@@ -74,6 +58,15 @@ export async function action({ request }: Route.ActionArgs) {
   const programIdStr = formData.get("program_id") as string | null;
   const programId =
     programIdStr && /^[1-9]\d*$/.test(programIdStr) ? Number(programIdStr) : 0;
+  const organizationId = await getStudentBookingOrganization(client, {
+    profileId: profile.profile_id,
+    programId,
+  });
+  if (!organizationId)
+    return data(
+      { success: false, error: "예약할 클래스와 수강 권한을 확인해 주세요." },
+      { status: 400, headers },
+    );
   let policy;
   try {
     ({ policy } = await getProgramBookingPolicy(client, {

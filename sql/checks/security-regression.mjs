@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadMockedModule } from "../../tests/helpers/mocked-module.ts";
 import { checkAttendance } from "./attendance.mjs";
+import { checkBookingLifecycle } from "./booking-lifecycle.mjs";
 import {
   checkBookingPolicy,
   checkBookingPolicyMigration,
@@ -2139,6 +2140,24 @@ try {
     orgB,
     adminA,
     studentA,
+  });
+
+  await checkBookingLifecycle({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+    studentB,
+    managedStudent,
+    source: await readFile(
+      new URL("0039_booking_lifecycle_integrity.sql", migrationRoot),
+      "utf8",
+    ),
   });
 
   console.log(

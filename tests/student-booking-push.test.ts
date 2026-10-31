@@ -3,6 +3,7 @@ import test from "node:test";
 
 import * as bookingPolicy from "../app/features/app-settings/booking-policy.ts";
 import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
+import * as bookingOrganization from "../app/features/schedules/utils/booking-organization.server.ts";
 import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
 import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
@@ -13,7 +14,7 @@ function setup(rejectBooking = false) {
   const client = {
     auth: { getUser: async () => ({ data: { user: { id: "auth-student" } } }) },
     from(table: string) {
-      const chain = {
+      const chain: any = {
         select: () => chain,
         eq: () => chain,
         single: async () => ({
@@ -23,6 +24,7 @@ function setup(rejectBooking = false) {
               : { organization_id: "student-org" },
         }),
       };
+      chain.maybeSingle = chain.single;
       return chain;
     },
     rpc: async () => {
@@ -39,6 +41,7 @@ function setup(rejectBooking = false) {
       import.meta.url,
     ),
     {
+      "../utils/booking-organization.server": bookingOrganization,
       "../../programs/booking-policy.server": {
         getProgramBookingPolicy: async () => ({
           policy: bookingPolicy.DEFAULT_BOOKING_POLICY,

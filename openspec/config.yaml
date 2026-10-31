@@ -1,0 +1,27 @@
+schema: spec-driven
+context: |
+  Write artifacts in Korean; preserve OpenSpec structural headings and SHALL/MUST.
+  Lestly: Node 24, React Router 7, Supabase/PostgreSQL; see AGENTS.md and openspec/README.md.
+  Use spec:context to load only relevant policy and evidence. Current specs differ from docs history.
+  KST civil dates, half-open intervals; class duration/capacity and organization rules are distinct.
+  Preserve existing bookings, attendance, and cancellation snapshots. Preview and production intentionally share a DB.
+  Distinguish observed behavior, proposed policy, unimplemented features, and executed verification.
+rules:
+  proposal:
+    - Name affected capabilities and existing requirement IDs. Surface policy conflicts and data impact.
+  specs:
+    - Keep stable IDs; cover actor, tenant, state, time boundaries, failures, and preservation where relevant.
+    - Do not promote bugs or unresolved known-gaps into approved behavior. Keep implementation evidence in policy-map.json.
+  design:
+    - Trace final SQL definitions through all migrations. Document compatibility and concurrency where relevant.
+  tasks:
+    - Include relevant regression commands, policy-map/source-index updates, and actual verification evidence.
+operations:
+  apply:
+    guidance:
+      - Follow AGENTS.md. Complete the user's authorized implementation scope without repeated approval requests.
+      - Run relevant regressions and spec:check; do not use live DB operations as local tests.
+  archive:
+    guidance:
+      - Confirm tasks and executed verification; preserve unresolved policy questions in known-gaps.md.
+      - Run spec:check after syncing current specs. Commit/push/deploy only within user authorization.

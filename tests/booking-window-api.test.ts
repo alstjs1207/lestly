@@ -7,6 +7,7 @@ import * as times from "../app/features/app-settings/booking-times.ts";
 import * as window from "../app/features/app-settings/booking-window.ts";
 import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
 import * as settingsSections from "../app/features/app-settings/settings-sections.ts";
+import * as bookingOrganization from "../app/features/schedules/utils/booking-organization.server.ts";
 import * as kst from "../app/features/schedules/utils/kst.ts";
 import * as rules from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
@@ -184,7 +185,9 @@ function studentRoutes(
       };
     },
   };
+  chain.maybeSingle = chain.single;
   const shared: any = {
+    "../utils/booking-organization.server": bookingOrganization,
     "../../app-settings/cancellation-policy": cancellation,
     "react-router": {
       data: (body: any, init: any) => ({ body, init }),

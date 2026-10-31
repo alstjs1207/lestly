@@ -70,7 +70,12 @@ export default function ScheduleForm({
   bookingPolicy: organizationPolicy = DEFAULT_BOOKING_POLICY,
   defaultValues,
 }: ScheduleFormProps) {
-  const fetcher = useFetcher<{ success: boolean; error?: string }>();
+  const fetcher = useFetcher<{
+    success: boolean;
+    error?: string;
+    partial?: boolean;
+    createdStudentIds?: string[];
+  }>();
   const isSubmitting = fetcher.state !== "idle";
   const [isRecurring, setIsRecurring] = useState(
     defaultValues?.is_recurring || false,
@@ -93,9 +98,15 @@ export default function ScheduleForm({
         )?.duration_minutes ?? organizationPolicy.defaultDurationMinutes,
       ),
   );
+  const existingProgramInactive =
+    mode === "edit" &&
+    !!defaultValues?.program_id &&
+    !programs.some((p) => p.program_id === defaultValues.program_id);
   const [selectedProgramId, setSelectedProgramId] = useState(
-    defaultValues?.program_id?.toString() ||
-      (programs[0]?.program_id.toString() ?? ""),
+    existingProgramInactive
+      ? ""
+      : defaultValues?.program_id?.toString() ||
+          (programs[0]?.program_id.toString() ?? ""),
   );
   const selectedProgram = programs.find(
     (program) => String(program.program_id) === selectedProgramId,
@@ -149,6 +160,12 @@ export default function ScheduleForm({
   useEffect(() => {
     if (fetcher.data && !fetcher.data.success && fetcher.data.error) {
       setErrorMessage(fetcher.data.error);
+      if (fetcher.data.partial && fetcher.data.createdStudentIds) {
+        const created = new Set(fetcher.data.createdStudentIds);
+        setSelectedStudents(
+          (previous) => new Set([...previous].filter((id) => !created.has(id))),
+        );
+      }
     }
   }, [fetcher.data]);
 
@@ -213,6 +230,14 @@ export default function ScheduleForm({
         action={actionUrl}
         className="space-y-6 pb-36 md:pb-0"
       >
+        {existingProgramInactive && (
+          <p role="status" className="text-muted-foreground text-sm">
+            기존 클래스는 초안 또는 보관 상태입니다. 이동할 활성 클래스를 선택해
+            주세요.
+            {programs.length === 0 &&
+              " 활성 클래스를 준비한 뒤 다시 수정할 수 있습니다."}
+          </p>
+        )}
         {selectedProgram && (
           <p className="text-muted-foreground text-sm">
             {selectedProgram.title} · 같은 시간대 최대{" "}
@@ -333,7 +358,7 @@ export default function ScheduleForm({
             </div>
           )}
 
-          {programs.length > 1 ? (
+          {programs.length > 1 || existingProgramInactive ? (
             <div className="space-y-2">
               <Label htmlFor="program_id">클래스 *</Label>
               <Select
@@ -468,35 +493,43 @@ export default function ScheduleForm({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>반복 옵션</Label>
-            <div className="flex min-h-11 items-center space-x-3 rounded-md border px-3">
-              <Checkbox
-                id="is_recurring"
-                checked={isRecurring}
-                onCheckedChange={(checked) =>
-                  setIsRecurring(checked as boolean)
-                }
+          {mode === "create" ? (
+            <div className="space-y-2">
+              <Label>반복 옵션</Label>
+              <div className="flex min-h-11 items-center space-x-3 rounded-md border px-3">
+                <Checkbox
+                  id="is_recurring"
+                  checked={isRecurring}
+                  onCheckedChange={(checked) =>
+                    setIsRecurring(checked as boolean)
+                  }
+                />
+                <label
+                  htmlFor="is_recurring"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  매주 반복 등록
+                </label>
+              </div>
+              {isRecurring && (
+                <p className="text-muted-foreground text-xs">
+                  수강생의 수강 종료일까지 매주 같은 요일에 등록됩니다. 클래스의
+                  총 회차로 제한하지 않습니다.
+                </p>
+              )}
+              <input
+                type="hidden"
+                name="is_recurring"
+                value={isRecurring ? "true" : "false"}
               />
-              <label
-                htmlFor="is_recurring"
-                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                매주 반복 등록
-              </label>
             </div>
-            {isRecurring && (
-              <p className="text-muted-foreground text-xs">
-                수강생의 수강 종료일까지 매주 같은 요일에 등록됩니다. 클래스의
-                총 회차로 제한하지 않습니다.
-              </p>
-            )}
-            <input
-              type="hidden"
-              name="is_recurring"
-              value={isRecurring ? "true" : "false"}
-            />
-          </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              {defaultValues?.is_recurring
+                ? "반복 일정입니다. 아래에서 수정할 회차 범위를 선택해 주세요. 수강생을 변경하는 일정은 기존 반복 묶음에서 분리됩니다."
+                : "단건 일정입니다. 반복 일정은 새 일정 등록에서 만들 수 있습니다."}
+            </p>
+          )}
         </div>
 
         {mode === "edit" && (
@@ -591,7 +624,9 @@ export default function ScheduleForm({
             <DialogTitle>
               {mode === "create" ? "등록 실패" : "수정 실패"}
             </DialogTitle>
-            <DialogDescription>{errorMessage}</DialogDescription>
+            <DialogDescription className="whitespace-pre-line">
+              {errorMessage}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button onClick={() => setErrorMessage(null)}>확인</Button>

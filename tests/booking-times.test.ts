@@ -14,6 +14,7 @@ import {
 import * as bookingWindow from "../app/features/app-settings/booking-window.ts";
 import * as cancellation from "../app/features/app-settings/cancellation-policy.ts";
 import * as settingsSections from "../app/features/app-settings/settings-sections.ts";
+import * as bookingOrganization from "../app/features/schedules/utils/booking-organization.server.ts";
 import { desktopBookingSlots } from "../app/features/schedules/utils/desktop-booking.ts";
 import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/kst.ts";
 import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
@@ -120,6 +121,7 @@ test("settings route validates all choices before one tenant-scoped atomic write
           policy: bookingPolicy.DEFAULT_BOOKING_POLICY,
         }),
       },
+      "../utils/booking-organization.server": bookingOrganization,
       "../utils/student-schedule-rules": { parseDateString },
       "../utils/kst": { toKSTDateString: realKstDate },
       "react-router": {
@@ -227,6 +229,7 @@ test("availability failures retain restrictions and settings query failures neve
           policy: bookingPolicy.DEFAULT_BOOKING_POLICY,
         }),
       },
+      "../utils/booking-organization.server": bookingOrganization,
       "../utils/student-schedule-rules": { parseDateString },
       "../utils/kst": { toKSTDateString: realKstDate },
       "react-router": { data: (body: unknown) => body },
@@ -237,6 +240,10 @@ test("availability failures retain restrictions and settings query failures neve
               const query: any = {
                 select: () => query,
                 eq: () => query,
+                maybeSingle: async () => ({
+                  data: { organization_id: "org-a" },
+                  error: null,
+                }),
                 single: async () => ({
                   data: { organization_id: "org-a" },
                   error: null,

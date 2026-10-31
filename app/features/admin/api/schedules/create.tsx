@@ -94,6 +94,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
 
   const errors: string[] = [];
+  const createdStudentIds: string[] = [];
 
   for (const studentId of studentIds) {
     try {
@@ -175,6 +176,7 @@ export async function action({ request }: Route.ActionArgs) {
         },
       );
       if (saveError) throw saveError;
+      createdStudentIds.push(studentId);
     } catch (e) {
       const student = await getStudentById(client, {
         organizationId,
@@ -197,9 +199,15 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (errors.length > 0) {
-    // Partial failure - some succeeded, redirect with warning
-    // For now, still redirect since some were created successfully
-    return redirect("/admin/schedules");
+    return data(
+      {
+        success: false,
+        partial: true,
+        createdStudentIds,
+        error: `${createdStudentIds.length}명 등록 완료, ${errors.length}명 등록 실패. 실패한 수강생만 다시 선택되어 있습니다.\n${errors.join("\n")}`,
+      },
+      { status: 207 },
+    );
   }
 
   return redirect("/admin/schedules");

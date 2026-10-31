@@ -37,6 +37,8 @@ export interface StudentSchedulesData {
   allowedStartDate: string;
   allowedEndDate: string;
   canBook: boolean;
+  organizationId?: string | null;
+  organizations?: { organization_id: string; name: string; state: string }[];
   disabledBookingDays?: number[];
   bookingPolicy?: BookingPolicy;
 }
@@ -49,6 +51,9 @@ export function StudentSchedulesView({
 }) {
   const { schedules, programs, year, month, canBook } = data;
   const [params, setParams] = useSearchParams();
+  const organizationQuery = data.organizationId
+    ? `&organization_id=${encodeURIComponent(data.organizationId)}`
+    : "";
   const requestedDate = params.get("date");
   const selectedDate =
     !list &&
@@ -161,8 +166,8 @@ export function StudentSchedulesView({
             <Link
               to={
                 list
-                  ? `/my-schedules?date=${selectedDate}`
-                  : `/my-schedules/list?year=${selectedDate.slice(0, 4)}&month=${Number(selectedDate.slice(5, 7))}`
+                  ? `/my-schedules?date=${selectedDate}${organizationQuery}`
+                  : `/my-schedules/list?year=${selectedDate.slice(0, 4)}&month=${Number(selectedDate.slice(5, 7))}${organizationQuery}`
               }
             >
               {list ? (
@@ -181,6 +186,33 @@ export function StudentSchedulesView({
           )}
         </div>
       </header>
+      {(data.organizations?.length ?? 0) > 1 && (
+        <label className="flex flex-wrap items-center gap-3 text-sm">
+          수업 공간
+          <select
+            aria-label="수업 공간 선택"
+            className="bg-background rounded-lg border p-3"
+            value={params.get("organization_id") ?? data.organizationId ?? ""}
+            onChange={(event) => {
+              const next = new URLSearchParams(params);
+              next.set("organization_id", event.target.value);
+              next.delete("schedule");
+              next.delete("book");
+              setSelected(null);
+              setBooking(null);
+              setStatus("");
+              setParams(next, { preventScrollReset: true });
+            }}
+          >
+            {data.organizations?.map((org) => (
+              <option key={org.organization_id} value={org.organization_id}>
+                {org.name}
+                {org.state === "GRADUATE" ? " · 수강 종료" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {status && (
         <p
           role="status"
@@ -268,6 +300,7 @@ export function StudentSchedulesView({
         </>
       ) : (
         <StudentWeeklySchedules
+          key={`week:${data.organizationId}`}
           data={{ ...data, selectedDate }}
           onSelectDate={chooseDate}
           onManage={setSelected}
@@ -311,6 +344,7 @@ export function StudentSchedulesView({
         onCancelled={() => setStatus("수업 예약을 취소했어요.")}
       />
       <StudentBookingDialog
+        key={`booking:${data.organizationId}`}
         date={list ? booking : null}
         onClose={closeBooking}
         programs={programs}

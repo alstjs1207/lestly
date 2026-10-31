@@ -1,3 +1,5 @@
+> **이력 문서**: 현재 정책은 [OpenSpec 명세](../openspec/README.md)를 따른다. 이 문서는 당시 계획·구현·검증 기록이며 현재 지원 여부나 미해결 결함의 기준으로 단독 사용하지 않는다.
+
 # 출결 관리
 
 구현: `/admin/attendance` · DB migration `0027_attendance.sql`
