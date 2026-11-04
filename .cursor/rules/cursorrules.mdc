@@ -1,9 +1,0 @@
----
-description: Lestly repository policy and development entry point
-alwaysApply: true
----
-
-Read and follow the repository root `AGENTS.md` before editing.
-Use `openspec/README.md` and `npm run spec:context -- <domain-or-path>` to load only relevant policies.
-Current policies live in `openspec/specs/`; active changes live in `openspec/changes/`; unresolved decisions live in `openspec/known-gaps.md`.
-Do not treat historical `docs/` plans or audits as the current specification.
