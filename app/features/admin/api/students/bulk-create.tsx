@@ -12,6 +12,7 @@ import {
   createBulkStudents,
   findBulkStudentDuplicates,
 } from "../../lib/student-bulk.server";
+import { parseStudentCourseDates } from "../../lib/student-form.server";
 
 export async function action({ request }: Route.ActionArgs) {
   requireMethod("POST")(request);
@@ -51,6 +52,15 @@ export async function action({ request }: Route.ActionArgs) {
       { status: 400 },
     );
   }
+  const period = parseStudentCourseDates(formData, { creating: true });
+  if (!period.success) {
+    return data(
+      {
+        error: period.error.issues[0]?.message ?? "수강 기간을 확인해 주세요.",
+      },
+      { status: 400 },
+    );
+  }
   try {
     const duplicates = await findBulkStudentDuplicates(
       client,
@@ -78,6 +88,11 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
   return data({
-    results: await createBulkStudents(client, organizationId, parsed.data),
+    results: await createBulkStudents(
+      client,
+      organizationId,
+      parsed.data,
+      period.data,
+    ),
   });
 }

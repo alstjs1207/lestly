@@ -135,8 +135,8 @@ test("API date rules, slot checks, course limits and latest availability policy 
     bookingWindow: { mode: "rolling", daysAhead: 14 } as const,
   };
   const course = {
-    classStartDate: null,
-    classEndDate: null,
+    classStartDate: "2020-01-01",
+    classEndDate: "2099-12-31",
     bookingPolicy: policy,
   };
   assert.equal(bookingDateReason("2026-11-12", course, now), null);

@@ -206,9 +206,11 @@ export async function action({ request, params }: Route.ActionArgs) {
         {
           success: false,
           error:
-            updateError.message === "schedule_outside_course"
-              ? "수강 종료일 이후로 변경할 수 없습니다. 수강 기간을 먼저 확인해 주세요."
-              : "일정을 변경하지 못했습니다. 수강 기간과 겹치는 일정을 확인해 주세요.",
+            updateError.message === "schedule_course_dates_required"
+              ? "수강 시작일과 종료일을 먼저 등록해 주세요."
+              : updateError.message === "schedule_outside_course"
+                ? "수강 종료일 이후로 변경할 수 없습니다. 수강 기간을 먼저 확인해 주세요."
+                : "일정을 변경하지 못했습니다. 수강 기간과 겹치는 일정을 확인해 주세요.",
         },
         { status: 400 },
       );
@@ -249,9 +251,11 @@ export async function action({ request, params }: Route.ActionArgs) {
         {
           success: false,
           error:
-            updateError.message === "schedule_outside_course"
-              ? "수강 종료일 이후로 변경할 수 없습니다. 수강 기간을 먼저 확인해 주세요."
-              : "일정을 변경하지 못했습니다. 수강 기간과 겹치는 일정을 확인해 주세요.",
+            updateError.message === "schedule_course_dates_required"
+              ? "수강 시작일과 종료일을 먼저 등록해 주세요."
+              : updateError.message === "schedule_outside_course"
+                ? "수강 종료일 이후로 변경할 수 없습니다. 수강 기간을 먼저 확인해 주세요."
+                : "일정을 변경하지 못했습니다. 수강 기간과 겹치는 일정을 확인해 주세요.",
         },
         { status: 400 },
       );

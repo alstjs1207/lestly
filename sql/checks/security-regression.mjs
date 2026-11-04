@@ -27,6 +27,7 @@ import {
 } from "./cancellation-policy.mjs";
 import { checkClassBookingPolicy } from "./class-booking-policy.mjs";
 import { checkSettingsSections } from "./settings-sections.mjs";
+import { checkStudentCourseDates } from "./student-course-dates.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
 import { checkStudentLifecycle } from "./student-lifecycle.mjs";
 import {
@@ -2160,6 +2161,19 @@ try {
     ),
   });
 
+  await checkStudentCourseDates({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    adminA,
+    studentA,
+    source: await readFile(
+      new URL("0040_student_course_dates.sql", migrationRoot),
+      "utf8",
+    ),
+  });
   console.log(
     `SQL security regression: ${passed} checks passed; migrations from ${fileURLToPath(migrationRoot)}`,
   );

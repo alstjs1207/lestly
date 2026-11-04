@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
 import type { BulkStudentResult, BulkStudentRow } from "./student-bulk.ts";
+import type { StudentFormValues } from "./student-form.server.ts";
 
 import { normalizePhone } from "./student-fields.ts";
 import {
@@ -53,11 +54,14 @@ export async function createBulkStudents(
   client: SupabaseClient<Database>,
   organizationId: string,
   rows: BulkStudentRow[],
+  period: Pick<StudentFormValues, "class_start_date" | "class_end_date">,
 ): Promise<BulkStudentResult[]> {
   const results: BulkStudentResult[] = [];
   const create = async (row: BulkStudentRow): Promise<BulkStudentResult> => {
     try {
       const profileId = await saveManagedStudent(client, organizationId, {
+        class_start_date: period.class_start_date,
+        class_end_date: period.class_end_date,
         name: row.name,
         phone: row.phone,
         region: row.region,

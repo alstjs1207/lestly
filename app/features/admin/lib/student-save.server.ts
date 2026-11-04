@@ -3,10 +3,7 @@ import type { Database } from "database.types";
 
 import type { StudentFormValues } from "./student-form.server.ts";
 
-import {
-  addYearsToDateString,
-  getDefaultStudentClassDates,
-} from "./student-class-dates.ts";
+import { getDefaultStudentClassDates } from "./student-class-dates.ts";
 import { studentLifecycleFailure } from "./student-lifecycle.server.ts";
 
 export async function saveManagedStudent(
@@ -21,7 +18,9 @@ export async function saveManagedStudent(
   const payload = { ...values };
   if (!studentId) {
     payload.class_start_date ||= getDefaultStudentClassDates().classStartDate;
-    payload.class_end_date ||= addYearsToDateString(payload.class_start_date);
+  }
+  if (payload.class_start_date && !payload.class_end_date) {
+    throw { code: "22023", message: "student_course_end_required" };
   }
   const { data, error } = await client.rpc("save_managed_student", {
     p_organization_id: organizationId,
@@ -34,6 +33,20 @@ export async function saveManagedStudent(
 }
 
 export function studentSaveFailure(error: unknown) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    error.message === "student_course_end_required"
+  ) {
+    return {
+      status: 400,
+      error: "수업 종료일을 입력하거나 기간을 선택해 주세요.",
+      fieldErrors: {
+        class_end_date: ["수업 종료일을 입력하거나 기간을 선택해 주세요."],
+      },
+    };
+  }
   const lifecycle = studentLifecycleFailure(error);
   if (lifecycle) return lifecycle;
   const code =

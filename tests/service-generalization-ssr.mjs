@@ -116,9 +116,16 @@ const types = [
 const blank = await render(
   "features/admin/screens/students/create",
   "/admin/students/new",
-  { studentTypes: types },
+  { studentTypes: types, classStartDate: "2026-11-04", classEndDate: "" },
 );
 assert.match(blank, /<details class="[^"]*">/);
+assert.match(blank, /name="class_start_date"[^>]*value="2026-11-04"/);
+const endInput = blank.match(/<input[^>]*id="class_end_date"[^>]*>/)?.[0] ?? "";
+assert.match(endInput, /required=""/);
+assert.match(endInput, /value=""/);
+for (const label of ["1개월", "3개월", "6개월", "1년"])
+  assert.ok(blank.includes(label));
+assert.doesNotMatch(blank, /1년 후 날짜로 자동 저장/);
 assert.match(blank, /보호자 정보 \(선택\)/);
 const edit = await render(
   "features/admin/screens/students/edit",

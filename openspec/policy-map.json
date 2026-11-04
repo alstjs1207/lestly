@@ -220,7 +220,8 @@
           "sources": [
             "app/features/admin/lib/student-bulk.ts",
             "app/features/admin/lib/student-bulk.server.ts",
-            "app/features/admin/screens/students/bulk-create.tsx"
+            "app/features/admin/screens/students/bulk-create.tsx",
+            "app/features/admin/components/student-course-dates.tsx"
           ],
           "tests": ["tests/student-bulk.test.ts"],
           "verification": "automated",
@@ -254,12 +255,18 @@
           "id": "STU-004",
           "sources": [
             "app/features/admin/lib/student-class-dates.ts",
-            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+            "sql/migrations/0039_booking_lifecycle_integrity.sql",
+            "app/features/admin/components/student-course-dates.tsx",
+            "app/features/admin/lib/student-form.server.ts",
+            "app/features/admin/lib/student-save.server.ts",
+            "sql/migrations/0040_student_course_dates.sql"
           ],
           "tests": [
             "tests/student-form.test.ts",
             "tests/student-lifecycle.test.ts",
-            "sql/checks/student-lifecycle.mjs"
+            "sql/checks/student-lifecycle.mjs",
+            "sql/checks/student-course-dates.mjs",
+            "tests/service-generalization-ssr.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -406,11 +413,18 @@
           "id": "BOOK-001",
           "sources": [
             "app/features/schedules/utils/booking-organization.server.ts",
-            "app/features/schedules/api/create-schedule.tsx"
+            "app/features/schedules/api/create-schedule.tsx",
+            "app/features/schedules/utils/student-booking.ts",
+            "app/features/schedules/utils/student-calendar.server.ts",
+            "sql/migrations/0040_student_course_dates.sql"
           ],
           "tests": [
             "tests/booking-organization.test.ts",
-            "sql/checks/booking-lifecycle.mjs"
+            "sql/checks/booking-lifecycle.mjs",
+            "tests/student-booking-push.test.ts",
+            "tests/student-learning.test.ts",
+            "tests/student-week-loader.test.ts",
+            "sql/checks/student-course-dates.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -608,11 +622,13 @@
           "sources": [
             "app/features/admin/api/schedules/update.tsx",
             "app/features/admin/screens/schedules/edit.tsx",
-            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+            "sql/migrations/0039_booking_lifecycle_integrity.sql",
+            "sql/migrations/0040_student_course_dates.sql"
           ],
           "tests": [
             "tests/booking-integrity.test.ts",
-            "sql/checks/booking-lifecycle.mjs"
+            "sql/checks/booking-lifecycle.mjs",
+            "sql/checks/student-course-dates.mjs"
           ],
           "verification": "automated",
           "anchors": [

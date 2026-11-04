@@ -73,8 +73,8 @@ test("batch validation isolates class seats while preventing a student's cross-c
 });
 test("availability results for another class cannot close this class or change its duration policy", () => {
   const course = {
-    classStartDate: null,
-    classEndDate: null,
+    classStartDate: "2020-01-01",
+    classEndDate: "2099-12-31",
     programId: 2,
     bookingPolicy: DEFAULT_BOOKING_POLICY,
   };

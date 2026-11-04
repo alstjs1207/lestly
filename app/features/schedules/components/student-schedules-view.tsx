@@ -324,6 +324,12 @@ export function StudentSchedulesView({
             )}{" "}
             기존 예약은 수업 상세의 취소 규칙을 따라요.
           </p>
+          {(!data.classStartDate || !data.classEndDate) && (
+            <p role="status">
+              수강 기간이 등록되지 않았어요. 운영자에게 시작일과 종료일 등록을
+              요청해 주세요. 기존 일정은 확인할 수 있어요.
+            </p>
+          )}
           {(data.classStartDate || data.classEndDate) && (
             <p>
               나의 수강 기간 · {data.classStartDate || "시작일 미등록"} ~{" "}

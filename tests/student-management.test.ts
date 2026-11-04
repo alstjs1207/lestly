@@ -90,7 +90,15 @@ test("transaction helper keeps edit dates empty and assigns create dates only", 
       return { data: "saved-id", error: null };
     },
   };
-  await saveManagedStudent(client as any, "org-a", values);
+  await assert.rejects(
+    () => saveManagedStudent(client as any, "org-a", values),
+    { message: "student_course_end_required" },
+  );
+  assert.equal(calls.length, 0);
+  await saveManagedStudent(client as any, "org-a", {
+    ...values,
+    class_end_date: "2099-12-31",
+  });
   await saveManagedStudent(
     client as any,
     "org-a",
@@ -101,9 +109,7 @@ test("transaction helper keeps edit dates empty and assigns create dates only", 
     },
     "student-id",
   );
-  assert.ok(
-    calls[0].p_values.class_end_date > calls[0].p_values.class_start_date,
-  );
+  assert.ok(calls[0].p_values.class_end_date === "2099-12-31");
   assert.equal(calls[1].p_student_id, "student-id");
   assert.equal(calls[1].p_values.class_end_date, null);
 });

@@ -13,10 +13,6 @@ import makeServerClient from "~/core/lib/supa-client.server";
 
 import { getStudentTypes } from "../../../organizations/student-types.server";
 import { requireAdminRole } from "../../guards.server";
-import {
-  addYearsToDateString,
-  getDefaultStudentClassDates,
-} from "../../lib/student-class-dates";
 import { parseStudentForm } from "../../lib/student-form.server";
 import {
   saveManagedStudent,
@@ -32,7 +28,9 @@ export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
 
   const studentTypes = await getStudentTypes(client, organizationId);
-  const parsed = parseStudentForm(formData, studentTypes);
+  const parsed = parseStudentForm(formData, studentTypes, undefined, {
+    creating: true,
+  });
   if (!parsed.success) {
     return data(
       {
@@ -43,29 +41,9 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
   const values = parsed.data;
-  const defaultClassDates = getDefaultStudentClassDates();
-  const classStartDate =
-    values.class_start_date || defaultClassDates.classStartDate;
-  const classEndDate =
-    values.class_end_date || addYearsToDateString(classStartDate);
-  if (classEndDate < classStartDate) {
-    return data(
-      {
-        success: false,
-        fieldErrors: {
-          class_end_date: ["수업 종료일은 시작일 이후여야 합니다."],
-        },
-      },
-      { status: 400 },
-    );
-  }
 
   try {
-    const profileId = await saveManagedStudent(client, organizationId, {
-      ...values,
-      class_start_date: classStartDate,
-      class_end_date: classEndDate,
-    });
+    const profileId = await saveManagedStudent(client, organizationId, values);
     return redirect(`/admin/students/${profileId}`);
   } catch (error) {
     console.error("Failed to create student", error);

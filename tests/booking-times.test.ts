@@ -21,7 +21,7 @@ import { parseDateString } from "../app/features/schedules/utils/student-schedul
 // Exercise the real route handlers with explicit dependencies and no live writes.
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
-const course = { classStartDate: null, classEndDate: null };
+const course = { classStartDate: "2020-01-01", classEndDate: "2099-12-31" };
 const now = new Date("2026-10-23T00:00:00Z");
 function form(allowed: string[]) {
   const data = new FormData();

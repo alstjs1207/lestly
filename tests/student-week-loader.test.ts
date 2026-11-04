@@ -33,6 +33,10 @@ function fixture(
     },
   ],
   bookable = false,
+  courseDates = {
+    class_start_date: "2020-01-01",
+    class_end_date: "2099-12-31",
+  } as { class_start_date: string | null; class_end_date: string | null },
 ) {
   const nextFilters: [string, unknown][] = [];
   let range:
@@ -127,8 +131,7 @@ function fixture(
       "../../users/queries": {
         getUserProfile: async () => ({
           profile_id: "student-a",
-          class_start_date: null,
-          class_end_date: null,
+          ...courseDates,
         }),
       },
       "./calendar-month": { getKSTMonthRange, parseCalendarMonth },
@@ -249,4 +252,19 @@ test("multi-organization calendar selects an authorized tenant and scopes its sc
     ),
     (e: any) => e.status === 403,
   );
+});
+
+test("calendar keeps existing schedules visible but blocks new reservations without either course date", async () => {
+  for (const dates of [
+    { class_start_date: null, class_end_date: null },
+    { class_start_date: null, class_end_date: "2099-12-31" },
+    { class_start_date: "2020-01-01", class_end_date: null },
+  ]) {
+    const f = fixture(undefined, undefined, true, dates);
+    const { body } = await f.loadStudentCalendar(
+      new Request("https://lestly.test/my-schedules?date=2027-01-01"),
+    );
+    assert.equal(body.canBook, false);
+    assert.equal(body.nextSchedule?.schedule_id, 5);
+  }
 });

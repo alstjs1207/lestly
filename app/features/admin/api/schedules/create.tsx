@@ -186,9 +186,11 @@ export async function action({ request }: Route.ActionArgs) {
       const message =
         e && typeof e === "object" && "message" in e ? String(e.message) : "";
       errors.push(
-        message === "schedule_outside_course"
-          ? `${name}: 수강 기간을 벗어나는 수업은 등록할 수 없습니다. 수강 기간을 먼저 확인해 주세요.`
-          : `${name}: 등록 중 오류가 발생했습니다.`,
+        message === "schedule_course_dates_required"
+          ? `${name}: 수강 시작일과 종료일을 먼저 등록해 주세요.`
+          : message === "schedule_outside_course"
+            ? `${name}: 수강 기간을 벗어나는 수업은 등록할 수 없습니다. 수강 기간을 먼저 확인해 주세요.`
+            : `${name}: 등록 중 오류가 발생했습니다.`,
       );
     }
   }

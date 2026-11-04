@@ -22,6 +22,8 @@ export function bookingDateReason(
   course: CourseDates,
   now = new Date(),
 ): string | null {
+  if (!course.classStartDate || !course.classEndDate)
+    return "수강 기간이 등록되지 않았어요. 운영자에게 시작일과 종료일 등록을 요청해 주세요.";
   const today = toKSTDateString(now);
   if (date < today) return "지난 날짜에는 수업을 예약할 수 없어요.";
   if (

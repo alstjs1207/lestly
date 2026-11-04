@@ -95,6 +95,32 @@ test("new feature and new migration need deliberate policy ownership", () => {
     ),
   );
 });
+
+test("migration journal requires platform evidence without bypassing new SQL ownership", () => {
+  const journal = "sql/migrations/meta/_journal.json";
+  const record = "openspec/changes/migration/proposal.md";
+  const catalog = {
+    domains: [{ id: "platform", requirements: [{ id: "PLAT-003" }] }],
+  };
+  assert.deepEqual(classify(journal), ["platform"]);
+  assert.throws(
+    () => assertChangeEvidence([journal], catalog, () => ""),
+    /Missing policy\/change evidence/,
+  );
+  assert.deepEqual(
+    assertChangeEvidence([journal, record], catalog, () => "PLAT-003"),
+    ["platform"],
+  );
+  assert.throws(
+    () =>
+      assertChangeEvidence(
+        [journal, "sql/migrations/9999_unassigned_feature.sql", record],
+        catalog,
+        () => "PLAT-003",
+      ),
+    /Unclassified changed source/,
+  );
+});
 test("source inventory fails on new files until reviewed index is updated", () =>
   fixture(({ root, put, index }) => {
     put("app/features/payments/another.ts", "export const another = 1;");

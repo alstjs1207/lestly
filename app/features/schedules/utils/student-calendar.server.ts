@@ -126,8 +126,9 @@ export async function loadStudentCalendar(
       canBook:
         programs.length > 0 &&
         !!membership &&
-        (!profile.class_end_date ||
-          profile.class_end_date >= toKSTDateString(now)),
+        !!profile.class_start_date &&
+        !!profile.class_end_date &&
+        profile.class_end_date >= toKSTDateString(now),
     },
     { headers },
   );

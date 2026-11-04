@@ -685,6 +685,12 @@
       ]
     },
     {
+      "path": "app/features/admin/components/student-course-dates.tsx",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
       "path": "app/features/admin/components/student-form.tsx",
       "domains": [
         "student-management"
@@ -2343,6 +2349,12 @@
       ]
     },
     {
+      "path": "sql/checks/student-course-dates.mjs",
+      "domains": [
+        "student-management"
+      ]
+    },
+    {
       "path": "sql/checks/student-lifecycle-performance.mjs",
       "domains": [
         "student-management"
@@ -2778,6 +2790,14 @@
       ]
     },
     {
+      "path": "sql/migrations/0040_student_course_dates.sql",
+      "domains": [
+        "booking",
+        "recurring-schedules",
+        "student-management"
+      ]
+    },
+    {
       "path": "sql/operations/20261018_schedule_performance.sql",
       "domains": [
         "booking",
@@ -2976,6 +2996,12 @@
     },
     {
       "path": "sql/operations/20261030_verify_settings_sections.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261104_apply_student_course_dates.mjs",
       "domains": [
         "platform"
       ]

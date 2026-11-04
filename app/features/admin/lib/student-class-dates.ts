@@ -3,10 +3,16 @@ function formatDate(year: number, month: number, day: number) {
 }
 
 export function addYearsToDateString(value: string, years = 1) {
+  return addMonthsToDateString(value, years * 12);
+}
+
+export function addMonthsToDateString(value: string, months: number) {
   const [year, month, day] = value.split("-").map(Number);
-  const targetYear = year + years;
-  const lastDayOfTargetMonth = new Date(targetYear, month, 0).getDate();
-  return formatDate(targetYear, month, Math.min(day, lastDayOfTargetMonth));
+  const target = new Date(Date.UTC(year, month - 1 + months, 1));
+  const targetYear = target.getUTCFullYear();
+  const targetMonth = target.getUTCMonth() + 1;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
+  return formatDate(targetYear, targetMonth, Math.min(day, lastDay));
 }
 
 export function getDefaultStudentClassDates(now = new Date()) {
@@ -23,6 +29,6 @@ export function getDefaultStudentClassDates(now = new Date()) {
 
   return {
     classStartDate,
-    classEndDate: addYearsToDateString(classStartDate),
+    classEndDate: "",
   };
 }

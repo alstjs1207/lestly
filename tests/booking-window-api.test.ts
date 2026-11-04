@@ -170,7 +170,12 @@ function studentRoutes(
     select: () => chain,
     eq: () => chain,
     single: async () => ({
-      data: { profile_id: "student-a", organization_id: "org-a" },
+      data: {
+        profile_id: "student-a",
+        organization_id: "org-a",
+        class_start_date: "2020-01-01",
+        class_end_date: "2099-12-31",
+      },
       error: null,
     }),
   };

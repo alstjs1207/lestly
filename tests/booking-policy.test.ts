@@ -112,8 +112,8 @@ test("only absent policy uses legacy defaults; read errors and malformed saved p
 });
 test("lead time accepts its exact boundary and rejects the millisecond before it", () => {
   const course = {
-    classStartDate: null,
-    classEndDate: null,
+    classStartDate: "2020-01-01",
+    classEndDate: "2099-12-31",
     bookingPolicy: { ...policy, leadMinutes: 60 },
   };
   const now = new Date("2026-10-24T08:00:00+09:00");
@@ -197,7 +197,11 @@ test("resolved policy reads the separate booking window while preserving legacy 
       return query;
     },
     in: async (_: string, keys: string[]) => {
-      assert.deepEqual(keys, ["booking_policy", "booking_window", "cancellation_policy"]);
+      assert.deepEqual(keys, [
+        "booking_policy",
+        "booking_window",
+        "cancellation_policy",
+      ]);
       return { data: rows, error: null };
     },
   };
