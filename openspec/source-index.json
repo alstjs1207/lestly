@@ -654,6 +654,12 @@
       ]
     },
     {
+      "path": "app/features/admin/components/inline-instructor-dialog.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
       "path": "app/features/admin/components/instructor-form.tsx",
       "domains": [
         "catalog"
@@ -2317,6 +2323,12 @@
       ]
     },
     {
+      "path": "sql/checks/catalog-entry.mjs",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
       "path": "sql/checks/class-booking-policy.mjs",
       "domains": [
         "booking",
@@ -2798,6 +2810,12 @@
       ]
     },
     {
+      "path": "sql/migrations/0041_public_program_slug.sql",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
       "path": "sql/operations/20261018_schedule_performance.sql",
       "domains": [
         "booking",
@@ -3001,6 +3019,13 @@
       ]
     },
     {
+      "path": "sql/operations/20261104_apply_catalog_entry.mjs",
+      "domains": [
+        "catalog",
+        "platform"
+      ]
+    },
+    {
       "path": "sql/operations/20261104_apply_student_course_dates.mjs",
       "domains": [
         "platform"
@@ -3126,6 +3151,12 @@
       "path": "tests/cancellation-policy.test.ts",
       "domains": [
         "booking"
+      ]
+    },
+    {
+      "path": "tests/catalog-entry.test.ts",
+      "domains": [
+        "catalog"
       ]
     },
     {

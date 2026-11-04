@@ -102,5 +102,17 @@ export async function action({ request }: Route.ActionArgs) {
     }
   }
 
+  if (formData.get("response_mode") === "inline") {
+    return data(
+      {
+        success: true,
+        instructor: {
+          instructor_id: instructor.instructor_id,
+          name: instructor.name,
+        },
+      },
+      { headers },
+    );
+  }
   return redirect("/admin/instructors", { headers });
 }

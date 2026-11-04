@@ -326,11 +326,17 @@
           "sources": [
             "app/features/class/queries.ts",
             "app/features/programs/queries.ts",
-            "sql/migrations/0036_class_booking_policy.sql"
+            "sql/migrations/0036_class_booking_policy.sql",
+            "app/features/admin/lib/catalog-form.server.ts",
+            "app/features/admin/components/program-form.tsx",
+            "sql/migrations/0041_public_program_slug.sql"
           ],
           "tests": [
             "tests/class-booking-policy.test.ts",
-            "sql/checks/security-regression.mjs"
+            "sql/checks/security-regression.mjs",
+            "tests/catalog-form.test.ts",
+            "sql/checks/catalog-entry.mjs",
+            "tests/service-generalization-ssr.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -382,11 +388,16 @@
           "sources": [
             "app/features/admin/lib/catalog-form.server.ts",
             "app/features/schedules/utils/learning-records.ts",
-            "app/features/class/components/class-location.tsx"
+            "app/features/class/components/class-location.tsx",
+            "app/features/admin/components/program-form.tsx",
+            "app/features/admin/components/inline-instructor-dialog.tsx",
+            "app/features/admin/api/instructors/create.tsx"
           ],
           "tests": [
             "tests/catalog-form.test.ts",
-            "tests/service-generalization-ssr.mjs"
+            "tests/service-generalization-ssr.mjs",
+            "tests/catalog-entry.test.ts",
+            "sql/checks/catalog-entry.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -1081,7 +1092,8 @@
           "sources": [
             "sql/checks/security-regression.mjs",
             "sql/operations/20261030_apply_booking_lifecycle.mjs",
-            "docs/booking-integrity-fixes.md"
+            "docs/booking-integrity-fixes.md",
+            "sql/operations/20261104_apply_catalog_entry.mjs"
           ],
           "tests": ["sql/checks/booking-lifecycle.mjs"],
           "verification": "automated",

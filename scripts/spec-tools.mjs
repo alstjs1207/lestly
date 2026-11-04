@@ -157,7 +157,7 @@ export function classify(file) {
       if (/\/students\/|student-(?!type-settings)/.test(rest))
         return ["student-management"];
       if (
-        /\/programs\/|\/instructors\/|catalog-form|program-form|instructor-form/.test(
+        /\/programs\/|\/instructors\/|catalog-form|program-form|instructor-form|inline-instructor-dialog/.test(
           rest,
         )
       )
@@ -210,6 +210,7 @@ export function classify(file) {
       38: ["organization-settings"],
       39: ["recurring-schedules", "booking", "notifications"],
       40: ["student-management", "booking", "recurring-schedules"],
+      41: ["catalog"],
     };
     if (mapping[n]) return mapping[n];
     if (n <= 14)

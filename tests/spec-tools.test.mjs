@@ -87,6 +87,13 @@ test("policy checker detects duplicate IDs, missing scenarios and unmapped requi
     assert.throws(() => checkPolicies(root), /Unmapped requirement/);
   }));
 test("new feature and new migration need deliberate policy ownership", () => {
+  assert.deepEqual(
+    classify("app/features/admin/components/inline-instructor-dialog.tsx"),
+    ["catalog"],
+  );
+  assert.deepEqual(classify("sql/migrations/0041_public_program_slug.sql"), [
+    "catalog",
+  ]);
   assert.deepEqual(classify("app/features/new-product/api.ts"), []);
   assert.deepEqual(classify("sql/migrations/9999_unassigned_feature.sql"), []);
   assert.ok(

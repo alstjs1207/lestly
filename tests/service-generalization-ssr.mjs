@@ -150,6 +150,21 @@ const catalog = await render(
   "/admin/programs/new",
   { instructors: [] },
 );
+const privateSlugInput = catalog.match(/<input[^>]*id="slug"[^>]*>/)?.[0] ?? "";
+assert.ok(privateSlugInput);
+assert.doesNotMatch(privateSlugInput, /required=""/);
+assert.match(catalog, /담당 강사/);
+assert.match(catalog, /미지정/);
+assert.match(catalog, /강사 추가/);
+const publicCatalog = await render(
+  "features/admin/screens/programs/create",
+  "/admin/programs/new",
+  { instructors: [], defaults: { is_public: true, slug: "kept-Slug" } },
+);
+const publicSlugInput =
+  publicCatalog.match(/<input[^>]*id="slug"[^>]*>/)?.[0] ?? "";
+assert.match(publicSlugInput, /required=""/);
+assert.match(publicSlugInput, /value="kept-Slug"/);
 assert.match(catalog, /이 클래스의 실제 예약에 적용/);
 assert.match(catalog, /반복 예약은 이 횟수가 아닌/);
 assert.match(catalog, /같은 시간대 수업에 참여할 수 있는 최대 인원/);

@@ -288,6 +288,13 @@
       "when": 1793718000000,
       "tag": "0040_student_course_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793788800000,
+      "tag": "0041_public_program_slug",
+      "breakpoints": true
     }
   ]
 }

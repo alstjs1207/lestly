@@ -92,6 +92,10 @@ export const programs = pgTable(
     ...timestamps,
   },
   (table) => [
+    check(
+      "programs_public_slug_check",
+      sql`${table.is_public} IS NOT TRUE OR (${table.slug} IS NOT NULL AND ${table.slug} ~ '[^[:space:]]')`,
+    ),
     // DEFERRABLE tenant FK programs_instructor_tenant_fk is maintained in SQL.
     // Defaults are copied once by guard_program_booking_policy on INSERT.
     // Duplicate duration validation and row-lock behavior are maintained in SQL.

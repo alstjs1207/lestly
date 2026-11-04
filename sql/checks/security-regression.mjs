@@ -25,6 +25,7 @@ import {
   checkCancellationMigration,
   checkCancellationPolicy,
 } from "./cancellation-policy.mjs";
+import { checkCatalogEntry } from "./catalog-entry.mjs";
 import { checkClassBookingPolicy } from "./class-booking-policy.mjs";
 import { checkSettingsSections } from "./settings-sections.mjs";
 import { checkStudentCourseDates } from "./student-course-dates.mjs";
@@ -2171,6 +2172,19 @@ try {
     studentA,
     source: await readFile(
       new URL("0040_student_course_dates.sql", migrationRoot),
+      "utf8",
+    ),
+  });
+  await checkCatalogEntry({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    studentA,
+    source: await readFile(
+      new URL("0041_public_program_slug.sql", migrationRoot),
       "utf8",
     ),
   });
