@@ -14,3 +14,11 @@
 ## Deployment follow-up
 
 기존 preview 첫 배포 `826a488`은 Ready와 CI 성공을 확인했다. 이번 즉시 푸시 정리 커밋의 원격 SHA·배포 Ready/alias·CI·실제 화면 검증 결과는 최종 .vercel/consult-immediate-deployment-verification.json 및 작업 완료 응답에 기록한다. 실제 사람에게 시험 푸시를 보내거나 시험 상담을 저장하지 않는다.
+
+## 실제 preview 확인
+
+- 정리 코드 커밋 `a6271782783e8f2ae18f0e22cce25ec6ed493c42`의 Vercel 배포 `dpl_2joN5hpZnWRsFk5o9aTwhAMaK9bn`이 Ready/aliasAssigned true이며 stable preview 도메인은 https://lestly.vercel.app 이다.
+- GitHub Actions run `41980289333` Policy and regression checks가 success로 완료됐다.
+- 기존 테스트 관리자 자격으로 로그인해 상담관리 화면 렌더링과 종 아이콘 API 200을 확인했다. 기기 푸시 설정 API는 configured true/publicKey available이며 테스트 기기 구독은 false였다. worker는 비밀 없는 요청에 401을 유지한다. 연락처/자격 값은 로그나 결과 파일에 넣지 않았다.
+- 실제 Supabase에서 현재 store SQL을 사용한 상담/인앱 생성과 정기 worker 제외를 savepoint 안에서 검사하고 롤백했다. 선택한 공개 클래스의 허용 구독 대상은 0개였으므로 실제 기기 발송/실패 처리의 현장 검증은 수행하지 않았다. 양수 기기·다중 배치·실패 재처리 제외는 단위/PGlite 회귀로 통과했다. 합성 상담과 원본 이력 해시는 그대로이고 외부 푸시 호출은 0회다. 결과는 `sql/operations/20261105_consult_push_immediate_live.result.json`이다.
+- archive 뒤 현재 명세와 spec:changed/diff를 재확인하며 기록 커밋도 preview에 푸시한다. 최종 SHA와 배포/CI 결과는 완료 응답 및 비공개 .vercel 검증 요약에 보존한다.

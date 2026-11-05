@@ -9,4 +9,4 @@
 
 - [x] 2.1 verify:local·명세/연결 검증을 완료한다.
 - [x] 2.2 실제 DB에서 상담 retry job/URL만 제거하고 기존 상담/예약 작업 동일성을 확인한다.
-- [ ] 2.3 preview 커밋·푸시·배포/CI/실제 화면을 검증하고 기록·archive한다.
+- [x] 2.3 preview 커밋·푸시·배포/CI/실제 화면을 검증하고 기록·archive한다.

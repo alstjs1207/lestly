@@ -50,7 +50,7 @@
 - 상태: **2026-11-05 재개 구현·DB 적용 / 상담 즉시 푸시 전용**. 관련: PUB-001, PUB-003, NOT-008.
 - 변경: 공개 ACTIVE 클래스만 공유 요청 제한·중복 방지를 통과해 접수한다. 사용자 의도에 따라 상담 CAPTCHA 의존성을 제거하고 입력·권한·DB 경계 보호를 유지한다. 기존 이력을 유지하고 상담관리와 인앱/기기 푸시를 분리한다.
 - 근거: `openspec/changes/archive/2026-11-05-reactivate-secure-consultations/`, `openspec/changes/archive/2026-11-05-remove-consult-captcha-requirement/`, `openspec/changes/archive/2026-11-05-consult-immediate-push-only/`, `app/features/class/api/consult-request.tsx`, `sql/migrations/0042_secure_consultations.sql`, `sql/checks/consult-security.mjs`.
-- 활성화 조건: preview HMAC/VAPID 환경변수, 실제 DB 적용·preview 배포 및 실제 기기 확인. 상담은 즉시 푸시만 사용하며 자동 재시도 job/URL·우회키는 제외한다. 보안 설정 누락 시 접수하지 않는다. 로컬 검증을 실제 외부 접수·수신 성공으로 간주하지 않는다.
+- 적용: preview HMAC 설정과 0042·0043 DB 변경, preview 정리 코드 배포/CI 성공을 확인했다. 상담은 즉시 푸시만 사용하며 상담 재시도 job/URL·우회키는 없다. 기존 예약 작업·상담 6건은 보존했다. 실제 기기 푸시 수신은 별도 검증 범위이며 로컬/롤백 검사를 실제 기기 수신 성공으로 간주하지 않는다.
 
 ## GAP-006 — 관리자 조직 선택
 
