@@ -21,3 +21,15 @@
 - 2026-11-05 사용자가 preview 변경 전체를 main에 병합해 운영 배포하도록 명시 승인했다. 기존 2개 제품 파일 한정 승인을 대체하는 최종 배포 범위다.
 - main → preview 동기화는 충돌 없이 완료됐고 병합한 코드의 verify:local exit 0: 단위 241건·격리 SQL 286건·타입·빌드·SSR 7종 및 명세/도구 검사 통과.
 - production 전용 CONSULT_RATE_LIMIT_SECRET을 sensitive 환경변수로 추가했다. 기존 preview HMAC과 production/preview 푸시·worker 설정은 유지했다. 환경변수 값은 기록하지 않았다.
+
+## Production release and final lockdown
+- 승인된 전체 preview를 main에 병합한 운영 커밋 `e215cb4343cae793ab7b49ea0b5e87aeacd42023`을 원격에 보존했다. 이전 최소 패치 후보 `7ebe2fa`는 main에 포함하지 않았다.
+- 운영 Vercel `dpl_ED1jHZjNSahNmPezBaExKvhUZiL6` READY/aliasAssigned, lestly.io 연결; CI 41999671621 success. preview `fa3028d` Vercel `dpl_CGjiqpqvKjV2VsQkrDuC7D1jBuds` READY/aliasAssigned; CI 41999641888 success.
+- 실제 운영 도메인의 새 공개 조회 전환을 확인한 뒤 0045 `867251dfe43306afcdfe634b77b5cc40b4e0624c183fd289c2cc31d5825aa1f8`을 백업·트랜잭션 적용하고 postflight를 통과했다. private 0600 백업은 `20261105-public-catalog-45-before-1793869805624.json`이다.
+- 기존 public 행 전체·cron·authenticated/service_role 권한·비공개 조직 정책은 전후 동일했다. 기존 상담 6건의 해시도 유지됐다.
+- 실제 anon 원본 programs/instructors 조회 차단, REST 내부 컬럼 조회 401, 최소 공개 RPC 200, 비공개 클래스 숨김을 확인했다.
+- 실제 NORMAL STUDENT/ADMIN JWT 역할에서 자기 조직 클래스·강사 조회가 유지되고, 멤버십/예약 이력이 없는 타 조직 행은 0건이었다. 쓰기/실제 예약은 실행하지 않았다.
+- 운영·preview /class/art_mask는 각각 200이며 내부 push_profile_id·가격 필드가 없고 상담 버튼/단일 Dialog가 유지된다. 양쪽 관리자 클래스·강사·상담 목록 200, 푸시 configured=true를 확인했다.
+- 운영 상담 API의 거절 전용 검사: 잘못된 입력 400, 외부 Origin 403, 16KB 초과 본문 413. 실제 상담 접수·알림·푸시 발송은 0건이다.
+- 검토용 helper는 결과 JSON과 함께 output에 보존한 뒤 .vercel의 임시 helper만 정리했다. 원본 체크아웃 /Users/msyu/study/lestly는 유지했고, 신규 worktree/clone은 없다.
+- 아래 완료 기록 archive 커밋을 preview와 main 양쪽에 반영하고 최종 Ready/CI/원격 SHA를 별도 output JSON으로 확인한다. 제품 코드는 검증한 release와 동일하다.

@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-05T09:12:07.151Z",
+  "actualConsultationSubmissions": 0,
+  "checks": [
+    {
+      "name": "invalid-fields",
+      "status": 400,
+      "cacheControl": "no-store"
+    },
+    {
+      "name": "foreign-origin",
+      "status": 403,
+      "cacheControl": "public, max-age=0, must-revalidate"
+    },
+    {
+      "name": "oversized-body",
+      "status": 413,
+      "cacheControl": "no-store"
+    }
+  ]
+}

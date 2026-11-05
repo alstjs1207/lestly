@@ -1,0 +1,63 @@
+{
+  "at": "2026-11-05T09:10:17.513Z",
+  "readOnly": true,
+  "roles": [
+    {
+      "role": "anon",
+      "table": "programs",
+      "directReadDenied": true
+    },
+    {
+      "role": "anon",
+      "table": "instructors",
+      "directReadDenied": true
+    },
+    {
+      "role": "STUDENT",
+      "ownClassRowsVisible": 2,
+      "ownInstructorRowsVisible": 1,
+      "foreignClassRowsVisible": 0,
+      "publicRpcWorks": true
+    },
+    {
+      "role": "ADMIN",
+      "ownClassRowsVisible": 3,
+      "ownInstructorRowsVisible": 2,
+      "foreignClassRowsVisible": 0,
+      "publicRpcWorks": true
+    }
+  ],
+  "rest": [
+    {
+      "path": "/rest/v1/programs?select=price&limit=1",
+      "status": 401,
+      "denied": true
+    },
+    {
+      "path": "/rest/v1/instructors?select=push_profile_id&limit=1",
+      "status": 401,
+      "denied": true
+    },
+    {
+      "path": "/rest/v1/rpc/get_public_program_by_slug",
+      "status": 200,
+      "projectionWorks": true
+    }
+  ],
+  "publicKeys": [
+    "slug",
+    "title",
+    "subtitle",
+    "curriculum",
+    "instructor",
+    "program_id",
+    "description",
+    "max_capacity",
+    "location_type",
+    "total_sessions",
+    "cover_image_url",
+    "duration_minutes",
+    "location_address"
+  ],
+  "privateClassHidden": true
+}

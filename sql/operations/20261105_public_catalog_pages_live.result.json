@@ -1,0 +1,68 @@
+{
+  "at": "2026-11-05T09:10:58.678Z",
+  "publicChecks": [
+    {
+      "base": "https://lestly.vercel.app",
+      "status": 200,
+      "internalBindingExposed": false,
+      "rawPriceExposed": false,
+      "footer": "상담 신청",
+      "enabled": true,
+      "title": "서경대 입시"
+    },
+    {
+      "base": "https://lestly.io",
+      "status": 200,
+      "internalBindingExposed": false,
+      "rawPriceExposed": false,
+      "footer": "상담 신청",
+      "enabled": true,
+      "title": "서경대 입시"
+    }
+  ],
+  "productionDialogCount": 1,
+  "previewAdmin": [
+    {
+      "path": "/admin/programs",
+      "status": 200,
+      "finalPath": "/admin/programs"
+    },
+    {
+      "path": "/admin/instructors",
+      "status": 200,
+      "finalPath": "/admin/instructors"
+    },
+    {
+      "path": "/admin/consultations",
+      "status": 200,
+      "finalPath": "/admin/consultations"
+    }
+  ],
+  "previewPush": {
+    "status": 200,
+    "configured": true
+  },
+  "actualConsultationSubmissions": 0,
+  "productionAdmin": [
+    {
+      "path": "/admin/programs",
+      "status": 200,
+      "finalPath": "/admin/programs"
+    },
+    {
+      "path": "/admin/instructors",
+      "status": 200,
+      "finalPath": "/admin/instructors"
+    },
+    {
+      "path": "/admin/consultations",
+      "status": 200,
+      "finalPath": "/admin/consultations"
+    }
+  ],
+  "productionPush": {
+    "status": 200,
+    "configured": true,
+    "publicKeyAvailable": true
+  }
+}
