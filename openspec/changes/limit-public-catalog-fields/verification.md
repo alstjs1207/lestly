@@ -11,7 +11,13 @@
 - private 0600 백업 `20261105-public-catalog-44-before-1793868574974.json`을 검증했다. 기존 모든 public 데이터·cron·authenticated/service_role 권한·기타 RLS는 동일하다. 기존 상담 6건 해시 `123185c0fae68d2ba02ceb6145e0fd5df08e785e7f79733064048c719bc4a048` 유지.
 - 익명 REST RPC로 art_mask/art-mask가 최소 클래스·강사 키만 반환하고 없는 slug는 null인 것을 확인했다. 공개 권한 회수 전이므로 이 단계에서는 원본 테이블 읽기가 남아 있다.
 
-## Rollout condition
-- 실제 운영 공개 페이지는 현재 HTTP 200이지만 push_profile_id를 포함한다. 0045를 먼저 적용하면 운영의 옛 SELECT * 조회가 실패한다.
-- 운영 호환 패치는 조회 코드·타입 선언 2개 파일만으로 준비했고, 기존 운영 일정 조회와 소개 화면은 유지한다. patch: `/Users/msyu/study/output/lestly-public-catalog-security-20261105/main-compatibility.patch`.
-- 현재 요청 범위 밖의 main 배포 승인을 질문했다. 답변 전에는 0045를 적용하지 않고 preview RPC 배포까지 진행한다.
+## Rollout
+- preview `6030362f656ee62907926e93fade5235aa11465d` 배포 Ready, CI 41997698748 success를 확인했다. 실제 공개 페이지는 200이고 내부 push_profile_id·가격 필드가 없으며 하단 상담 버튼은 유지된다.
+- 기존 최소 운영 호환 패치는 로컬 codex/public-catalog-compat 브랜치에 보존하고 배포하지 않았다.
+- 사용자가 preview → main 전체 병합·운영 배포를 명시 승인했다. main을 preview에 동기화하고, 전체 release 검증 후 preview를 main에 병합해 운영 배포한다. 운영의 새 공개 조회가 정상인 것을 확인한 뒤 0045를 적용한다.
+- 원본 체크아웃을 계속 사용한다. 관리 worktree 생성은 응답 지연 후 취소됐고 attachment 및 git worktree 조회에서 신규 폴더가 없음을 확인했다.
+
+## Full production release preparation
+- 2026-11-05 사용자가 preview 변경 전체를 main에 병합해 운영 배포하도록 명시 승인했다. 기존 2개 제품 파일 한정 승인을 대체하는 최종 배포 범위다.
+- main → preview 동기화는 충돌 없이 완료됐고 병합한 코드의 verify:local exit 0: 단위 241건·격리 SQL 286건·타입·빌드·SSR 7종 및 명세/도구 검사 통과.
+- production 전용 CONSULT_RATE_LIMIT_SECRET을 sensitive 환경변수로 추가했다. 기존 preview HMAC과 production/preview 푸시·worker 설정은 유지했다. 환경변수 값은 기록하지 않았다.

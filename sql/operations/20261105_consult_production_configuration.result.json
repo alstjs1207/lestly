@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-05T09:05:40.384Z",
+  "key": "CONSULT_RATE_LIMIT_SECRET",
+  "id": "qXplQnOpxXWbnfzh",
+  "target": [
+    "production"
+  ],
+  "type": "sensitive",
+  "created": true,
+  "previewSecretPreserved": true,
+  "existingPushConfigurationPreserved": true
+}
