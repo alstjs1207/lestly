@@ -1,3 +1,5 @@
+import type { PushScope } from "./store.server";
+
 import * as Sentry from "@sentry/react-router";
 import webpush from "web-push";
 
@@ -11,10 +13,7 @@ import {
 } from "./store.server";
 import { isAllowedPushEndpoint } from "./validation";
 
-export async function dispatchPushQueue(scope?: {
-  scheduleId: number;
-  actorProfileId: string;
-}) {
+export async function dispatchPushQueue(scope?: PushScope) {
   const config = getPushConfig();
   if (!config) return { configured: false, processed: 0 };
   if (!scope) await maintainPushQueue();
@@ -51,7 +50,11 @@ export async function dispatchPushQueue(scope?: {
               title: target.title,
               body: target.body,
               tag: `schedule-${target.event_id}`,
-              url: "/admin/schedules",
+              url:
+                target.event_type === "CONSULT_REQUEST" &&
+                target.notification_id
+                  ? `/admin/consultations/${target.notification_id}`
+                  : "/admin/schedules",
             }),
             {
               vapidDetails: config,
@@ -93,6 +96,14 @@ export async function dispatchPushQueue(scope?: {
     }
   }
   return { configured: true, processed: deliveries.length };
+}
+
+export async function dispatchConsultPush(notificationId: number) {
+  try {
+    await dispatchPushQueue({ notificationId });
+  } catch {
+    Sentry.captureMessage("Consultation Web Push queued for retry", "warning");
+  }
 }
 
 export async function dispatchSchedulePush(

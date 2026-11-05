@@ -62,7 +62,9 @@ export async function getNotificationsPaginated(
     { data: superTemplates, error: templateError },
   ] = await Promise.all([
     query,
-    client.from("super_templates").select("kakao_template_code, name"),
+    typeFilter === "CONSULT_REQUEST"
+      ? Promise.resolve({ data: [], error: null })
+      : client.from("super_templates").select("kakao_template_code, name"),
   ]);
 
   if (error) {

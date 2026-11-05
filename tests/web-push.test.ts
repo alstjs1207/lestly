@@ -15,6 +15,7 @@ function setup({
   status = 0,
   attempts = 1,
   persistFailure = false,
+  consult = false,
 } = {}) {
   const sent: unknown[] = [];
   const finished: { status: string; error: string | null }[] = [];
@@ -68,8 +69,12 @@ function setup({
           p256dh: "key",
           auth: "auth",
           event_id: "event",
-          title: "수업 예약",
-          body: "수강생이 예약했습니다.",
+          title: consult ? "새 상담 신청" : "수업 예약",
+          body: consult
+            ? "상담관리에서 확인해 주세요."
+            : "수강생이 예약했습니다.",
+          event_type: consult ? "CONSULT_REQUEST" : "BOOKED",
+          notification_id: consult ? 42 : null,
         }),
         finishPushDelivery: async (
           _delivery: unknown,
@@ -267,4 +272,39 @@ test("the push worker displays a notification and opens only the authenticated s
   await waiting;
   assert.deepEqual(navigated, ["https://lestly.test/admin/schedules"]);
   assert.equal(focused, true);
+  for (const path of [
+    "/admin/consultations/42",
+    "//attacker.test",
+    "/admin/consultations/42/../../settings",
+    "/admin/consultations/0",
+    "https://lestly.test/admin/consultations/42",
+  ]) {
+    handlers.push({
+      data: { json: () => ({ url: path }) },
+      waitUntil: (promise: Promise<unknown>) => {
+        waiting = promise;
+      },
+    });
+    await waiting;
+    handlers.notificationclick({
+      notification: { close() {}, data: notifications.at(-1)[1].data },
+      waitUntil: (promise: Promise<unknown>) => {
+        waiting = promise;
+      },
+    });
+    await waiting;
+    assert.equal(
+      navigated.at(-1),
+      "https://lestly.test" +
+        (path === "/admin/consultations/42" ? path : "/admin/schedules"),
+    );
+  }
+});
+
+test("consultation push points to the matching detail instead of the schedule page", async () => {
+  const state = setup({ consult: true });
+  await state.dispatcher.dispatchPushQueue();
+  const payload = JSON.parse((state.sent[0] as any[])[1]);
+  assert.equal(payload.url, "/admin/consultations/42");
+  assert.equal(payload.body, "상담관리에서 확인해 주세요.");
 });

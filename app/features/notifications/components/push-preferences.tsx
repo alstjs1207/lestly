@@ -81,11 +81,12 @@ export function PushPreferences() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BellRingIcon className="size-5" />
-          예약·취소 푸시 알림
+          상담·예약·취소 푸시 알림
         </CardTitle>
         <CardDescription>
-          강사 명부에 이 계정이 연결되어 있으면 담당 수업의 수강생 예약·취소를
-          알림으로 받습니다. 사용하는 기기마다 설정해 주세요.
+          새 상담 신청을 알림으로 받습니다. 강사 명부에 이 계정이 연결되어
+          있으면 담당 수업의 수강생 예약·취소도 받습니다. 사용하는 기기마다
+          설정해 주세요.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

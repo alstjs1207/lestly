@@ -211,6 +211,7 @@ export function classify(file) {
       39: ["recurring-schedules", "booking", "notifications"],
       40: ["student-management", "booking", "recurring-schedules"],
       41: ["catalog"],
+      42: ["public-service", "notifications", "access-control"],
     };
     if (mapping[n]) return mapping[n];
     if (n <= 14)

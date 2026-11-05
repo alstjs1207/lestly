@@ -4,7 +4,7 @@
  * Provides real-time updates for in-app notifications.
  * Subscribes to INSERT and UPDATE events on in_app_notifications table.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 
 export interface InAppNotification {
@@ -27,12 +27,13 @@ interface UseInAppNotificationsReturn {
 
 export function useInAppNotifications(
   organizationId: string,
+  notificationsEnabled = true,
 ): UseInAppNotificationsReturn {
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const fetcher = useFetcher();
-  const hasLoadedRef = useRef(false);
+  const mutationFetcher = useFetcher();
 
   // Load initial data
   const loadNotifications = useCallback(() => {
@@ -41,19 +42,36 @@ export function useInAppNotifications(
 
   // Initial load (only once)
   useEffect(() => {
-    if (hasLoadedRef.current) return;
-    hasLoadedRef.current = true;
+    setNotifications([]);
+    setUnreadCount(0);
     loadNotifications();
-  }, []);
+  }, [organizationId, notificationsEnabled]);
 
   // Process fetcher data
   useEffect(() => {
-    if (fetcher.data) {
+    if (fetcher.data && "notifications" in fetcher.data) {
       setNotifications(fetcher.data.notifications || []);
       setUnreadCount(fetcher.data.unreadCount || 0);
       setIsLoading(false);
-    }
+    } else if (fetcher.data) setIsLoading(false);
   }, [fetcher.data]);
+
+  useEffect(() => {
+    if (mutationFetcher.state === "idle" && mutationFetcher.data)
+      loadNotifications();
+  }, [mutationFetcher.state, mutationFetcher.data]);
+
+  useEffect(() => {
+    const refreshVisible = () => {
+      if (document.visibilityState === "visible") loadNotifications();
+    };
+    window.addEventListener("focus", refreshVisible);
+    document.addEventListener("visibilitychange", refreshVisible);
+    return () => {
+      window.removeEventListener("focus", refreshVisible);
+      document.removeEventListener("visibilitychange", refreshVisible);
+    };
+  }, []);
 
   // Realtime subscription
   useEffect(() => {
@@ -82,10 +100,12 @@ export function useInAppNotifications(
               if (!isMounted) return;
 
               const newNotification = payload.new as InAppNotification;
-              setNotifications((prev) =>
-                [newNotification, ...prev].slice(0, 9),
-              );
-              setUnreadCount((prev) => prev + 1);
+              if (
+                !notificationsEnabled &&
+                newNotification.template_type !== "SYS_CONSULT_ADMIN"
+              )
+                return;
+              loadNotifications();
 
               // OS notifications are delivered independently through Web Push.
             },
@@ -132,7 +152,7 @@ export function useInAppNotifications(
       isMounted = false;
       cleanup?.then((fn) => fn?.());
     };
-  }, [organizationId]);
+  }, [organizationId, notificationsEnabled]);
 
   // Mark single notification as read
   const markAsRead = useCallback(async (id: number) => {
@@ -145,7 +165,7 @@ export function useInAppNotifications(
     setUnreadCount((prev) => Math.max(0, prev - 1));
 
     // API call
-    fetcher.submit(
+    mutationFetcher.submit(
       { in_app_notification_id: id },
       {
         method: "PATCH",
@@ -162,7 +182,7 @@ export function useInAppNotifications(
     setUnreadCount(0);
 
     // API call
-    fetcher.submit(
+    mutationFetcher.submit(
       {},
       {
         method: "POST",

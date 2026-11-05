@@ -7,7 +7,7 @@
 import type { CurriculumItem, InstructorSns } from "../queries";
 import type { Route } from "./+types/class-detail";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { data, useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
@@ -28,6 +28,7 @@ import ClassFooter from "../components/class-footer";
 import ClassHero from "../components/class-hero";
 import ClassInstructor from "../components/class-instructor";
 import ClassLocation from "../components/class-location";
+import { getConsultConfig } from "../consult-security.server";
 import { getNextScheduleForProgram, getPublicProgramBySlug } from "../queries";
 
 export const meta: Route.MetaFunction = ({ data }) => {
@@ -65,19 +66,24 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       // 스케줄이 없어도 페이지는 표시
     }
 
-    return { program, nextSchedule };
+    return {
+      program,
+      nextSchedule,
+      consultEnabled: !!getConsultConfig(),
+    };
   } catch (error) {
     throw data({ message: "클래스를 찾을 수 없습니다" }, { status: 404 });
   }
 }
 
 export default function ClassDetail({ loaderData }: Route.ComponentProps) {
-  const { program, nextSchedule } = loaderData;
+  const { program, nextSchedule, consultEnabled } = loaderData;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [requestId, setRequestId] = useState("");
   const fetcher = useFetcher<{ success?: boolean; error?: string }>();
 
   // JSONB 필드 파싱
@@ -93,7 +99,8 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     : {};
 
   const handleSubmit = () => {
-    if (!name.trim() || !phone.trim()) return;
+    if (!name.trim() || !phone.trim() || !requestId || fetcher.state !== "idle")
+      return;
 
     fetcher.submit(
       {
@@ -101,6 +108,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
         name: name.trim(),
         phone: phone.trim(),
         message: message.trim(),
+        requestId,
       },
       {
         method: "POST",
@@ -110,10 +118,10 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     );
   };
 
-  // 성공 시 submitted 상태로 변경
-  if (fetcher.data?.success && !submitted) {
-    setSubmitted(true);
-  }
+  useEffect(() => {
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    if (fetcher.data.success) setSubmitted(true);
+  }, [fetcher.data, fetcher.state]);
 
   const resetForm = () => {
     setName("");
@@ -121,6 +129,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     setMessage("");
     setSubmitted(false);
     setDialogOpen(false);
+    setRequestId("");
   };
 
   return (
@@ -139,11 +148,15 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       <div className="relative z-10 mt-6 flex justify-center">
         <button
           type="button"
-          disabled
-          aria-disabled="true"
+          disabled={!consultEnabled}
+          onClick={() => {
+            setRequestId(crypto.randomUUID());
+            setSubmitted(false);
+            setDialogOpen(true);
+          }}
           className="flex items-center gap-2 rounded-full bg-[#d4a574] px-8 py-3 text-lg font-semibold text-white shadow-lg transition-colors hover:bg-[#c49464] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          상담 신청 일시 중단
+          {consultEnabled ? "상담 신청" : "상담 신청 준비 중"}
           <svg
             className="h-5 w-5"
             fill="none"
@@ -161,7 +174,12 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       </div>
 
       {/* 상담 신청 Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => !open && resetForm()}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!open && fetcher.state === "idle") resetForm();
+        }}
+      >
         <DialogContent className="bg-white text-gray-900 sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-gray-900">상담 신청</DialogTitle>
@@ -208,6 +226,8 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                 </Label>
                 <Input
                   id="name"
+                  maxLength={100}
+                  autoComplete="name"
                   placeholder="이름을 입력하세요"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -223,6 +243,8 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                 <Input
                   id="phone"
                   type="tel"
+                  maxLength={30}
+                  autoComplete="tel"
                   placeholder="- 없이 숫자만 입력해주세요"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -237,6 +259,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                 </Label>
                 <Textarea
                   id="message"
+                  maxLength={2000}
                   placeholder="문의 내용을 입력하세요"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -245,6 +268,11 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                   className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-400"
                 />
               </div>
+
+              <p className="text-xs text-gray-500">
+                이름·연락처·문의 내용은 해당 클래스 상담을 위해 관리자에게
+                전달됩니다. 민감한 개인정보는 입력하지 마세요.
+              </p>
 
               {fetcher.data?.error && (
                 <p className="text-sm text-red-500">{fetcher.data.error}</p>

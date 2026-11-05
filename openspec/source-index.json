@@ -1269,6 +1269,20 @@
       ]
     },
     {
+      "path": "app/features/class/consult-security.server.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/consult-store.server.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
       "path": "app/features/class/consult-validation.ts",
       "domains": [
         "catalog",
@@ -1277,6 +1291,13 @@
     },
     {
       "path": "app/features/class/queries.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/schema.ts",
       "domains": [
         "catalog",
         "public-service"
@@ -1392,6 +1413,12 @@
       ]
     },
     {
+      "path": "app/features/notifications/consult-validation.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
       "path": "app/features/notifications/hooks/use-in-app-notifications.ts",
       "domains": [
         "notifications"
@@ -1447,6 +1474,18 @@
     },
     {
       "path": "app/features/notifications/schema.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/screens/consultation-detail.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/screens/consultations.tsx",
       "domains": [
         "notifications"
       ]
@@ -2337,6 +2376,13 @@
       ]
     },
     {
+      "path": "sql/checks/consult-security.mjs",
+      "domains": [
+        "access-control",
+        "public-service"
+      ]
+    },
+    {
       "path": "sql/checks/security-concurrency.mjs",
       "domains": [
         "access-control"
@@ -2816,6 +2862,14 @@
       ]
     },
     {
+      "path": "sql/migrations/0042_secure_consultations.sql",
+      "domains": [
+        "access-control",
+        "notifications",
+        "public-service"
+      ]
+    },
+    {
       "path": "sql/operations/20261018_schedule_performance.sql",
       "domains": [
         "booking",
@@ -3032,6 +3086,15 @@
       ]
     },
     {
+      "path": "sql/operations/20261105_apply_consult_push_security.mjs",
+      "domains": [
+        "access-control",
+        "notifications",
+        "platform",
+        "public-service"
+      ]
+    },
+    {
       "path": "supabase/functions/_shared/worker-auth.ts",
       "domains": [
         "access-control",
@@ -3181,6 +3244,12 @@
       ]
     },
     {
+      "path": "tests/consult-management.test.ts",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
       "path": "tests/consult-request.test.ts",
       "domains": [
         "public-service"
@@ -3188,6 +3257,19 @@
     },
     {
       "path": "tests/consult-route.test.ts",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/consult-security.test.ts",
+      "domains": [
+        "access-control",
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/consultations-ssr.mjs",
       "domains": [
         "public-service"
       ]

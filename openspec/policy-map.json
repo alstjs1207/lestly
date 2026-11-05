@@ -846,7 +846,9 @@
         {
           "id": "NOT-004",
           "sources": [
-            "app/features/notifications/api/in-app-notifications.tsx"
+            "app/features/notifications/api/in-app-notifications.tsx",
+            "app/features/notifications/components/notification-bell.tsx",
+            "app/features/notifications/hooks/use-in-app-notifications.ts"
           ],
           "tests": ["tests/notification-route.test.ts"],
           "verification": "automated",
@@ -869,7 +871,8 @@
             "tests/web-push.test.ts",
             "tests/push-routes.test.ts",
             "tests/push-client.test.ts",
-            "sql/checks/security-regression.mjs"
+            "sql/checks/security-regression.mjs",
+            "sql/checks/consult-security.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -900,6 +903,25 @@
             {
               "path": "app/features/cron/api/mailer.tsx",
               "contains": "queue_name"
+            }
+          ]
+        },
+        {
+          "id": "NOT-008",
+          "sources": [
+            "sql/migrations/0042_secure_consultations.sql",
+            "app/features/notifications/push/store.server.ts",
+            "app/features/notifications/push/dispatch.server.ts"
+          ],
+          "tests": [
+            "sql/checks/consult-security.mjs",
+            "tests/web-push.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0042_secure_consultations.sql",
+              "contains": "on_consult_request_insert"
             }
           ]
         }
@@ -979,13 +1001,23 @@
       "requirements": [
         {
           "id": "PUB-001",
-          "sources": ["app/features/class/api/consult-request.tsx"],
-          "tests": ["tests/consult-route.test.ts"],
+          "sources": [
+            "app/features/class/api/consult-request.tsx",
+            "app/features/class/consult-security.server.ts",
+            "app/features/class/consult-store.server.ts",
+            "app/features/class/screens/class-detail.tsx",
+            "sql/migrations/0042_secure_consultations.sql"
+          ],
+          "tests": [
+            "tests/consult-route.test.ts",
+            "tests/consult-security.test.ts",
+            "sql/checks/consult-security.mjs"
+          ],
           "verification": "automated",
           "anchors": [
             {
               "path": "app/features/class/api/consult-request.tsx",
-              "contains": "503"
+              "contains": "consumeConsultIpBudget"
             }
           ]
         },
@@ -1001,6 +1033,27 @@
             {
               "path": "app/features/contact/screens/contact-us.tsx",
               "contains": "isHcaptchaTokenValid"
+            }
+          ]
+        },
+        {
+          "id": "PUB-003",
+          "sources": [
+            "app/features/notifications/screens/consultations.tsx",
+            "app/features/notifications/screens/consultation-detail.tsx",
+            "app/features/notifications/consult-validation.ts",
+            "sql/migrations/0042_secure_consultations.sql"
+          ],
+          "tests": [
+            "tests/consult-management.test.ts",
+            "tests/consultations-ssr.mjs",
+            "sql/checks/consult-security.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/notifications/screens/consultation-detail.tsx",
+              "contains": "requireAdminRole"
             }
           ]
         }

@@ -23,6 +23,9 @@ function clientSetup({
     },
   };
   const registration = {
+    update: async () => {
+      operations.push("update");
+    },
     pushManager: {
       getSubscription: async () => subscription,
       subscribe: async () => {
@@ -110,6 +113,17 @@ test("explicit disable removes the server binding before unsubscribing and preve
   assert.deepEqual(state.operations, []);
   const active = clientSetup();
   await active.client.syncExistingPushSubscription();
-  assert.deepEqual(active.operations, ["GET", "POST"]);
+  assert.deepEqual(active.operations, ["update", "GET", "POST"]);
   assert.equal(active.operations.includes("permission"), false);
+});
+
+test("existing push devices update the consultation click worker once without requesting permission again", async () => {
+  const state = clientSetup();
+  await state.client.syncExistingPushSubscription();
+  await state.client.syncExistingPushSubscription();
+  assert.equal(
+    state.operations.filter((value) => value === "update").length,
+    1,
+  );
+  assert.ok(!state.operations.includes("permission"));
 });

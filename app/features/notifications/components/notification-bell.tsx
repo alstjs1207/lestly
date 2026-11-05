@@ -26,11 +26,15 @@ import {
 
 interface NotificationBellProps {
   organizationId: string;
+  notificationsEnabled?: boolean;
 }
 
-export function NotificationBell({ organizationId }: NotificationBellProps) {
+export function NotificationBell({
+  organizationId,
+  notificationsEnabled = true,
+}: NotificationBellProps) {
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useInAppNotifications(organizationId);
+    useInAppNotifications(organizationId, notificationsEnabled);
 
   return (
     <DropdownMenu>
@@ -89,12 +93,19 @@ export function NotificationBell({ organizationId }: NotificationBellProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link
-            to="/notifications"
+            to="/admin/consultations"
             className="text-muted-foreground justify-center text-sm"
           >
-            전체 보기
+            상담 전체 보기
           </Link>
         </DropdownMenuItem>
+        {notificationsEnabled && (
+          <DropdownMenuItem asChild>
+            <Link to="/admin/notifications" className="justify-center text-sm">
+              알림 이력 보기
+            </Link>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -114,21 +125,34 @@ function NotificationItem({ notification, onRead }: NotificationItemProps) {
           onRead();
         }
       }}
+      asChild
     >
-      <div className="flex w-full items-start gap-2">
-        <span
-          className={cn(
-            "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-            notification.is_read ? "bg-transparent" : "bg-blue-500",
-          )}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{notification.message}</p>
-          <p className="text-muted-foreground text-xs">
-            {formatRelativeTime(notification.created_at)}
-          </p>
+      <Link
+        to={
+          notification.template_type === "SYS_CONSULT_ADMIN"
+            ? notification.notification_id
+              ? `/admin/consultations/${notification.notification_id}`
+              : "/admin/consultations"
+            : "/admin/notifications"
+        }
+      >
+        <div className="flex w-full items-start gap-2">
+          <span
+            className={cn(
+              "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+              notification.is_read ? "bg-transparent" : "bg-blue-500",
+            )}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">
+              {notification.message}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {formatRelativeTime(notification.created_at)}
+            </p>
+          </div>
         </div>
-      </div>
+      </Link>
     </DropdownMenuItem>
   );
 }

@@ -27,6 +27,10 @@ import {
 } from "./cancellation-policy.mjs";
 import { checkCatalogEntry } from "./catalog-entry.mjs";
 import { checkClassBookingPolicy } from "./class-booking-policy.mjs";
+import {
+  checkConsultSecurity,
+  installConsultSecurity,
+} from "./consult-security.mjs";
 import { checkSettingsSections } from "./settings-sections.mjs";
 import { checkStudentCourseDates } from "./student-course-dates.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
@@ -288,6 +292,16 @@ try {
   `,
     [orgA, managedStudent, adminA],
   );
+
+  await installConsultSecurity({
+    db,
+    check,
+    orgA,
+    source: await readFile(
+      new URL("0042_secure_consultations.sql", migrationRoot),
+      "utf8",
+    ),
+  });
 
   await check(
     "student RLS and totals isolate both tenant and profile",
@@ -2187,6 +2201,18 @@ try {
       new URL("0041_public_program_slug.sql", migrationRoot),
       "utf8",
     ),
+  });
+  await checkConsultSecurity({
+    db,
+    check,
+    asRole,
+    blocked,
+    pushStore,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
   });
   console.log(
     `SQL security regression: ${passed} checks passed; migrations from ${fileURLToPath(migrationRoot)}`,

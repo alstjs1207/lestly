@@ -10,3 +10,7 @@ export const consultRequestSchema = z.object({
     .pipe(z.string().regex(/^0\d{9,10}$/)),
   message: z.string().trim().max(2000).optional(),
 });
+
+export const publicConsultRequestSchema = consultRequestSchema.extend({
+  requestId: z.string().uuid(),
+});

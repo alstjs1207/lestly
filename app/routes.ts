@@ -186,6 +186,13 @@ export default [
             "features/admin/screens/instructors/edit.tsx",
           ),
         ]),
+        ...prefix("/consultations", [
+          index("features/notifications/screens/consultations.tsx"),
+          route(
+            "/:consultationId",
+            "features/notifications/screens/consultation-detail.tsx",
+          ),
+        ]),
         ...prefix("/notifications", [
           index("features/notifications/screens/list.tsx"),
           route("/templates", "features/notifications/screens/templates.tsx"),

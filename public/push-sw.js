@@ -1,4 +1,10 @@
 // Push-only worker: authenticated HTML and APIs are never cached.
+self.addEventListener("install", (event) =>
+  event.waitUntil(self.skipWaiting()),
+);
+self.addEventListener("activate", (event) =>
+  event.waitUntil(self.clients.claim()),
+);
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
@@ -23,6 +29,13 @@ self.addEventListener("push", (event) => {
           typeof payload.tag === "string"
             ? payload.tag.slice(0, 100)
             : "lestly-schedule",
+        data: {
+          url:
+            typeof payload.url === "string" &&
+            /^\/admin\/consultations\/[1-9]\d*$/.test(payload.url)
+              ? payload.url
+              : "/admin/schedules",
+        },
       },
     ),
   );
@@ -30,8 +43,14 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  // Always open our authenticated schedule screen, never a payload-supplied URL.
-  const target = new URL("/admin/schedules", self.location.origin).href;
+  // Accept only our exact authenticated routes; never an arbitrary payload URL.
+  const path = event.notification.data?.url;
+  const target = new URL(
+    typeof path === "string" && /^\/admin\/consultations\/[1-9]\d*$/.test(path)
+      ? path
+      : "/admin/schedules",
+    self.location.origin,
+  ).href;
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({
