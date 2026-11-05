@@ -654,6 +654,12 @@
       ]
     },
     {
+      "path": "app/features/admin/components/inline-instructor-dialog.tsx",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
       "path": "app/features/admin/components/instructor-form.tsx",
       "domains": [
         "catalog"
@@ -682,6 +688,12 @@
       "path": "app/features/admin/components/settings-view.tsx",
       "domains": [
         "organization-settings"
+      ]
+    },
+    {
+      "path": "app/features/admin/components/student-course-dates.tsx",
+      "domains": [
+        "student-management"
       ]
     },
     {
@@ -1257,6 +1269,20 @@
       ]
     },
     {
+      "path": "app/features/class/consult-security.server.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/consult-store.server.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
       "path": "app/features/class/consult-validation.ts",
       "domains": [
         "catalog",
@@ -1265,6 +1291,13 @@
     },
     {
       "path": "app/features/class/queries.ts",
+      "domains": [
+        "catalog",
+        "public-service"
+      ]
+    },
+    {
+      "path": "app/features/class/schema.ts",
       "domains": [
         "catalog",
         "public-service"
@@ -1380,6 +1413,12 @@
       ]
     },
     {
+      "path": "app/features/notifications/consult-validation.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
       "path": "app/features/notifications/hooks/use-in-app-notifications.ts",
       "domains": [
         "notifications"
@@ -1435,6 +1474,18 @@
     },
     {
       "path": "app/features/notifications/schema.ts",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/screens/consultation-detail.tsx",
+      "domains": [
+        "notifications"
+      ]
+    },
+    {
+      "path": "app/features/notifications/screens/consultations.tsx",
       "domains": [
         "notifications"
       ]
@@ -2311,11 +2362,31 @@
       ]
     },
     {
+      "path": "sql/checks/catalog-entry.mjs",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
       "path": "sql/checks/class-booking-policy.mjs",
       "domains": [
         "booking",
         "catalog",
         "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/checks/consult-security.mjs",
+      "domains": [
+        "access-control",
+        "public-service"
+      ]
+    },
+    {
+      "path": "sql/checks/public-catalog-security.mjs",
+      "domains": [
+        "access-control",
+        "catalog"
       ]
     },
     {
@@ -2340,6 +2411,12 @@
       "path": "sql/checks/settings-sections.mjs",
       "domains": [
         "organization-settings"
+      ]
+    },
+    {
+      "path": "sql/checks/student-course-dates.mjs",
+      "domains": [
+        "student-management"
       ]
     },
     {
@@ -2778,6 +2855,49 @@
       ]
     },
     {
+      "path": "sql/migrations/0040_student_course_dates.sql",
+      "domains": [
+        "booking",
+        "recurring-schedules",
+        "student-management"
+      ]
+    },
+    {
+      "path": "sql/migrations/0041_public_program_slug.sql",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
+      "path": "sql/migrations/0042_secure_consultations.sql",
+      "domains": [
+        "access-control",
+        "notifications",
+        "public-service"
+      ]
+    },
+    {
+      "path": "sql/migrations/0043_consult_immediate_push_only.sql",
+      "domains": [
+        "access-control",
+        "notifications"
+      ]
+    },
+    {
+      "path": "sql/migrations/0044_public_catalog_projection.sql",
+      "domains": [
+        "access-control",
+        "catalog"
+      ]
+    },
+    {
+      "path": "sql/migrations/0045_private_catalog_table_reads.sql",
+      "domains": [
+        "access-control",
+        "catalog"
+      ]
+    },
+    {
       "path": "sql/operations/20261018_schedule_performance.sql",
       "domains": [
         "booking",
@@ -2981,6 +3101,44 @@
       ]
     },
     {
+      "path": "sql/operations/20261104_apply_catalog_entry.mjs",
+      "domains": [
+        "catalog",
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261104_apply_student_course_dates.mjs",
+      "domains": [
+        "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261105_apply_consult_push_immediate.mjs",
+      "domains": [
+        "notifications",
+        "platform",
+        "public-service"
+      ]
+    },
+    {
+      "path": "sql/operations/20261105_apply_consult_push_security.mjs",
+      "domains": [
+        "access-control",
+        "notifications",
+        "platform",
+        "public-service"
+      ]
+    },
+    {
+      "path": "sql/operations/20261105_apply_public_catalog_security.mjs",
+      "domains": [
+        "access-control",
+        "catalog",
+        "platform"
+      ]
+    },
+    {
       "path": "supabase/functions/_shared/worker-auth.ts",
       "domains": [
         "access-control",
@@ -3103,6 +3261,12 @@
       ]
     },
     {
+      "path": "tests/catalog-entry.test.ts",
+      "domains": [
+        "catalog"
+      ]
+    },
+    {
       "path": "tests/catalog-form.test.ts",
       "domains": [
         "catalog"
@@ -3124,6 +3288,19 @@
       ]
     },
     {
+      "path": "tests/consult-management.test.ts",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/consult-push-worker.test.ts",
+      "domains": [
+        "notifications",
+        "public-service"
+      ]
+    },
+    {
       "path": "tests/consult-request.test.ts",
       "domains": [
         "public-service"
@@ -3131,6 +3308,19 @@
     },
     {
       "path": "tests/consult-route.test.ts",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/consult-security.test.ts",
+      "domains": [
+        "access-control",
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/consultations-ssr.mjs",
       "domains": [
         "public-service"
       ]
@@ -3211,6 +3401,12 @@
       "domains": [
         "access-control",
         "identity"
+      ]
+    },
+    {
+      "path": "tests/public-catalog.test.ts",
+      "domains": [
+        "catalog"
       ]
     },
     {

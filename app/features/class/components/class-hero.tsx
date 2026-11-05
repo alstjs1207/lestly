@@ -1,4 +1,4 @@
-import { MapPinIcon, ClockIcon, CalendarIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, MapPinIcon } from "lucide-react";
 
 interface ClassHeroProps {
   title: string;
@@ -30,13 +30,15 @@ export default function ClassHero({
   return (
     <div className="relative">
       {/* 커버 이미지 배경 + 타이틀 오버레이 */}
-      <div className="relative w-full h-[300px] md:h-[400px]">
+      <div
+        className={`relative w-full ${coverImageUrl ? "h-[300px] md:h-[400px]" : "min-h-[180px] md:min-h-[220px]"}`}
+      >
         {/* 커버 이미지 또는 기본 배경 */}
         {coverImageUrl ? (
           <img
             src={coverImageUrl}
             alt={title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 bg-[#8b6f5c]" />
@@ -46,10 +48,16 @@ export default function ClassHero({
         <div className="absolute inset-0 bg-black/30" />
 
         {/* 타이틀/서브타이틀 오버레이 */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">{title}</h1>
+        <div
+          className={`flex flex-col items-center justify-center px-4 text-center text-white ${coverImageUrl ? "absolute inset-0" : "relative min-h-[180px] py-10 md:min-h-[220px]"}`}
+        >
+          <h1 className="mb-4 max-w-4xl text-3xl font-bold break-words md:text-5xl">
+            {title}
+          </h1>
           {subtitle && (
-            <p className="text-xl md:text-2xl text-white/90">{subtitle}</p>
+            <p className="max-w-3xl text-lg break-words text-white/90 md:text-2xl">
+              {subtitle}
+            </p>
           )}
         </div>
       </div>
@@ -58,8 +66,8 @@ export default function ClassHero({
       <div className="bg-[#8b6f5c] py-4">
         <div className="flex flex-wrap justify-center gap-3 text-sm text-white">
           {/* 위치 타입 */}
-          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full">
-            <MapPinIcon className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5">
+            <MapPinIcon className="h-4 w-4" />
             <span>
               {locationType === "online" ? "온라인 수업" : "오프라인 수업"}
             </span>
@@ -67,16 +75,16 @@ export default function ClassHero({
 
           {/* 수업 시간 */}
           {durationMinutes && (
-            <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full">
-              <ClockIcon className="w-4 h-4" />
-              <span>{formatDuration(durationMinutes)}</span>
+            <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5">
+              <ClockIcon className="h-4 w-4" />
+              <span>회당 {formatDuration(durationMinutes)}</span>
             </div>
           )}
 
           {/* 총 회차 */}
           {totalSessions && (
-            <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full">
-              <CalendarIcon className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5">
+              <CalendarIcon className="h-4 w-4" />
               <span>총 {totalSessions}회</span>
             </div>
           )}

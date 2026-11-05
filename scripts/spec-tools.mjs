@@ -78,7 +78,7 @@ function topicDomains(name) {
   }
   if (/attendance/.test(name)) found.add("attendance");
   if (
-    /student-(?:management|form|bulk|types|metadata|lifecycle|invite)|student-type/.test(
+    /student-(?:management|form|bulk|types|metadata|lifecycle|invite|course-dates)|student-type/.test(
       name,
     )
   )
@@ -157,7 +157,7 @@ export function classify(file) {
       if (/\/students\/|student-(?!type-settings)/.test(rest))
         return ["student-management"];
       if (
-        /\/programs\/|\/instructors\/|catalog-form|program-form|instructor-form/.test(
+        /\/programs\/|\/instructors\/|catalog-form|program-form|instructor-form|inline-instructor-dialog/.test(
           rest,
         )
       )
@@ -180,6 +180,7 @@ export function classify(file) {
     return ["identity", "notifications"];
   if (file === "public/push-sw.js") return ["notifications"];
   if (file.startsWith("public/")) return ["platform"];
+  if (file === "sql/migrations/meta/_journal.json") return ["platform"];
   if (file.startsWith("sql/migrations/")) {
     const n = Number(path.basename(file).slice(0, 4));
     const mapping = {
@@ -208,6 +209,12 @@ export function classify(file) {
       37: ["booking", "attendance"],
       38: ["organization-settings"],
       39: ["recurring-schedules", "booking", "notifications"],
+      40: ["student-management", "booking", "recurring-schedules"],
+      41: ["catalog"],
+      42: ["public-service", "notifications", "access-control"],
+      43: ["notifications", "access-control"],
+      44: ["catalog", "access-control"],
+      45: ["catalog", "access-control"],
     };
     if (mapping[n]) return mapping[n];
     if (n <= 14)

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  addMonthsToDateString,
   addYearsToDateString,
   getDefaultStudentClassDates,
 } from "../app/features/admin/lib/student-class-dates.ts";
@@ -113,17 +114,53 @@ test("student type remains required and rejects unconfigured text values", () =>
   assert.equal(parseStudentForm(form).success, true);
 });
 
-test("default class dates use the Korean registration date and one year", () => {
+test("default class dates use KST today without automatically setting an end", () => {
   const result = getDefaultStudentClassDates(
     new Date("2026-08-23T15:30:00.000Z"),
   );
 
   assert.deepEqual(result, {
     classStartDate: "2026-08-24",
-    classEndDate: "2027-08-24",
+    classEndDate: "",
   });
 });
 
 test("one-year class date defaults clamp leap day to February 28", () => {
   assert.equal(addYearsToDateString("2024-02-29"), "2025-02-28");
+});
+
+test("course presets clamp month ends and roll across years", () => {
+  assert.equal(addMonthsToDateString("2026-01-31", 1), "2026-02-28");
+  assert.equal(addMonthsToDateString("2024-01-31", 1), "2024-02-29");
+  assert.equal(addMonthsToDateString("2026-11-30", 3), "2027-02-28");
+  assert.equal(addMonthsToDateString("2026-08-31", 6), "2027-02-28");
+  assert.equal(addMonthsToDateString("2024-02-29", 12), "2025-02-28");
+});
+
+test("start dates require explicit ends and new registrations require ends even with an omitted start", () => {
+  const form = validStudentForm();
+  form.set("class_end_date", "");
+  assert.equal(parseStudentForm(form).success, false);
+  form.set("class_start_date", "");
+  assert.equal(
+    parseStudentForm(form, undefined, undefined, { creating: true }).success,
+    false,
+  );
+  form.set("class_end_date", "2099-12-31");
+  const parsed = parseStudentForm(form, undefined, undefined, {
+    creating: true,
+  });
+  assert.equal(parsed.success, true);
+  if (parsed.success) {
+    assert.equal(
+      parsed.data.class_start_date,
+      getDefaultStudentClassDates().classStartDate,
+    );
+    assert.equal(parsed.data.class_end_date, "2099-12-31");
+  }
+  form.set("class_end_date", "2000-01-01");
+  assert.equal(
+    parseStudentForm(form, undefined, undefined, { creating: true }).success,
+    false,
+  );
 });

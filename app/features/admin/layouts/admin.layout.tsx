@@ -86,9 +86,10 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             </span>
           </div>
           <div className="ml-auto flex items-center gap-2 px-4">
-            {loaderData.notificationsEnabled && (
-              <NotificationBell organizationId={loaderData.organizationId} />
-            )}
+            <NotificationBell
+              organizationId={loaderData.organizationId}
+              notificationsEnabled={loaderData.notificationsEnabled}
+            />
             <ThemeSwitcher />
             <LangSwitcher disabled />
           </div>

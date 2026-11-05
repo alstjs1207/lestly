@@ -23,7 +23,7 @@ import {
   type StudentTypeOption,
   getDefaultStudentType,
 } from "../../organizations/student-types";
-import { addYearsToDateString } from "../lib/student-class-dates";
+import StudentCourseDates from "./student-course-dates";
 
 interface StudentFormProps {
   mode: "create" | "edit";
@@ -90,12 +90,6 @@ export default function StudentForm({
   );
   const fetcher = useFetcher<StudentFormActionData>();
   const isSubmitting = fetcher.state !== "idle";
-  const [classEndDate, setClassEndDate] = useState(
-    defaultValues?.class_end_date || "",
-  );
-  const [isClassEndDateManual, setIsClassEndDateManual] = useState(
-    mode === "edit",
-  );
   const [color, setColor] = useState(defaultValues?.color || "#3B82F6");
 
   const randomizeColor = () => {
@@ -105,13 +99,6 @@ export default function StudentForm({
         .toString(16)
         .padStart(6, "0");
     setColor(hex);
-  };
-
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const startDate = e.target.value;
-    if (startDate && !isClassEndDateManual) {
-      setClassEndDate(addYearsToDateString(startDate));
-    }
   };
 
   const actionUrl =
@@ -247,47 +234,12 @@ export default function StudentForm({
           <FieldError errors={fetcher.data?.fieldErrors?.birth_date} />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="class_start_date">
-            수업 시작일{" "}
-            <span className="text-muted-foreground text-xs">(선택)</span>
-          </Label>
-          <Input
-            id="class_start_date"
-            name="class_start_date"
-            type="date"
-            defaultValue={defaultValues?.class_start_date}
-            onChange={handleStartDateChange}
-            aria-invalid={Boolean(
-              fetcher.data?.fieldErrors?.class_start_date?.length,
-            )}
-          />
-          <FieldError errors={fetcher.data?.fieldErrors?.class_start_date} />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="class_end_date">
-            수업 종료일{" "}
-            <span className="text-muted-foreground text-xs">(선택)</span>
-          </Label>
-          <Input
-            id="class_end_date"
-            name="class_end_date"
-            type="date"
-            value={classEndDate}
-            onChange={(e) => {
-              setClassEndDate(e.target.value);
-              setIsClassEndDateManual(Boolean(e.target.value));
-            }}
-            aria-invalid={Boolean(
-              fetcher.data?.fieldErrors?.class_end_date?.length,
-            )}
-          />
-          <FieldError errors={fetcher.data?.fieldErrors?.class_end_date} />
-          <p className="text-muted-foreground text-xs">
-            미입력 시 등록일과 등록일 기준 1년 후 날짜로 자동 저장됩니다.
-          </p>
-        </div>
+        <StudentCourseDates
+          creating={mode === "create"}
+          startDate={defaultValues?.class_start_date}
+          endDate={defaultValues?.class_end_date}
+          errors={fetcher.data?.fieldErrors}
+        />
 
         <details
           className="rounded-lg border p-4 md:col-span-2"

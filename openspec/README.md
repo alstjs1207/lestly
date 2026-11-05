@@ -54,7 +54,7 @@ npm run spec -- instructions proposal --change describe-the-change
 
 표준 schema는 proposal → specs/design → tasks를 사용한다. 동작 변경은 `ADDED/MODIFIED/REMOVED Requirements`와 `#### Scenario:`의 WHEN/THEN으로 작성한다. 기존 요구사항 ID를 유지하고 각 시나리오에서 주체·조직·이전 상태·동작·결과·데이터 보존을 구체화한다. 변경이 정책을 바꾸지 않는다면 그 이유와 기존 요구사항·테스트 근거를 기록한다.
 
-Codex에는 `.agents/skills/openspec-*`, Cursor에는 `.cursor/skills/openspec-*`와 `.cursor/commands/opsx-*.md`가 설치되어 있다. Codex CLI/IDE에서는 `$openspec-propose`, `$openspec-apply-change`, `$openspec-archive-change`를 사용할 수 있다. 명령 표기는 도구에 따라 다르므로 이 저장소의 고정 CLI는 `npm run spec -- ...`로 실행한다. 사용자 요청이 구현까지 포함하면 루트 지침에 따라 이미 승인된 범위를 진행한다.
+Codex용 OpenSpec 스킬은 `.agents/skills/openspec-*`에 설치되어 있다. Codex CLI/IDE에서는 `$openspec-propose`, `$openspec-apply-change`, `$openspec-archive-change`를 사용할 수 있다. OpenSpec CLI 명령은 이 저장소의 고정 버전을 사용하는 `npm run spec -- ...`로 실행한다. 사용자 요청이 구현까지 포함하면 루트 지침에 따라 이미 승인된 범위를 진행한다.
 
 ```sh
 npm run spec:index

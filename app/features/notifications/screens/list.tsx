@@ -6,7 +6,13 @@ import {
   MailIcon,
   SmartphoneIcon,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import {
+  Link,
+  data,
+  redirect,
+  useNavigate,
+  useSearchParams,
+} from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -40,23 +46,20 @@ import {
 import { getNotificationsPaginated } from "../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
+  const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
   await requireNotificationsEnabled(organizationId);
 
   const url = new URL(request.url);
   const page = parseInt(url.searchParams.get("page") || "1");
-  const typeFilter = url.searchParams.get("type") as
-    | "ALIMTALK"
-    | "CONSULT_REQUEST"
-    | undefined;
-  const statusFilter = url.searchParams.get("status") as
-    | "PENDING"
-    | "SENT"
-    | "FAILED"
-    | "WAITING"
-    | "COMPLETED"
-    | undefined;
+  if (url.searchParams.get("type") === "CONSULT_REQUEST")
+    return redirect("/admin/consultations");
+  const typeFilter = "ALIMTALK" as const;
+  const status = url.searchParams.get("status");
+  const statusFilter =
+    status === "PENDING" || status === "SENT" || status === "FAILED"
+      ? status
+      : undefined;
 
   const result = await getNotificationsPaginated(client, {
     organizationId,
@@ -66,7 +69,8 @@ export async function loader({ request }: Route.LoaderArgs) {
     statusFilter: statusFilter || undefined,
   });
 
-  return result;
+  headers.set("Cache-Control", "no-store");
+  return data(result, { headers });
 }
 
 const typeLabels: Record<
@@ -113,14 +117,6 @@ const consultStatusLabels: Record<
   COMPLETED: { label: "상담 완료", variant: "success" },
 };
 
-const consultResultLabels: Record<
-  string,
-  { label: string; variant: "success" | "secondary" | "destructive" }
-> = {
-  SUCCESS: { label: "등록 성공", variant: "success" },
-  FAILED: { label: "등록 실패", variant: "destructive" },
-};
-
 function formatPhoneNumber(value: string | null) {
   if (!value) return null;
   const digits = value.replace(/\D/g, "");
@@ -139,18 +135,6 @@ export default function NotificationListScreen({
   const { notifications, totalCount, totalPages, currentPage } = loaderData;
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-
-  const handleTypeFilter = (value: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (value && value !== "all") {
-      newParams.set("type", value);
-    } else {
-      newParams.delete("type");
-    }
-    newParams.delete("status");
-    newParams.set("page", "1");
-    setSearchParams(newParams);
-  };
 
   const handleStatusFilter = (value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -270,7 +254,7 @@ export default function NotificationListScreen({
     return <Badge variant="outline">-</Badge>;
   };
 
-  const currentTypeFilter = searchParams.get("type");
+  const currentTypeFilter = "ALIMTALK";
 
   return (
     <div className="space-y-6">
@@ -295,22 +279,6 @@ export default function NotificationListScreen({
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:flex md:items-center">
-        <Select
-          value={searchParams.get("type") || "all"}
-          onValueChange={handleTypeFilter}
-        >
-          <SelectTrigger
-            className={`h-11 w-full md:h-9 md:w-40 ${currentTypeFilter ? "" : "col-span-2"}`}
-          >
-            <SelectValue placeholder="유형" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">전체 유형</SelectItem>
-            <SelectItem value="ALIMTALK">알림톡</SelectItem>
-            <SelectItem value="CONSULT_REQUEST">상담 신청</SelectItem>
-          </SelectContent>
-        </Select>
-
         {currentTypeFilter === "ALIMTALK" && (
           <Select
             value={searchParams.get("status") || "all"}
@@ -324,22 +292,6 @@ export default function NotificationListScreen({
               <SelectItem value="PENDING">대기</SelectItem>
               <SelectItem value="SENT">발송 완료</SelectItem>
               <SelectItem value="FAILED">발송 실패</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-
-        {currentTypeFilter === "CONSULT_REQUEST" && (
-          <Select
-            value={searchParams.get("status") || "all"}
-            onValueChange={handleStatusFilter}
-          >
-            <SelectTrigger className="h-11 w-full md:h-9 md:w-40">
-              <SelectValue placeholder="상태" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체 상태</SelectItem>
-              <SelectItem value="WAITING">상담 대기</SelectItem>
-              <SelectItem value="COMPLETED">상담 완료</SelectItem>
             </SelectContent>
           </Select>
         )}
@@ -409,7 +361,6 @@ export default function NotificationListScreen({
               <TableHead className="w-40">상태</TableHead>
               <TableHead>수신자</TableHead>
               <TableHead>내용</TableHead>
-              <TableHead className="w-32">최종 결과</TableHead>
               <TableHead className="w-40">발송일시</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
@@ -417,7 +368,7 @@ export default function NotificationListScreen({
           <TableBody>
             {notifications.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center">
+                <TableCell colSpan={7} className="py-8 text-center">
                   알림 이력이 없습니다.
                 </TableCell>
               </TableRow>
@@ -464,22 +415,6 @@ export default function NotificationListScreen({
                       ? notification.template_name ||
                         notification.alimtalk_template_code
                       : notification.consult_message || "-"}
-                  </TableCell>
-                  <TableCell>
-                    {notification.type === "CONSULT_REQUEST" &&
-                    notification.consult_result ? (
-                      <Badge
-                        variant={
-                          consultResultLabels[notification.consult_result]
-                            ?.variant || "default"
-                        }
-                      >
-                        {consultResultLabels[notification.consult_result]
-                          ?.label || notification.consult_result}
-                      </Badge>
-                    ) : (
-                      "-"
-                    )}
                   </TableCell>
                   <TableCell>
                     {new Date(notification.created_at).toLocaleString("ko-KR", {

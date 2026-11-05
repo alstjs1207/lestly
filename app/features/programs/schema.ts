@@ -20,7 +20,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
 import { instructors } from "~/features/instructors/schema";
@@ -92,6 +92,10 @@ export const programs = pgTable(
     ...timestamps,
   },
   (table) => [
+    check(
+      "programs_public_slug_check",
+      sql`${table.is_public} IS NOT TRUE OR (${table.slug} IS NOT NULL AND ${table.slug} ~ '[^[:space:]]')`,
+    ),
     // DEFERRABLE tenant FK programs_instructor_tenant_fk is maintained in SQL.
     // Defaults are copied once by guard_program_booking_policy on INSERT.
     // Duplicate duration validation and row-lock behavior are maintained in SQL.
@@ -162,12 +166,6 @@ export const programs = pgTable(
       as: "permissive",
       using: sql`is_org_admin(${table.organization_id})`,
     }),
-    // RLS Policy: Public programs are viewable by anyone (anon + authenticated)
-    pgPolicy("public-programs-select-policy", {
-      for: "select",
-      to: [anonRole, authenticatedRole],
-      as: "permissive",
-      using: sql`${table.is_public} = true AND ${table.status} = 'ACTIVE'`,
-    }),
+    // Public introductions use get_public_program_by_slug, not table-wide read policies.
   ],
 ).enableRLS();

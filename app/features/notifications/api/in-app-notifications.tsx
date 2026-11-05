@@ -12,11 +12,10 @@ import { data } from "react-router";
 
 import { requireSameOrigin } from "~/core/lib/guards.server";
 import { RequestBodyError, readBoundedJson } from "~/core/lib/request-body";
+import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-import {
-  requireAdminRole,
-  requireNotificationsEnabled,
-} from "~/features/admin/guards.server";
+import { requireAdminRole } from "~/features/admin/guards.server";
+import { getNotificationsEnabled } from "~/features/app-settings/queries";
 
 /**
  * GET: List in-app notifications (max 9) with unread count
@@ -24,14 +23,24 @@ import {
 export async function loader({ request }: Route.LoaderArgs) {
   const [client, headers] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
-  await requireNotificationsEnabled(organizationId);
+  headers.set("Cache-Control", "no-store");
+  const notificationsEnabled = await getNotificationsEnabled(adminClient, {
+    organizationId,
+  });
+  const visible = <T extends { eq: (column: string, value: string) => T }>(
+    query: T,
+  ): T =>
+    notificationsEnabled
+      ? query
+      : query.eq("template_type", "SYS_CONSULT_ADMIN");
 
   // Get notifications (max 9, newest first)
   const [notificationResult, unreadResult] = await Promise.all([
-    client
-      .from("in_app_notifications")
-      .select(
-        `
+    visible(
+      client
+        .from("in_app_notifications")
+        .select(
+          `
       in_app_notification_id,
       message,
       template_type,
@@ -39,17 +48,20 @@ export async function loader({ request }: Route.LoaderArgs) {
       created_at,
       notification_id
     `,
-      )
-      .eq("organization_id", organizationId)
-      .order("created_at", { ascending: false })
-      .limit(9),
+        )
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: false })
+        .limit(9),
+    ),
 
     // Get unread count
-    client
-      .from("in_app_notifications")
-      .select("in_app_notification_id", { count: "exact", head: true })
-      .eq("organization_id", organizationId)
-      .eq("is_read", false),
+    visible(
+      client
+        .from("in_app_notifications")
+        .select("in_app_notification_id", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("is_read", false),
+    ),
   ]);
   if (notificationResult.error || unreadResult.error) {
     return data(
@@ -81,7 +93,16 @@ export async function action({ request }: Route.ActionArgs) {
   requireSameOrigin(request);
   const [client, headers] = makeServerClient(request);
   const { organizationId, profileId } = await requireAdminRole(client);
-  await requireNotificationsEnabled(organizationId);
+  headers.set("Cache-Control", "no-store");
+  const notificationsEnabled = await getNotificationsEnabled(adminClient, {
+    organizationId,
+  });
+  const visible = <T extends { eq: (column: string, value: string) => T }>(
+    query: T,
+  ): T =>
+    notificationsEnabled
+      ? query
+      : query.eq("template_type", "SYS_CONSULT_ADMIN");
 
   let body: unknown;
   try {
@@ -113,15 +134,17 @@ export async function action({ request }: Route.ActionArgs) {
     typeof in_app_notification_id === "number"
   ) {
     // Mark single notification as read
-    const { error } = await client
-      .from("in_app_notifications")
-      .update({
-        is_read: true,
-        read_at: new Date().toISOString(),
-        read_by: profileId,
-      })
-      .eq("in_app_notification_id", in_app_notification_id)
-      .eq("organization_id", organizationId);
+    const { error } = await visible(
+      client
+        .from("in_app_notifications")
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+          read_by: profileId,
+        })
+        .eq("in_app_notification_id", in_app_notification_id)
+        .eq("organization_id", organizationId),
+    );
 
     if (error) {
       return data(
@@ -134,15 +157,17 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   // Mark all unread notifications as read
-  const { error } = await client
-    .from("in_app_notifications")
-    .update({
-      is_read: true,
-      read_at: new Date().toISOString(),
-      read_by: profileId,
-    })
-    .eq("organization_id", organizationId)
-    .eq("is_read", false);
+  const { error } = await visible(
+    client
+      .from("in_app_notifications")
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+        read_by: profileId,
+      })
+      .eq("organization_id", organizationId)
+      .eq("is_read", false),
+  );
 
   if (error) {
     return data(

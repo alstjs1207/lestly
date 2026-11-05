@@ -9,7 +9,7 @@
 | GAP-001     | 정상 정책 확정           | 현재 출결 정정 흐름 유지. 학생을 수강 중으로 자동 복귀시키지 않음                                   |
 | GAP-002     | 복수 조직 문제 확인 항목 | 조직+전화번호 고유 범위는 이미 분리. 한 계정이 두 조직에 포함될 때의 문제를 후속 확인 대상으로 보존 |
 | GAP-003·004 | 현재 미지원 유지         | 기능 없음으로 기록하며 신규 구현하지 않음                                                           |
-| GAP-005~013 | 후속 정리 보류           | 차단 기능·메일을 포함한 각 항목의 원래 주제·근거를 유지. 이번에는 수정·재활성화하지 않음            |
+| GAP-006~013 | 후속 정리 보류           | 차단 기능·메일을 포함한 각 항목의 원래 주제·근거를 유지. 이번에는 수정·재활성화하지 않음            |
 
 아래 ID는 과거 참조를 위해 유지한다. 보류는 해결 완료가 아니며, 별도 요청 없이 후속 항목의 구현이나 운영 변경을 시작하지 않는다.
 
@@ -45,12 +45,12 @@
 - 현재: `total_sessions`는 소개 정보다. 관리자 반복 생성은 학생 수강 종료일까지이며 회차권 잔여·차감·환급·유료 수강 계약은 구현된 기능으로 보지 않는다.
 - 근거: `app/features/admin/api/schedules/create.tsx`, `docs/class-booking-policy.md`.
 
-## GAP-005 — 상담 CTA와 중단 API
+## GAP-005 — 상담 재개 구현과 활성화 조건
 
-- 상태: **후속 정리 보류 / 소스상 화면·기능 상태 불일치**. 관련: PUB-001.
-- 현재: 공개 클래스 화면에 상담 입력·제출 코드가 남아 있지만 API는 정책상 항상 503이다. 실제 상담 저장·전송을 재활성화하지 않았다.
-- 근거: `app/features/class/screens/class-detail.tsx`, `app/features/class/api/consult-request.tsx`, `tests/consult-route.test.ts`.
-- 후속: 중단 안내/CTA 표시를 일치시키거나 재활성화 정책과 남용 방지를 설계한다. 이번 도입은 문서화 범위다.
+- 상태: **2026-11-05 재개 구현·DB 적용 / 상담 즉시 푸시 전용**. 관련: PUB-001, PUB-003, NOT-008.
+- 변경: 공개 ACTIVE 클래스만 공유 요청 제한·중복 방지를 통과해 접수한다. 사용자 의도에 따라 상담 CAPTCHA 의존성을 제거하고 입력·권한·DB 경계 보호를 유지한다. 기존 이력을 유지하고 상담관리와 인앱/기기 푸시를 분리한다.
+- 근거: `openspec/changes/archive/2026-11-05-reactivate-secure-consultations/`, `openspec/changes/archive/2026-11-05-remove-consult-captcha-requirement/`, `openspec/changes/archive/2026-11-05-consult-immediate-push-only/`, `app/features/class/api/consult-request.tsx`, `sql/migrations/0042_secure_consultations.sql`, `sql/checks/consult-security.mjs`.
+- 적용: preview HMAC 설정과 0042·0043 DB 변경, preview 정리 코드 배포/CI 성공을 확인했다. 상담은 즉시 푸시만 사용하며 상담 재시도 job/URL·우회키는 없다. 기존 예약 작업·상담 6건은 보존했다. 실제 기기 푸시 수신은 별도 검증 범위이며 로컬/롤백 검사를 실제 기기 수신 성공으로 간주하지 않는다.
 
 ## GAP-006 — 관리자 조직 선택
 

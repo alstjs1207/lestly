@@ -184,6 +184,32 @@
               "contains": "isWorkerAuthorized"
             }
           ]
+        },
+        {
+          "id": "SEC-005",
+          "sources": [
+            "app/features/class/queries.ts",
+            "sql/migrations/0044_public_catalog_projection.sql",
+            "sql/migrations/0045_private_catalog_table_reads.sql",
+            "app/features/programs/schema.ts",
+            "app/features/instructors/schema.ts"
+          ],
+          "tests": [
+            "tests/public-catalog.test.ts",
+            "sql/checks/public-catalog-security.mjs",
+            "tests/consultations-ssr.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0044_public_catalog_projection.sql",
+              "contains": "get_public_program_by_slug"
+            },
+            {
+              "path": "sql/migrations/0045_private_catalog_table_reads.sql",
+              "contains": "REVOKE SELECT"
+            }
+          ]
         }
       ]
     },
@@ -220,7 +246,8 @@
           "sources": [
             "app/features/admin/lib/student-bulk.ts",
             "app/features/admin/lib/student-bulk.server.ts",
-            "app/features/admin/screens/students/bulk-create.tsx"
+            "app/features/admin/screens/students/bulk-create.tsx",
+            "app/features/admin/components/student-course-dates.tsx"
           ],
           "tests": ["tests/student-bulk.test.ts"],
           "verification": "automated",
@@ -254,12 +281,18 @@
           "id": "STU-004",
           "sources": [
             "app/features/admin/lib/student-class-dates.ts",
-            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+            "sql/migrations/0039_booking_lifecycle_integrity.sql",
+            "app/features/admin/components/student-course-dates.tsx",
+            "app/features/admin/lib/student-form.server.ts",
+            "app/features/admin/lib/student-save.server.ts",
+            "sql/migrations/0040_student_course_dates.sql"
           ],
           "tests": [
             "tests/student-form.test.ts",
             "tests/student-lifecycle.test.ts",
-            "sql/checks/student-lifecycle.mjs"
+            "sql/checks/student-lifecycle.mjs",
+            "sql/checks/student-course-dates.mjs",
+            "tests/service-generalization-ssr.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -319,11 +352,17 @@
           "sources": [
             "app/features/class/queries.ts",
             "app/features/programs/queries.ts",
-            "sql/migrations/0036_class_booking_policy.sql"
+            "sql/migrations/0036_class_booking_policy.sql",
+            "app/features/admin/lib/catalog-form.server.ts",
+            "app/features/admin/components/program-form.tsx",
+            "sql/migrations/0041_public_program_slug.sql"
           ],
           "tests": [
             "tests/class-booking-policy.test.ts",
-            "sql/checks/security-regression.mjs"
+            "sql/checks/security-regression.mjs",
+            "tests/catalog-form.test.ts",
+            "sql/checks/catalog-entry.mjs",
+            "tests/service-generalization-ssr.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -375,17 +414,41 @@
           "sources": [
             "app/features/admin/lib/catalog-form.server.ts",
             "app/features/schedules/utils/learning-records.ts",
-            "app/features/class/components/class-location.tsx"
+            "app/features/class/components/class-location.tsx",
+            "app/features/admin/components/program-form.tsx",
+            "app/features/admin/components/inline-instructor-dialog.tsx",
+            "app/features/admin/api/instructors/create.tsx"
           ],
           "tests": [
             "tests/catalog-form.test.ts",
-            "tests/service-generalization-ssr.mjs"
+            "tests/service-generalization-ssr.mjs",
+            "tests/catalog-entry.test.ts",
+            "sql/checks/catalog-entry.mjs"
           ],
           "verification": "automated",
           "anchors": [
             {
               "path": "app/features/admin/lib/catalog-form.server.ts",
               "contains": "MAX_CATALOG_IMAGE_BYTES"
+            }
+          ]
+        },
+        {
+          "id": "CAT-005",
+          "sources": [
+            "app/features/class/screens/class-detail.tsx",
+            "app/features/class/components/class-footer.tsx",
+            "app/features/class/components/class-hero.tsx",
+            "app/features/class/components/class-instructor.tsx",
+            "app/features/admin/components/program-form.tsx",
+            "app/features/admin/screens/programs/detail.tsx"
+          ],
+          "tests": ["tests/consultations-ssr.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/class/components/class-footer.tsx",
+              "contains": "onConsult"
             }
           ]
         }
@@ -406,11 +469,18 @@
           "id": "BOOK-001",
           "sources": [
             "app/features/schedules/utils/booking-organization.server.ts",
-            "app/features/schedules/api/create-schedule.tsx"
+            "app/features/schedules/api/create-schedule.tsx",
+            "app/features/schedules/utils/student-booking.ts",
+            "app/features/schedules/utils/student-calendar.server.ts",
+            "sql/migrations/0040_student_course_dates.sql"
           ],
           "tests": [
             "tests/booking-organization.test.ts",
-            "sql/checks/booking-lifecycle.mjs"
+            "sql/checks/booking-lifecycle.mjs",
+            "tests/student-booking-push.test.ts",
+            "tests/student-learning.test.ts",
+            "tests/student-week-loader.test.ts",
+            "sql/checks/student-course-dates.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -608,11 +678,13 @@
           "sources": [
             "app/features/admin/api/schedules/update.tsx",
             "app/features/admin/screens/schedules/edit.tsx",
-            "sql/migrations/0039_booking_lifecycle_integrity.sql"
+            "sql/migrations/0039_booking_lifecycle_integrity.sql",
+            "sql/migrations/0040_student_course_dates.sql"
           ],
           "tests": [
             "tests/booking-integrity.test.ts",
-            "sql/checks/booking-lifecycle.mjs"
+            "sql/checks/booking-lifecycle.mjs",
+            "sql/checks/student-course-dates.mjs"
           ],
           "verification": "automated",
           "anchors": [
@@ -819,7 +891,9 @@
         {
           "id": "NOT-004",
           "sources": [
-            "app/features/notifications/api/in-app-notifications.tsx"
+            "app/features/notifications/api/in-app-notifications.tsx",
+            "app/features/notifications/components/notification-bell.tsx",
+            "app/features/notifications/hooks/use-in-app-notifications.ts"
           ],
           "tests": ["tests/notification-route.test.ts"],
           "verification": "automated",
@@ -842,7 +916,9 @@
             "tests/web-push.test.ts",
             "tests/push-routes.test.ts",
             "tests/push-client.test.ts",
-            "sql/checks/security-regression.mjs"
+            "sql/checks/security-regression.mjs",
+            "sql/checks/consult-security.mjs",
+            "tests/consult-push-worker.test.ts"
           ],
           "verification": "automated",
           "anchors": [
@@ -873,6 +949,25 @@
             {
               "path": "app/features/cron/api/mailer.tsx",
               "contains": "queue_name"
+            }
+          ]
+        },
+        {
+          "id": "NOT-008",
+          "sources": [
+            "sql/migrations/0042_secure_consultations.sql",
+            "app/features/notifications/push/store.server.ts",
+            "app/features/notifications/push/dispatch.server.ts"
+          ],
+          "tests": [
+            "sql/checks/consult-security.mjs",
+            "tests/web-push.test.ts"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0042_secure_consultations.sql",
+              "contains": "on_consult_request_insert"
             }
           ]
         }
@@ -952,13 +1047,23 @@
       "requirements": [
         {
           "id": "PUB-001",
-          "sources": ["app/features/class/api/consult-request.tsx"],
-          "tests": ["tests/consult-route.test.ts"],
+          "sources": [
+            "app/features/class/api/consult-request.tsx",
+            "app/features/class/consult-security.server.ts",
+            "app/features/class/consult-store.server.ts",
+            "app/features/class/screens/class-detail.tsx",
+            "sql/migrations/0042_secure_consultations.sql"
+          ],
+          "tests": [
+            "tests/consult-route.test.ts",
+            "tests/consult-security.test.ts",
+            "sql/checks/consult-security.mjs"
+          ],
           "verification": "automated",
           "anchors": [
             {
               "path": "app/features/class/api/consult-request.tsx",
-              "contains": "503"
+              "contains": "consumeConsultIpBudget"
             }
           ]
         },
@@ -974,6 +1079,27 @@
             {
               "path": "app/features/contact/screens/contact-us.tsx",
               "contains": "isHcaptchaTokenValid"
+            }
+          ]
+        },
+        {
+          "id": "PUB-003",
+          "sources": [
+            "app/features/notifications/screens/consultations.tsx",
+            "app/features/notifications/screens/consultation-detail.tsx",
+            "app/features/notifications/consult-validation.ts",
+            "sql/migrations/0042_secure_consultations.sql"
+          ],
+          "tests": [
+            "tests/consult-management.test.ts",
+            "tests/consultations-ssr.mjs",
+            "sql/checks/consult-security.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/notifications/screens/consultation-detail.tsx",
+              "contains": "requireAdminRole"
             }
           ]
         }
@@ -1065,7 +1191,8 @@
           "sources": [
             "sql/checks/security-regression.mjs",
             "sql/operations/20261030_apply_booking_lifecycle.mjs",
-            "docs/booking-integrity-fixes.md"
+            "docs/booking-integrity-fixes.md",
+            "sql/operations/20261104_apply_catalog_entry.mjs"
           ],
           "tests": ["sql/checks/booking-lifecycle.mjs"],
           "verification": "automated",

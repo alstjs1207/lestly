@@ -40,6 +40,7 @@ import {
   studentTypeLabelMap,
 } from "../../../organizations/student-types";
 import { getStudentTypes } from "../../../organizations/student-types.server";
+import StudentCourseDates from "../../components/student-course-dates";
 import StudentInviteDialog from "../../components/student-invite-dialog";
 import { requireAdminRole } from "../../guards.server";
 import {
@@ -51,6 +52,7 @@ import {
   hasStudentInput,
   readStudentBulkDraft,
 } from "../../lib/student-bulk-draft";
+import { getDefaultStudentClassDates } from "../../lib/student-class-dates";
 
 type EditableRow = EditableStudentRow;
 const makeEmptyRow = (id: string, defaultType: string): EditableRow => ({
@@ -67,6 +69,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { profileId, organizationId } = await requireAdminRole(client);
   const studentTypes = await getStudentTypes(client, organizationId);
   return {
+    ...getDefaultStudentClassDates(),
     studentTypes,
     draftKey: `lestly:student-bulk:${profileId}:${organizationId}:v1`,
   };
@@ -236,7 +239,15 @@ export default function StudentBulkCreateScreen({
     setMessage("");
     setRows((current) => current.map((row) => ({ ...row, error: undefined })));
     void fetcher.submit(
-      { students: JSON.stringify(parsed.data) },
+      {
+        students: JSON.stringify(parsed.data),
+        class_start_date: String(
+          new FormData(event.currentTarget).get("class_start_date") ?? "",
+        ),
+        class_end_date: String(
+          new FormData(event.currentTarget).get("class_end_date") ?? "",
+        ),
+      },
       { method: "post", action: "/api/admin/students/bulk-create" },
     );
   };
@@ -280,6 +291,21 @@ export default function StudentBulkCreateScreen({
 
       <form onSubmit={submit}>
         <fieldset disabled={busy || !draftReady} className="min-w-0 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>공통 수강 기간</CardTitle>
+              <CardDescription>
+                이번에 등록하는 수강생에게 같은 기간을 적용합니다. 수강생별
+                기간은 등록 후 수정할 수 있습니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 md:grid-cols-2">
+              <StudentCourseDates
+                creating
+                startDate={loaderData.classStartDate}
+              />
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>엑셀 명단 붙여넣기</CardTitle>

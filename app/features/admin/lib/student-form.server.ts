@@ -7,6 +7,7 @@ import {
   DEFAULT_STUDENT_TYPES,
   type StudentTypeOption,
 } from "../../organizations/student-types.ts";
+import { getDefaultStudentClassDates } from "./student-class-dates.ts";
 import {
   normalizePhone,
   studentFields,
@@ -48,22 +49,54 @@ const studentFormObject = z.object({
     .default("#3B82F6"),
 });
 
+const studentCourseDatesSchema = studentFormObject
+  .pick({ class_start_date: true, class_end_date: true })
+  .refine(
+    (values) => !values.class_start_date || Boolean(values.class_end_date),
+    {
+      path: ["class_end_date"],
+      message: "수업 종료일을 입력하거나 기간을 선택해 주세요.",
+    },
+  )
+  .refine(
+    (values) =>
+      !values.class_start_date ||
+      !values.class_end_date ||
+      values.class_end_date >= values.class_start_date,
+    {
+      path: ["class_end_date"],
+      message: "수업 종료일은 시작일 이후여야 합니다.",
+    },
+  );
+
 function studentFormSchema(
   types: StudentTypeOption[],
   currentType?: string | null,
 ) {
   return studentFormObject
     .extend({ type: studentTypeField(types, currentType) })
-    .refine(
-      (values) =>
-        !values.class_start_date ||
-        !values.class_end_date ||
-        values.class_end_date >= values.class_start_date,
-      {
-        path: ["class_end_date"],
-        message: "수업 종료일은 시작일 이후여야 합니다.",
-      },
-    );
+    .superRefine((values, context) => {
+      const dates = studentCourseDatesSchema.safeParse(values);
+      if (!dates.success)
+        dates.error.issues.forEach((issue) => context.addIssue(issue));
+    });
+}
+
+function studentFormEntries(formData: FormData, creating: boolean) {
+  const values = Object.fromEntries(formData);
+  if (creating && !String(values.class_start_date || "").trim()) {
+    values.class_start_date = getDefaultStudentClassDates().classStartDate;
+  }
+  return values;
+}
+
+export function parseStudentCourseDates(
+  formData: FormData,
+  { creating = false } = {},
+) {
+  return studentCourseDatesSchema.safeParse(
+    studentFormEntries(formData, creating),
+  );
 }
 
 export type StudentFormValues = z.infer<ReturnType<typeof studentFormSchema>>;
@@ -72,9 +105,10 @@ export function parseStudentForm(
   formData: FormData,
   types = DEFAULT_STUDENT_TYPES,
   currentType?: string | null,
+  { creating = false } = {},
 ) {
   return studentFormSchema(types, currentType).safeParse(
-    Object.fromEntries(formData),
+    studentFormEntries(formData, creating),
   );
 }
 

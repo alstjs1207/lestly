@@ -15,15 +15,20 @@ function setup({
   status = 0,
   attempts = 1,
   persistFailure = false,
+  consult = false,
+  batchSize = 1,
+  batches = 1,
 } = {}) {
   const sent: unknown[] = [];
   const finished: { status: string; error: string | null }[] = [];
   const removed: string[] = [];
   const captured: string[] = [];
+  const abandoned: unknown[] = [];
   let claims = 0;
   const dispatcher = loadMockedModule<{
     dispatchPushQueue(): Promise<{ configured: boolean; processed: number }>;
     dispatchSchedulePush(id: number, actor: string): Promise<void>;
+    dispatchConsultPush(id: number): Promise<void>;
   }>(
     new URL(
       "../app/features/notifications/push/dispatch.server.ts",
@@ -59,7 +64,13 @@ function setup({
       "./store.server": {
         claimPushDeliveries: async () => {
           claims++;
-          return [{ delivery_id: "delivery", claim_token: "lease", attempts }];
+          return claims <= batches
+            ? Array.from({ length: batchSize }, (_, i) => ({
+                delivery_id: `delivery-${claims}-${i}`,
+                claim_token: "lease",
+                attempts,
+              }))
+            : [];
         },
         getPushDeliveryTarget: async () => ({
           eligible,
@@ -68,8 +79,12 @@ function setup({
           p256dh: "key",
           auth: "auth",
           event_id: "event",
-          title: "수업 예약",
-          body: "수강생이 예약했습니다.",
+          title: consult ? "새 상담 신청" : "수업 예약",
+          body: consult
+            ? "상담관리에서 확인해 주세요."
+            : "수강생이 예약했습니다.",
+          event_type: consult ? "CONSULT_REQUEST" : "BOOKED",
+          notification_id: consult ? 42 : null,
         }),
         finishPushDelivery: async (
           _delivery: unknown,
@@ -83,6 +98,9 @@ function setup({
           removed.push(id);
         },
         maintainPushQueue: async () => {},
+        failPendingConsultPush: async (id: number, reason: string) => {
+          abandoned.push({ id, reason });
+        },
       },
     },
   );
@@ -92,6 +110,7 @@ function setup({
     finished,
     removed,
     captured,
+    abandoned,
     claims: () => claims,
   };
 }
@@ -267,4 +286,66 @@ test("the push worker displays a notification and opens only the authenticated s
   await waiting;
   assert.deepEqual(navigated, ["https://lestly.test/admin/schedules"]);
   assert.equal(focused, true);
+  for (const path of [
+    "/admin/consultations/42",
+    "//attacker.test",
+    "/admin/consultations/42/../../settings",
+    "/admin/consultations/0",
+    "https://lestly.test/admin/consultations/42",
+  ]) {
+    handlers.push({
+      data: { json: () => ({ url: path }) },
+      waitUntil: (promise: Promise<unknown>) => {
+        waiting = promise;
+      },
+    });
+    await waiting;
+    handlers.notificationclick({
+      notification: { close() {}, data: notifications.at(-1)[1].data },
+      waitUntil: (promise: Promise<unknown>) => {
+        waiting = promise;
+      },
+    });
+    await waiting;
+    assert.equal(
+      navigated.at(-1),
+      "https://lestly.test" +
+        (path === "/admin/consultations/42" ? path : "/admin/schedules"),
+    );
+  }
+});
+
+test("consultation push points to the matching detail instead of the schedule page", async () => {
+  const state = setup({ consult: true });
+  await state.dispatcher.dispatchPushQueue();
+  const payload = JSON.parse((state.sent[0] as any[])[1]);
+  assert.equal(payload.url, "/admin/consultations/42");
+  assert.equal(payload.body, "상담관리에서 확인해 주세요.");
+});
+
+test("consult push makes only immediate attempts and never queues transient failures for retry", async () => {
+  for (const status of [408, 429, 500, 503]) {
+    const state = setup({ consult: true, status });
+    await state.dispatcher.dispatchConsultPush(42);
+    assert.equal(state.sent.length, 1);
+    assert.equal(state.finished[0].status, "FAILED");
+  }
+  const offline = setup({ consult: true, configured: false });
+  await offline.dispatcher.dispatchConsultPush(42);
+  assert.equal(offline.sent.length, 0);
+  assert.deepEqual(offline.abandoned, [
+    { id: 42, reason: "push_not_configured" },
+  ]);
+});
+
+test("consult immediate push drains all device batches without retrying committed or unknown deliveries", async () => {
+  const many = setup({ consult: true, batchSize: 10, batches: 2 });
+  await many.dispatcher.dispatchConsultPush(42);
+  assert.equal(many.sent.length, 20);
+  assert.equal(many.claims(), 3);
+  const failed = setup({ consult: true, persistFailure: true });
+  await failed.dispatcher.dispatchConsultPush(42);
+  assert.equal(failed.sent.length, 1);
+  assert.equal(failed.finished.length, 0);
+  assert.deepEqual(failed.captured, ["Immediate consultation Web Push failed"]);
 });

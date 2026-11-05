@@ -97,6 +97,10 @@ export function desktopBookingSlots(
           closed: ["이 수업의 예약 접수가 마감됐어요.", "접수 마감"],
           past: ["이미 지난 시작 시각이에요.", "지난 시간"],
           outside_course: ["수강 기간 밖의 날짜예요.", "예약 불가"],
+          course_dates_required: [
+            "운영자에게 수강 시작일과 종료일 등록을 요청해 주세요.",
+            "기간 미등록",
+          ],
           student_conflict: ["내 다른 수업과 겹쳐요.", "내 수업"],
           capacity: ["정원이 찼어요.", "정원 마감"],
         };

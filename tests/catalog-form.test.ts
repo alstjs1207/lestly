@@ -210,3 +210,43 @@ test("public SNS links suppress legacy executable URLs and invalid JSON values",
     "http://youtube.com/person",
   );
 });
+
+test("slug is required only for external publication and instructors stay optional", () => {
+  for (const status of ["DRAFT", "ACTIVE", "ARCHIVED"]) {
+    for (const slug of [undefined, "", "   "]) {
+      const input = form({ title: "검토 클래스", status });
+      if (slug !== undefined) input.set("slug", slug);
+      const privateResult = parseProgramForm(input);
+      assert.equal(privateResult.success, true);
+      if (privateResult.success) {
+        assert.equal(privateResult.data.slug, null);
+        assert.equal(privateResult.data.instructor_id, null);
+      }
+      input.set("is_public", "on");
+      const publicResult = parseProgramForm(input);
+      assert.equal(publicResult.success, false);
+      if (!publicResult.success)
+        assert.deepEqual(publicResult.error.flatten().fieldErrors.slug, [
+          "외부 공개 시 URL 슬러그를 입력해 주세요.",
+        ]);
+    }
+    const input = form({
+      title: "검토 클래스",
+      status,
+      is_public: "on",
+      slug: " existing-Class ",
+      instructor_id: "",
+    });
+    const result = parseProgramForm(input);
+    assert.equal(result.success, true);
+    if (result.success) {
+      assert.equal(result.data.slug, "existing-Class");
+      assert.equal(result.data.instructor_id, null);
+    }
+    input.delete("is_public");
+    const unpublished = parseProgramForm(input);
+    assert.equal(unpublished.success, true);
+    if (unpublished.success)
+      assert.equal(unpublished.data.slug, "existing-Class");
+  }
+});

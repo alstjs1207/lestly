@@ -87,12 +87,45 @@ test("policy checker detects duplicate IDs, missing scenarios and unmapped requi
     assert.throws(() => checkPolicies(root), /Unmapped requirement/);
   }));
 test("new feature and new migration need deliberate policy ownership", () => {
+  assert.deepEqual(
+    classify("app/features/admin/components/inline-instructor-dialog.tsx"),
+    ["catalog"],
+  );
+  assert.deepEqual(classify("sql/migrations/0041_public_program_slug.sql"), [
+    "catalog",
+  ]);
   assert.deepEqual(classify("app/features/new-product/api.ts"), []);
   assert.deepEqual(classify("sql/migrations/9999_unassigned_feature.sql"), []);
   assert.ok(
     classify("sql/migrations/0039_booking_lifecycle_integrity.sql").includes(
       "recurring-schedules",
     ),
+  );
+});
+
+test("migration journal requires platform evidence without bypassing new SQL ownership", () => {
+  const journal = "sql/migrations/meta/_journal.json";
+  const record = "openspec/changes/migration/proposal.md";
+  const catalog = {
+    domains: [{ id: "platform", requirements: [{ id: "PLAT-003" }] }],
+  };
+  assert.deepEqual(classify(journal), ["platform"]);
+  assert.throws(
+    () => assertChangeEvidence([journal], catalog, () => ""),
+    /Missing policy\/change evidence/,
+  );
+  assert.deepEqual(
+    assertChangeEvidence([journal, record], catalog, () => "PLAT-003"),
+    ["platform"],
+  );
+  assert.throws(
+    () =>
+      assertChangeEvidence(
+        [journal, "sql/migrations/9999_unassigned_feature.sql", record],
+        catalog,
+        () => "PLAT-003",
+      ),
+    /Unclassified changed source/,
   );
 });
 test("source inventory fails on new files until reviewed index is updated", () =>

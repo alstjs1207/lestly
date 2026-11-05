@@ -94,13 +94,13 @@ test("same-day booking allows future slots but excludes past, conflicts and cour
     null,
   );
   assert.match(bookingDateReason("2026-12-01", course, now)!, /수강 기간/);
-  assert.equal(
+  assert.match(
     bookingDateReason(
       "2027-01-01",
       { classStartDate: null, classEndDate: null },
       new Date("2026-12-25T03:00:00Z"),
-    ),
-    null,
+    )!,
+    /수강 기간이 등록되지/,
   );
 });
 

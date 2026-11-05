@@ -36,8 +36,9 @@
     "spec:changed": "node scripts/spec-tools.mjs changed",
     "spec:check": "openspec validate --all --strict --no-interactive && openspec validate --archived --strict --no-interactive && node scripts/spec-tools.mjs check",
     "test:spec-tools": "node --test tests/spec-tools.test.mjs",
-    "test:ssr": "npm run test:attendance:ssr && npm run test:schedules:ssr && npm run test:student-types:ssr && npm run test:booking-policy:ssr && npm run test:booking-window:ssr && npm run test:generalization:ssr",
-    "verify:local": "node scripts/verify-local.mjs"
+    "test:ssr": "npm run test:attendance:ssr && npm run test:schedules:ssr && npm run test:student-types:ssr && npm run test:booking-policy:ssr && npm run test:booking-window:ssr && npm run test:generalization:ssr && npm run test:consultations:ssr",
+    "verify:local": "node scripts/verify-local.mjs",
+    "test:consultations:ssr": "node tests/consultations-ssr.mjs"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",

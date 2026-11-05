@@ -8,6 +8,7 @@ interface ClassInstructorProps {
   photoUrl?: string | null;
   career: string[];
   sns: InstructorSns;
+  wide?: boolean;
 }
 
 // SNS 아이콘 컴포넌트
@@ -33,17 +34,22 @@ export default function ClassInstructor({
   photoUrl,
   career,
   sns,
+  wide = false,
 }: ClassInstructorProps) {
   if (!name) return null;
   const instagramUrl = getSafeHttpUrl(sns.instagram);
   const youtubeUrl = getSafeHttpUrl(sns.youtube);
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+    <div
+      className={`rounded-xl border border-gray-100 bg-white p-6 shadow-sm ${wide ? "sm:flex sm:items-center sm:gap-6" : ""}`}
+    >
       {/* 강사 사진 */}
       {photoUrl && (
-        <div className="mb-4 flex justify-center">
-          <div className="h-80 w-80 overflow-hidden rounded-full border-2 border-gray-100">
+        <div
+          className={`mb-4 flex justify-center ${wide ? "sm:mb-0 sm:shrink-0" : ""}`}
+        >
+          <div className="size-40 max-w-full overflow-hidden rounded-full border-2 border-gray-100 sm:size-48">
             <img
               src={photoUrl}
               alt={`${name} 강사`}
@@ -53,52 +59,63 @@ export default function ClassInstructor({
         </div>
       )}
 
-      {/* 강사 이름 & 타이틀 */}
-      <div className="mb-4">
-        <h3 className="text-xl font-bold text-gray-800">
-          {name}
-          <span className="ml-1 font-normal text-gray-500">강사</span>
-        </h3>
-        {info && <p className="mt-1 text-sm text-gray-600">{info}</p>}
-      </div>
-
-      {/* 경력 */}
-      {career.length > 0 && (
-        <ul className="mb-4 space-y-1.5">
-          {career.map((item, index) => (
-            <li key={index} className="flex items-start text-sm text-gray-600">
-              <span className="mr-2">&#x2022;</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* SNS 링크 */}
-      {(instagramUrl || youtubeUrl) && (
-        <div className="flex gap-3 pt-2">
-          {instagramUrl && (
-            <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white transition-opacity hover:opacity-90"
-            >
-              <InstagramIcon className="h-5 w-5" />
-            </a>
-          )}
-          {youtubeUrl && (
-            <a
-              href={youtubeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 text-white transition-opacity hover:opacity-90"
-            >
-              <YoutubeIcon className="h-5 w-5" />
-            </a>
+      <div className="min-w-0">
+        {/* 강사 이름 & 타이틀 */}
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-800">
+            {name}
+            <span className="ml-1 font-normal text-gray-500">강사</span>
+          </h3>
+          {info && (
+            <p className="mt-1 text-sm break-words whitespace-pre-wrap text-gray-600">
+              {info}
+            </p>
           )}
         </div>
-      )}
+
+        {/* 경력 */}
+        {career.length > 0 && (
+          <ul className="mb-4 space-y-1.5">
+            {career.map((item, index) => (
+              <li
+                key={index}
+                className="flex items-start text-sm text-gray-600"
+              >
+                <span className="mr-2">&#x2022;</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* SNS 링크 */}
+        {(instagramUrl || youtubeUrl) && (
+          <div className="flex gap-3 pt-2">
+            {instagramUrl && (
+              <a
+                href={instagramUrl}
+                aria-label={`${name} 강사 인스타그램`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white transition-opacity hover:opacity-90"
+              >
+                <InstagramIcon className="h-5 w-5" />
+              </a>
+            )}
+            {youtubeUrl && (
+              <a
+                href={youtubeUrl}
+                aria-label={`${name} 강사 유튜브`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 text-white transition-opacity hover:opacity-90"
+              >
+                <YoutubeIcon className="h-5 w-5" />
+              </a>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

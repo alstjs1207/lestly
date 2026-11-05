@@ -83,6 +83,8 @@ export default function ProgramDetailScreen({
   loaderData,
 }: Route.ComponentProps) {
   const { program, hasSchedules: programHasSchedules } = loaderData;
+  const isPagePublished =
+    program.status === "ACTIVE" && program.is_public && Boolean(program.slug);
   const deleteFetcher = useFetcher<{ success: false; error?: string }>();
 
   return (
@@ -256,15 +258,15 @@ export default function ProgramDetailScreen({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <p className="text-muted-foreground text-sm">공개 여부</p>
-                <Badge variant={program.is_public ? "default" : "outline"}>
-                  {program.is_public ? "공개" : "비공개"}
+                <Badge variant={isPagePublished ? "default" : "outline"}>
+                  {isPagePublished ? "공개 중" : "공개되지 않음"}
                 </Badge>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm">공개 URL</p>
-                {program.slug ? (
+                {isPagePublished ? (
                   <a
-                    href={`/class/${program.slug}`}
+                    href={`/class/${encodeURIComponent(program.slug!)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary inline-flex items-center gap-1 font-medium hover:underline"
@@ -272,11 +274,21 @@ export default function ProgramDetailScreen({
                     /class/{program.slug}
                     <ExternalLinkIcon className="h-3 w-3" />
                   </a>
+                ) : program.slug ? (
+                  <p className="text-muted-foreground font-medium break-all">
+                    /class/{program.slug}
+                  </p>
                 ) : (
                   <p className="text-muted-foreground font-medium">-</p>
                 )}
               </div>
             </div>
+            {!isPagePublished && (
+              <p className="text-muted-foreground text-sm">
+                외부 페이지를 표시하려면 클래스 수정에서 상태를 ‘활성’으로
+                설정하고, 공개 설정과 URL 슬러그를 확인해 주세요.
+              </p>
+            )}
           </CardContent>
         </Card>
 

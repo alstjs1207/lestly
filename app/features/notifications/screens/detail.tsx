@@ -1,26 +1,17 @@
 import type { Route } from "./+types/detail";
 
 import { ChevronLeftIcon, RefreshCwIcon } from "lucide-react";
-import { Link, useFetcher } from "react-router";
+import { Link, redirect, useFetcher } from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
 import { Label } from "~/core/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/core/components/ui/select";
-import { Textarea } from "~/core/components/ui/textarea";
 import { requireMethod } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import {
@@ -28,19 +19,20 @@ import {
   requireNotificationsEnabled,
 } from "~/features/admin/guards.server";
 
-import { getNotificationById, updateConsultNotification } from "../queries";
+import { getNotificationById } from "../queries";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const { organizationId } = await requireAdminRole(client);
-  await requireNotificationsEnabled(organizationId);
-
   const notificationId = parseInt(params.notificationId);
   const notification = await getNotificationById(client, {
     organizationId,
     notificationId,
   });
 
+  if (notification.type === "CONSULT_REQUEST")
+    return redirect(`/admin/consultations/${notification.notification_id}`);
+  await requireNotificationsEnabled(organizationId);
   return { notification };
 }
 
@@ -50,32 +42,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const { organizationId } = await requireAdminRole(client);
   await requireNotificationsEnabled(organizationId);
 
-  const formData = await request.formData();
-  const intent = formData.get("intent");
-
-  if (intent === "updateConsult") {
-    const consultStatus = formData.get("consultStatus") as
-      | "WAITING"
-      | "COMPLETED"
-      | undefined;
-    const consultResult = formData.get("consultResult") as
-      | "SUCCESS"
-      | "FAILED"
-      | undefined;
-    const consultNotes = formData.get("consultNotes") as string | undefined;
-
-    await updateConsultNotification(client, {
-      organizationId,
-      notificationId: parseInt(params.notificationId),
-      consultStatus: consultStatus || undefined,
-      consultResult: consultResult || undefined,
-      consultNotes,
-    });
-
-    return { success: true };
-  }
-
-  return { success: false };
+  return redirect(`/admin/consultations/${params.notificationId}`);
 }
 
 const typeLabels: Record<
@@ -122,19 +89,10 @@ const consultStatusLabels: Record<
   COMPLETED: { label: "상담 완료", variant: "default" },
 };
 
-const consultResultLabels: Record<
-  string,
-  { label: string; variant: "default" | "secondary" | "destructive" }
-> = {
-  SUCCESS: { label: "등록 성공", variant: "default" },
-  FAILED: { label: "등록 실패", variant: "destructive" },
-};
-
 export default function NotificationDetailScreen({
   loaderData,
 }: Route.ComponentProps) {
   const { notification } = loaderData;
-  const updateFetcher = useFetcher<{ success: boolean }>();
   const resendFetcher = useFetcher();
 
   const isAlimtalk = notification.type === "ALIMTALK";
@@ -362,97 +320,6 @@ export default function NotificationDetailScreen({
                     </p>
                   </div>
                 )}
-            </CardContent>
-          </Card>
-        )}
-
-        {isConsult && (
-          <Card>
-            <CardHeader>
-              <CardTitle>상담 정보</CardTitle>
-              <CardDescription>
-                상담 상태와 결과를 수정할 수 있습니다.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <updateFetcher.Form method="post" className="space-y-4">
-                <input type="hidden" name="intent" value="updateConsult" />
-
-                {notification.consult_message && (
-                  <div>
-                    <Label className="text-muted-foreground">상담 메시지</Label>
-                    <p className="mt-1 font-medium">
-                      {notification.consult_message}
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="consultStatus">상담 상태</Label>
-                    <Select
-                      name="consultStatus"
-                      defaultValue={notification.consult_status || "WAITING"}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="WAITING">상담 대기</SelectItem>
-                        <SelectItem value="COMPLETED">상담 완료</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="consultResult">최종 결과</Label>
-                    <Select
-                      name="consultResult"
-                      defaultValue={notification.consult_result || ""}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SUCCESS">등록 성공</SelectItem>
-                        <SelectItem value="FAILED">등록 실패</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="consultNotes">메모</Label>
-                  <Textarea
-                    id="consultNotes"
-                    name="consultNotes"
-                    defaultValue={notification.consult_notes || ""}
-                    placeholder="상담 내용이나 메모를 입력하세요"
-                    rows={4}
-                  />
-                </div>
-
-                {notification.consult_completed_at && (
-                  <div>
-                    <Label className="text-muted-foreground">
-                      상담 완료 시각
-                    </Label>
-                    <p className="font-medium">
-                      {new Date(
-                        notification.consult_completed_at,
-                      ).toLocaleString("ko-KR")}
-                    </p>
-                  </div>
-                )}
-
-                {updateFetcher.data?.success && (
-                  <p className="text-sm text-green-600">저장되었습니다.</p>
-                )}
-
-                <Button type="submit" disabled={updateFetcher.state !== "idle"}>
-                  {updateFetcher.state !== "idle" ? "저장 중..." : "저장"}
-                </Button>
-              </updateFetcher.Form>
             </CardContent>
           </Card>
         )}

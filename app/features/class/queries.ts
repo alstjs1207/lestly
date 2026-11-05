@@ -14,56 +14,40 @@ export interface InstructorSns {
   [key: string]: string | undefined;
 }
 
-/**
- * slug로 공개 프로그램 조회 (instructor 포함)
- */
+type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
+type InstructorRow = Database["public"]["Tables"]["instructors"]["Row"];
+
+// Matches 0044's explicit public RPC contract, including the legacy public footer.
+export type PublicProgram = Pick<
+  ProgramRow,
+  | "program_id"
+  | "slug"
+  | "title"
+  | "subtitle"
+  | "description"
+  | "cover_image_url"
+  | "location_type"
+  | "location_address"
+  | "duration_minutes"
+  | "total_sessions"
+  | "max_capacity"
+  | "curriculum"
+> & {
+  instructor: Pick<
+    InstructorRow,
+    "name" | "info" | "photo_url" | "career" | "sns"
+  > | null;
+};
+
+/** Read only the public introduction, independent of the visitor's account role. */
 export async function getPublicProgramBySlug(
   client: SupabaseClient<Database>,
   { slug }: { slug: string },
-) {
-  const { data, error } = await client
-    .from("programs")
-    .select(
-      `
-      *,
-      instructor:instructors!programs_instructor_id_instructors_instructor_id_fk(*)
-    `,
-    )
-    .eq("slug", slug)
-    .eq("is_public", true)
-    .eq("status", "ACTIVE")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-/**
- * 프로그램의 다음 스케줄 조회 (가장 가까운 미래 일정)
- */
-export async function getNextScheduleForProgram(
-  client: SupabaseClient<Database>,
-  { programId }: { programId: number },
-) {
-  const now = new Date().toISOString();
-
-  const { data, error } = await client
-    .from("schedules")
-    .select("schedule_id, start_time, end_time")
-    .is("cancelled_at", null)
-    .eq("program_id", programId)
-    .gte("start_time", now)
-    .order("start_time", { ascending: true })
-    .limit(1)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    // PGRST116: no rows returned
-    throw error;
-  }
-
-  return data;
+): Promise<PublicProgram | null> {
+  const { data, error } = await client.rpc("get_public_program_by_slug", {
+    p_slug: slug,
+  });
+  if (error) throw error;
+  // The fixed SECURITY DEFINER projection is the trusted server-side boundary.
+  return data as PublicProgram | null;
 }

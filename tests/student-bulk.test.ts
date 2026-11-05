@@ -12,6 +12,7 @@ import {
   parseBulkStudents,
   parseStudentClipboard,
 } from "../app/features/admin/lib/student-bulk.ts";
+import { parseStudentCourseDates } from "../app/features/admin/lib/student-form.server.ts";
 import {
   DEFAULT_STUDENT_TYPES,
   studentTypeLabelMap,
@@ -101,6 +102,7 @@ test("legacy pasted classifications merge into student without losing retaker in
     } as any,
     "org-a",
     parsed.data,
+    { class_start_date: "2026-01-01", class_end_date: "2027-01-01" },
   );
   assert.equal(payload.region, null);
   assert.equal(payload.type, "STUDENT");
@@ -143,10 +145,12 @@ test("bulk save calls the atomic RPC with scoped fields and returns profile IDs"
       return { data: "00000000-0000-0000-0000-000000000099", error: null };
     },
   };
-  const results = await createBulkStudents(client as any, "org-a", [
-    row(),
-    row(1),
-  ]);
+  const results = await createBulkStudents(
+    client as any,
+    "org-a",
+    [row(), row(1)],
+    { class_start_date: "2026-01-01", class_end_date: "2027-01-01" },
+  );
   assert.deepEqual(
     results.map((item) => item.success),
     [true, true],
@@ -159,9 +163,7 @@ test("bulk save calls the atomic RPC with scoped fields and returns profile IDs"
   for (const call of calls) {
     assert.equal(call.name, "save_managed_student");
     assert.equal(call.args.p_organization_id, "org-a");
-    assert.ok(
-      call.args.p_values.class_end_date > call.args.p_values.class_start_date,
-    );
+    assert.ok(call.args.p_values.class_end_date === "2027-01-01");
     assert.equal(call.args.p_values.auth_user_id, undefined);
   }
 });
@@ -174,10 +176,12 @@ test("bulk RPC failure reports only failed rows and keeps successful profile IDs
         ? { data: null, error: { code: "23505" } }
         : { data: "00000000-0000-0000-0000-000000000099", error: null },
   };
-  const results = await createBulkStudents(client as any, "org-a", [
-    row(),
-    row(1),
-  ]);
+  const results = await createBulkStudents(
+    client as any,
+    "org-a",
+    [row(), row(1)],
+    { class_start_date: "2026-01-01", class_end_date: "2027-01-01" },
+  );
   assert.deepEqual(
     results.map((item) => item.success),
     [false, true],
@@ -270,6 +274,7 @@ test("bulk API authenticates before reading rows and never writes invalid or dup
         getStudentTypes: async () => DEFAULT_STUDENT_TYPES,
       },
       "../../lib/student-bulk": { parseBulkStudents },
+      "../../lib/student-form.server": { parseStudentCourseDates },
       "../../lib/student-bulk.server": {
         findBulkStudentDuplicates: async (_client: unknown, org: string) => {
           assert.equal(org, "org-from-session");
@@ -287,7 +292,11 @@ test("bulk API authenticates before reading rows and never writes invalid or dup
   const request = (students: string) =>
     new Request("https://lestly.test/api/admin/students/bulk-create", {
       method: "POST",
-      body: new URLSearchParams({ students, organization_id: "attacker-org" }),
+      body: new URLSearchParams({
+        students,
+        organization_id: "attacker-org",
+        class_end_date: "2099-12-31",
+      }),
     });
   allowed = false;
   await assert.rejects(

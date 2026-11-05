@@ -57,48 +57,53 @@ function optionalNumber(minimum: number, integer: boolean, label: string) {
   );
 }
 
-const programSchema = z.object({
-  title: z.string().trim().min(1, "클래스명을 입력해 주세요."),
-  status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"], {
-    errorMap: () => ({ message: "클래스 상태를 확인해 주세요." }),
-  }),
-  subtitle: optionalText,
-  description: optionalText,
-  level: z.preprocess(
-    (value) => (value === "" || value == null ? null : value),
-    z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).nullable(),
-  ),
-  price: optionalNumber(0, false, "가격"),
-  instructor_id: optionalNumber(1, true, "강사"),
-  slug: optionalText,
-  location_type: z.preprocess(
-    (value) => (value === "" || value == null ? "offline" : value),
-    z.enum(["offline", "online"], {
-      errorMap: () => ({ message: "수업 형태를 확인해 주세요." }),
+const programSchema = z
+  .object({
+    title: z.string().trim().min(1, "클래스명을 입력해 주세요."),
+    status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"], {
+      errorMap: () => ({ message: "클래스 상태를 확인해 주세요." }),
     }),
-  ),
-  location_address: optionalText,
-  duration_minutes: optionalNumber(1, true, "수업 시간"),
-  booking_duration_minutes: z.preprocess(
-    (value) => (value == null || value === "" ? null : jsonInput(value)),
-    z.array(z.number().int().min(1).max(1440)).min(1).max(48).nullable(),
-  ),
-  total_sessions: optionalNumber(1, true, "총 회차"),
-  max_capacity: optionalNumber(1, true, "모집 정원"),
-  is_public: z.preprocess((value) => value === "on", z.boolean()),
-  curriculum: z.preprocess(
-    jsonInput,
-    z.array(
-      z.object({
-        session: z.number().int().positive(),
-        title: z.string(),
-        description: z.string().optional(),
-      }),
-      { invalid_type_error: "커리큘럼은 회차별 배열로 입력해 주세요." },
+    subtitle: optionalText,
+    description: optionalText,
+    level: z.preprocess(
+      (value) => (value === "" || value == null ? null : value),
+      z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).nullable(),
     ),
-  ),
-  existing_cover_image_url: optionalWebUrl,
-});
+    price: optionalNumber(0, false, "가격"),
+    instructor_id: optionalNumber(1, true, "강사"),
+    slug: optionalText,
+    location_type: z.preprocess(
+      (value) => (value === "" || value == null ? "offline" : value),
+      z.enum(["offline", "online"], {
+        errorMap: () => ({ message: "수업 형태를 확인해 주세요." }),
+      }),
+    ),
+    location_address: optionalText,
+    duration_minutes: optionalNumber(1, true, "수업 시간"),
+    booking_duration_minutes: z.preprocess(
+      (value) => (value == null || value === "" ? null : jsonInput(value)),
+      z.array(z.number().int().min(1).max(1440)).min(1).max(48).nullable(),
+    ),
+    total_sessions: optionalNumber(1, true, "총 회차"),
+    max_capacity: optionalNumber(1, true, "모집 정원"),
+    is_public: z.preprocess((value) => value === "on", z.boolean()),
+    curriculum: z.preprocess(
+      jsonInput,
+      z.array(
+        z.object({
+          session: z.number().int().positive(),
+          title: z.string(),
+          description: z.string().optional(),
+        }),
+        { invalid_type_error: "커리큘럼은 회차별 배열로 입력해 주세요." },
+      ),
+    ),
+    existing_cover_image_url: optionalWebUrl,
+  })
+  .refine((values) => !values.is_public || Boolean(values.slug), {
+    path: ["slug"],
+    message: "외부 공개 시 URL 슬러그를 입력해 주세요.",
+  });
 
 export function parseInstructorForm(formData: FormData) {
   return instructorSchema.safeParse(Object.fromEntries(formData));
@@ -114,6 +119,7 @@ export function getCatalogFormError(error: z.ZodError) {
     name: "강사명을 입력해 주세요.",
     push_profile_id: "알림을 받을 강사 계정을 선택해 주세요.",
     title: "클래스명을 입력해 주세요.",
+    slug: "외부 공개 시 URL 슬러그를 입력해 주세요.",
     career: "경력은 문자열 배열로 입력해 주세요.",
     curriculum: "커리큘럼은 회차, 제목, 설명이 포함된 배열로 입력해 주세요.",
     status: "클래스 상태를 확인해 주세요.",

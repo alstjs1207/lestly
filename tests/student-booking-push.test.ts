@@ -8,7 +8,13 @@ import { toKSTDateString as realKstDate } from "../app/features/schedules/utils/
 import { parseDateString } from "../app/features/schedules/utils/student-schedule-rules.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
-function setup(rejectBooking = false) {
+function setup(
+  rejectBooking = false,
+  dates: Record<string, string | null> = {
+    class_start_date: "2020-01-01",
+    class_end_date: "2099-12-31",
+  },
+) {
   const order: string[] = [];
   const pushes: unknown[][] = [];
   const client = {
@@ -20,7 +26,7 @@ function setup(rejectBooking = false) {
         single: async () => ({
           data:
             table === "profiles"
-              ? { profile_id: "student-profile" }
+              ? { profile_id: "student-profile", ...dates }
               : { organization_id: "student-org" },
         }),
       };
@@ -106,4 +112,19 @@ test("student booking dispatches only after a successful RPC commit with its aut
   assert.equal((await rejected.run()).data.success, false);
   assert.deepEqual(rejected.order, ["booking-committed"]);
   assert.equal(rejected.pushes.length, 0);
+});
+
+test("missing course dates reject booking before its RPC or push dispatch", async () => {
+  for (const dates of [
+    { class_start_date: null, class_end_date: null },
+    { class_start_date: null, class_end_date: "2099-12-31" },
+    { class_start_date: "2020-01-01", class_end_date: null },
+  ]) {
+    const state = setup(false, dates);
+    const result = await state.run();
+    assert.equal(result.init.status, 400);
+    assert.match(result.data.error, /수강 기간/);
+    assert.deepEqual(state.order, []);
+    assert.equal(state.pushes.length, 0);
+  }
 });

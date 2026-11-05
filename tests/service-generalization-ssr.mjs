@@ -116,9 +116,16 @@ const types = [
 const blank = await render(
   "features/admin/screens/students/create",
   "/admin/students/new",
-  { studentTypes: types },
+  { studentTypes: types, classStartDate: "2026-11-04", classEndDate: "" },
 );
 assert.match(blank, /<details class="[^"]*">/);
+assert.match(blank, /name="class_start_date"[^>]*value="2026-11-04"/);
+const endInput = blank.match(/<input[^>]*id="class_end_date"[^>]*>/)?.[0] ?? "";
+assert.match(endInput, /required=""/);
+assert.match(endInput, /value=""/);
+for (const label of ["1개월", "3개월", "6개월", "1년"])
+  assert.ok(blank.includes(label));
+assert.doesNotMatch(blank, /1년 후 날짜로 자동 저장/);
 assert.match(blank, /보호자 정보 \(선택\)/);
 const edit = await render(
   "features/admin/screens/students/edit",
@@ -143,6 +150,21 @@ const catalog = await render(
   "/admin/programs/new",
   { instructors: [] },
 );
+const privateSlugInput = catalog.match(/<input[^>]*id="slug"[^>]*>/)?.[0] ?? "";
+assert.ok(privateSlugInput);
+assert.doesNotMatch(privateSlugInput, /required=""/);
+assert.match(catalog, /담당 강사/);
+assert.match(catalog, /미지정/);
+assert.match(catalog, /강사 추가/);
+const publicCatalog = await render(
+  "features/admin/screens/programs/create",
+  "/admin/programs/new",
+  { instructors: [], defaults: { is_public: true, slug: "kept-Slug" } },
+);
+const publicSlugInput =
+  publicCatalog.match(/<input[^>]*id="slug"[^>]*>/)?.[0] ?? "";
+assert.match(publicSlugInput, /required=""/);
+assert.match(publicSlugInput, /value="kept-Slug"/);
 assert.match(catalog, /이 클래스의 실제 예약에 적용/);
 assert.match(catalog, /반복 예약은 이 횟수가 아닌/);
 assert.match(catalog, /같은 시간대 수업에 참여할 수 있는 최대 인원/);

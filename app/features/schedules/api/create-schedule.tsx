@@ -40,7 +40,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   const { data: profile } = await client
     .from("profiles")
-    .select("profile_id")
+    .select("profile_id,class_start_date,class_end_date")
     .eq("auth_user_id", user.id)
     .single();
 
@@ -48,6 +48,17 @@ export async function action({ request }: Route.ActionArgs) {
     return data(
       { success: false, error: "수강생 프로필을 찾을 수 없습니다." },
       { status: 400 },
+    );
+  }
+
+  if (!profile.class_start_date || !profile.class_end_date) {
+    return data(
+      {
+        success: false,
+        error:
+          "수강 기간이 등록되지 않았어요. 운영자에게 시작일과 종료일 등록을 요청해 주세요.",
+      },
+      { status: 400, headers },
     );
   }
 
@@ -200,6 +211,8 @@ export async function action({ request }: Route.ActionArgs) {
       schedule_student_conflict: "이미 같은 시간대에 등록한 일정이 있습니다.",
       schedule_capacity_exceeded: "동시간대 정원이 찼습니다.",
       schedule_outside_course: "수강 기간에 포함된 날짜를 선택해주세요.",
+      schedule_course_dates_required:
+        "수강 기간이 등록되지 않았어요. 운영자에게 시작일과 종료일 등록을 요청해 주세요.",
       schedule_program_not_eligible: "선택한 클래스를 등록할 수 없습니다.",
     };
     return data(

@@ -7,7 +7,7 @@
 import type { CurriculumItem, InstructorSns } from "../queries";
 import type { Route } from "./+types/class-detail";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { data, useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
@@ -22,21 +22,51 @@ import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import { Textarea } from "~/core/components/ui/textarea";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getSafeHttpUrl } from "~/core/lib/web-url";
 
 import ClassCurriculum from "../components/class-curriculum";
 import ClassFooter from "../components/class-footer";
 import ClassHero from "../components/class-hero";
 import ClassInstructor from "../components/class-instructor";
 import ClassLocation from "../components/class-location";
-import { getNextScheduleForProgram, getPublicProgramBySlug } from "../queries";
+import { getConsultConfig } from "../consult-security.server";
+import { getPublicProgramBySlug } from "../queries";
 
 export const meta: Route.MetaFunction = ({ data }) => {
   if (!data?.program) {
     return [{ title: "클래스를 찾을 수 없습니다" }];
   }
+  const title = `${data.program.title} | ${import.meta.env.VITE_APP_NAME || "Lestly"}`;
+  const description = (
+    [data.program.subtitle?.trim(), data.program.description?.trim()]
+      .filter(Boolean)
+      .join(" · ") || `${data.program.title} 클래스 소개와 상담 신청`
+  )
+    .replace(/\s+/g, " ")
+    .slice(0, 160);
+  const image = getSafeHttpUrl(data.program.cover_image_url);
   return [
-    { title: `${data.program.title} | ${import.meta.env.VITE_APP_NAME}` },
-    { name: "description", content: data.program.subtitle || "" },
+    { title },
+    { name: "description", content: description },
+    { property: "og:type", content: "website" },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:url", content: data.shareUrl },
+    { tagName: "link", rel: "canonical", href: data.shareUrl },
+    {
+      name: "twitter:card",
+      content: image ? "summary_large_image" : "summary",
+    },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
+    ...(image
+      ? [
+          { property: "og:image", content: image },
+          { property: "og:image:alt", content: data.program.title },
+          { name: "twitter:image", content: image },
+          { name: "twitter:image:alt", content: data.program.title },
+        ]
+      : []),
   ];
 };
 
@@ -55,29 +85,27 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       throw data({ message: "클래스를 찾을 수 없습니다" }, { status: 404 });
     }
 
-    // 다음 스케줄 조회
-    let nextSchedule = null;
-    try {
-      nextSchedule = await getNextScheduleForProgram(client, {
-        programId: program.program_id,
-      });
-    } catch {
-      // 스케줄이 없어도 페이지는 표시
-    }
-
-    return { program, nextSchedule };
+    return {
+      program,
+      shareUrl: new URL(
+        `/class/${encodeURIComponent(program.slug || slug)}`,
+        request.url,
+      ).href,
+      consultEnabled: !!getConsultConfig(),
+    };
   } catch (error) {
     throw data({ message: "클래스를 찾을 수 없습니다" }, { status: 404 });
   }
 }
 
 export default function ClassDetail({ loaderData }: Route.ComponentProps) {
-  const { program, nextSchedule } = loaderData;
+  const { program, consultEnabled } = loaderData;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [requestId, setRequestId] = useState("");
   const fetcher = useFetcher<{ success?: boolean; error?: string }>();
 
   // JSONB 필드 파싱
@@ -93,7 +121,8 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     : {};
 
   const handleSubmit = () => {
-    if (!name.trim() || !phone.trim()) return;
+    if (!name.trim() || !phone.trim() || !requestId || fetcher.state !== "idle")
+      return;
 
     fetcher.submit(
       {
@@ -101,6 +130,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
         name: name.trim(),
         phone: phone.trim(),
         message: message.trim(),
+        requestId,
       },
       {
         method: "POST",
@@ -110,10 +140,10 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     );
   };
 
-  // 성공 시 submitted 상태로 변경
-  if (fetcher.data?.success && !submitted) {
-    setSubmitted(true);
-  }
+  useEffect(() => {
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    if (fetcher.data.success) setSubmitted(true);
+  }, [fetcher.data, fetcher.state]);
 
   const resetForm = () => {
     setName("");
@@ -121,6 +151,13 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     setMessage("");
     setSubmitted(false);
     setDialogOpen(false);
+    setRequestId("");
+  };
+
+  const openConsult = () => {
+    setRequestId(crypto.randomUUID());
+    setSubmitted(false);
+    setDialogOpen(true);
   };
 
   return (
@@ -135,34 +172,14 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
         totalSessions={program.total_sessions}
       />
 
-      {/* CTA 버튼 */}
-      <div className="relative z-10 mt-6 flex justify-center">
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          className="flex items-center gap-2 rounded-full bg-[#d4a574] px-8 py-3 text-lg font-semibold text-white shadow-lg transition-colors hover:bg-[#c49464] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          상담 신청 일시 중단
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      </div>
-
       {/* 상담 신청 Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => !open && resetForm()}>
-        <DialogContent className="bg-white text-gray-900 sm:max-w-md">
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!open && fetcher.state === "idle") resetForm();
+        }}
+      >
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white text-gray-900 sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-gray-900">상담 신청</DialogTitle>
             <DialogDescription className="text-gray-600">
@@ -208,6 +225,8 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                 </Label>
                 <Input
                   id="name"
+                  maxLength={100}
+                  autoComplete="name"
                   placeholder="이름을 입력하세요"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -223,6 +242,8 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                 <Input
                   id="phone"
                   type="tel"
+                  maxLength={30}
+                  autoComplete="tel"
                   placeholder="- 없이 숫자만 입력해주세요"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -237,6 +258,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                 </Label>
                 <Textarea
                   id="message"
+                  maxLength={2000}
                   placeholder="문의 내용을 입력하세요"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -245,6 +267,11 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
                   className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-400"
                 />
               </div>
+
+              <p className="text-xs text-gray-500">
+                이름·연락처·문의 내용은 해당 클래스 상담을 위해 관리자에게
+                전달됩니다. 민감한 개인정보는 입력하지 마세요.
+              </p>
 
               {fetcher.data?.error && (
                 <p className="text-sm text-red-500">{fetcher.data.error}</p>
@@ -265,7 +292,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       </Dialog>
 
       {/* 메인 콘텐츠 */}
-      <div className="mx-auto max-w-4xl px-4 pt-12 pb-24">
+      <div className="mx-auto max-w-4xl px-4 pt-8 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pt-12">
         {/* 클래스 설명 */}
         {program.description && (
           <div className="mb-12">
@@ -281,7 +308,9 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
         )}
 
         {/* 커리큘럼 & 강사 소개 */}
-        <div className="grid gap-8 md:grid-cols-2">
+        <div
+          className={`grid gap-8 ${curriculum.length > 0 && instructor?.name ? "md:grid-cols-2" : "grid-cols-1"}`}
+        >
           {/* 커리큘럼 */}
           {curriculum.length > 0 && <ClassCurriculum curriculum={curriculum} />}
 
@@ -293,6 +322,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
               photoUrl={instructor.photo_url}
               career={instructorCareer}
               sns={instructorSns}
+              wide={curriculum.length === 0}
             />
           )}
         </div>
@@ -304,10 +334,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       </div>
 
       {/* 하단 고정 바 */}
-      <ClassFooter
-        maxCapacity={program.max_capacity}
-        nextSchedule={nextSchedule}
-      />
+      <ClassFooter consultEnabled={consultEnabled} onConsult={openConsult} />
     </div>
   );
 }

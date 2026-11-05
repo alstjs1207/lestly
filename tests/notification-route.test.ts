@@ -9,25 +9,38 @@ import {
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
 type Result = { data: unknown; init?: { status?: number } };
-type Route = { action(args: { request: Request }): Promise<Result> };
+type Route = {
+  action(args: { request: Request }): Promise<Result>;
+  loader(args: { request: Request }): Promise<Result>;
+};
 
-function setup(authorized = true) {
+function setup(authorized = true, enabled = true) {
   const updates: Array<Record<string, unknown>> = [];
   const filters: Array<[string, unknown]> = [];
   let guardCalls = 0;
   const chain = {
+    select() {
+      return chain;
+    },
+    order() {
+      return chain;
+    },
+    limit() {
+      return chain;
+    },
     eq(column: string, value: unknown) {
       filters.push([column, value]);
       return chain;
     },
     then(resolve: (value: { error: null }) => unknown) {
-      return Promise.resolve({ error: null }).then(resolve);
+      return Promise.resolve({ error: null, data: [], count: 0 }).then(resolve);
     },
   };
   const client = {
     from(table: string) {
       assert.equal(table, "in_app_notifications");
       return {
+        select: () => chain,
         update(values: Record<string, unknown>) {
           updates.push(values);
           return chain;
@@ -46,6 +59,10 @@ function setup(authorized = true) {
       },
       "~/core/lib/guards.server": { requireSameOrigin },
       "~/core/lib/request-body": { readBoundedJson, RequestBodyError },
+      "~/core/lib/supa-admin-client.server": { default: {} },
+      "~/features/app-settings/queries": {
+        getNotificationsEnabled: async () => enabled,
+      },
       "~/core/lib/supa-client.server": {
         default: () => [client, new Headers()],
       },
@@ -146,4 +163,35 @@ test("notification POST marks only its own tenant unread rows and uses stable pr
     ["organization_id", "authorized-org"],
     ["is_read", false],
   ]);
+});
+
+test("consult bell updates remain available with AlimTalk disabled and cannot mark hidden non-consult notices", async () => {
+  const state = setup(true, false);
+  await state.route.action({ request: request("POST", {}) });
+  assert.deepEqual(state.filters, [
+    ["organization_id", "authorized-org"],
+    ["is_read", false],
+    ["template_type", "SYS_CONSULT_ADMIN"],
+  ]);
+});
+
+test("consult bell remains readable with AlimTalk disabled and filters both list and total unread count", async () => {
+  const state = setup(true, false);
+  await state.route.loader({
+    request: new Request("https://lestly.test/api/notifications"),
+  });
+  assert.equal(
+    state.filters.filter(
+      ([column, value]) =>
+        column === "template_type" && value === "SYS_CONSULT_ADMIN",
+    ).length,
+    2,
+  );
+  assert.equal(
+    state.filters.filter(
+      ([column, value]) =>
+        column === "organization_id" && value === "authorized-org",
+    ).length,
+    2,
+  );
 });

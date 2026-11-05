@@ -1115,6 +1115,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_program_by_slug: { Args: { p_slug: string }; Returns: Json }
       save_booking_settings_section: {
         Args: { p_org: string; p_section: string; p_values: Json }
         Returns: undefined

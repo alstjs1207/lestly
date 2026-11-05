@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-05T06:28:21.745Z",
+  "environment": "preview",
+  "bellCreated": 1,
+  "immediateDeviceAttempts": 0,
+  "scheduledWorkerExcludedConsultation": true,
+  "secondAttemptCount": 0,
+  "failedConsultationNotRequeued": true,
+  "paidMessages": false,
+  "externalPushCalls": 0,
+  "syntheticRowsRolledBack": true,
+  "existingHistoryUnchanged": true,
+  "history": {
+    "count": 6,
+    "hash": "123185c0fae68d2ba02ceb6145e0fd5df08e785e7f79733064048c719bc4a048"
+  }
+}

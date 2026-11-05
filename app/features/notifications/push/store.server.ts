@@ -87,22 +87,30 @@ export type ClaimedPushDelivery = {
   attempts: number;
 };
 
-export async function claimPushDeliveries(scope?: {
-  scheduleId: number;
-  actorProfileId: string;
-}) {
+export type PushScope =
+  | { scheduleId: number; actorProfileId: string }
+  | { notificationId: number };
+
+export async function claimPushDeliveries(scope?: PushScope) {
   return db.execute<ClaimedPushDelivery>(sql`
     WITH due AS (
       SELECT d.delivery_id FROM public.push_deliveries d
       JOIN public.push_events e ON e.event_id = d.event_id
-      WHERE ((d.status = 'PENDING' AND d.next_attempt_at <= now()) OR
-        (d.status = 'SENDING' AND d.locked_until < now()))
+      WHERE ((d.status IN ('PENDING','CONSULT_PENDING') AND d.next_attempt_at <= now()) OR
+        (d.status IN ('SENDING','CONSULT_SENDING') AND d.locked_until < now()))
         AND d.attempts < 5
-        ${scope ? sql`AND e.schedule_id = ${scope.scheduleId} AND e.actor_profile_id = ${scope.actorProfileId}::uuid` : sql``}
+        ${
+          scope
+            ? "notificationId" in scope
+              ? sql`AND e.notification_id = ${scope.notificationId} AND e.event_type = 'CONSULT_REQUEST'`
+              : sql`AND e.schedule_id = ${scope.scheduleId} AND e.actor_profile_id = ${scope.actorProfileId}::uuid AND e.event_type <> 'CONSULT_REQUEST'`
+            : sql`AND e.event_type <> 'CONSULT_REQUEST'`
+        }
+        ${scope && "notificationId" in scope ? sql`AND d.status = 'CONSULT_PENDING' AND d.attempts = 0` : sql``}
       ORDER BY d.next_attempt_at LIMIT ${scope ? 10 : 25}
       FOR UPDATE OF d SKIP LOCKED
     )
-    UPDATE public.push_deliveries d SET status = 'SENDING', attempts = attempts + 1,
+    UPDATE public.push_deliveries d SET status = CASE WHEN d.status IN ('CONSULT_PENDING','CONSULT_SENDING') THEN 'CONSULT_SENDING' ELSE 'SENDING' END, attempts = attempts + 1,
       locked_until = now() + interval '2 minutes', claim_token = gen_random_uuid()
     FROM due WHERE d.delivery_id = due.delivery_id
     RETURNING d.delivery_id, d.claim_token, d.attempts
@@ -117,7 +125,9 @@ export type PushTarget = {
   event_id: string;
   title: string;
   body: string;
-  schedule_id: number;
+  schedule_id: number | null;
+  notification_id: number | null;
+  event_type: string;
   eligible: boolean;
 };
 
@@ -127,9 +137,10 @@ export async function getPushDeliveryTarget(
 ) {
   const rows = await db.execute<PushTarget>(sql`
     SELECT s.subscription_id, s.endpoint, s.p256dh, s.auth,
-      e.event_id, e.title, e.body, e.schedule_id,
+      e.event_id, e.title, e.body, e.schedule_id, e.notification_id, e.event_type,
       (s.organization_id = e.organization_id AND s.profile_id = e.recipient_profile_id
-        AND i.push_profile_id = e.recipient_profile_id
+        AND ((e.event_type = 'CONSULT_REQUEST' AND n.type = 'CONSULT_REQUEST') OR
+          (e.event_type <> 'CONSULT_REQUEST' AND i.push_profile_id = e.recipient_profile_id))
         AND m.role = 'ADMIN' AND m.state = 'NORMAL' AND p.auth_user_id IS NOT NULL
         AND (s.expires_at IS NULL OR s.expires_at > now())
         AND e.created_at > now() - interval '24 hours'
@@ -137,10 +148,11 @@ export async function getPushDeliveryTarget(
     FROM public.push_deliveries d
     JOIN public.push_events e ON e.event_id = d.event_id
     JOIN public.push_subscriptions s ON s.subscription_id = d.subscription_id
-    JOIN public.instructors i ON i.instructor_id = e.instructor_id AND i.organization_id = e.organization_id
+    LEFT JOIN public.instructors i ON i.instructor_id = e.instructor_id AND i.organization_id = e.organization_id
+    LEFT JOIN public.notifications n ON n.notification_id = e.notification_id AND n.organization_id = e.organization_id
     JOIN public.organization_members m ON m.profile_id = e.recipient_profile_id AND m.organization_id = e.organization_id
     JOIN public.profiles p ON p.profile_id = m.profile_id
-    WHERE d.delivery_id = ${deliveryId}::uuid AND d.claim_token = ${claimToken}::uuid AND d.status = 'SENDING'
+    WHERE d.delivery_id = ${deliveryId}::uuid AND d.claim_token = ${claimToken}::uuid AND d.status IN ('SENDING','CONSULT_SENDING')
   `);
   return rows[0] ?? null;
 }
@@ -150,12 +162,22 @@ export async function finishPushDelivery(
   status: string,
   error: string | null = null,
 ) {
-  await db.execute(sql`UPDATE public.push_deliveries SET status = ${status},
+  await db.execute(sql`UPDATE public.push_deliveries SET status = CASE WHEN status='CONSULT_SENDING' AND ${status}='PENDING' THEN 'FAILED' ELSE ${status} END,
     last_error = ${error}, locked_until = NULL,
     next_attempt_at = now() + make_interval(secs => ${Math.min(3600, 30 * 2 ** delivery.attempts)}),
     sent_at = CASE WHEN ${status} = 'SENT' THEN now() ELSE sent_at END
     WHERE delivery_id = ${delivery.delivery_id}::uuid AND claim_token = ${delivery.claim_token}::uuid
-      AND status = 'SENDING'`);
+      AND status IN ('SENDING','CONSULT_SENDING')`);
+}
+
+export async function failPendingConsultPush(
+  notificationId: number,
+  reason: string,
+) {
+  await db.execute(sql`UPDATE public.push_deliveries d SET status = 'FAILED', last_error = ${reason}
+    FROM public.push_events e WHERE e.event_id = d.event_id
+      AND e.notification_id = ${notificationId} AND e.event_type = 'CONSULT_REQUEST'
+      AND d.status = 'CONSULT_PENDING' AND d.attempts = 0`);
 }
 
 export async function removeExpiredPushSubscription(subscriptionId: string) {
@@ -166,7 +188,7 @@ export async function removeExpiredPushSubscription(subscriptionId: string) {
 
 export async function maintainPushQueue() {
   await db.execute(sql`UPDATE public.push_deliveries SET status = 'FAILED', locked_until = NULL,
-    last_error = 'attempt_limit' WHERE status = 'SENDING' AND locked_until < now() AND attempts >= 5`);
+    last_error = 'attempt_limit' WHERE status IN ('SENDING','CONSULT_SENDING') AND locked_until < now() AND attempts >= 5`);
   // Snapshots contain student names; keep delivery diagnostics for only 30 days.
   await db.execute(
     sql`DELETE FROM public.push_events WHERE created_at < now() - interval '30 days'`,

@@ -1,6 +1,7 @@
 const subscriptionUrl = "/api/notifications/push-subscription";
 const preferenceKey = "lestly.push.enabled";
 export const pushSettingsChangedEvent = "lestly:push-settings-changed";
+let workerUpdateChecked = false;
 
 export type PushSettings = {
   configured: boolean;
@@ -72,6 +73,17 @@ export async function syncExistingPushSubscription() {
     /* Storage can be unavailable. */
   }
   if (Notification.permission !== "granted") return;
+  if (!workerUpdateChecked) {
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    if (registration) {
+      try {
+        await registration.update();
+        workerUpdateChecked = true;
+      } catch {
+        /* Keep the current subscription usable when the update check is offline. */
+      }
+    }
+  }
   const subscription = await getDeviceSubscription();
   if (!subscription) return;
   const settings = await getPushSettings();

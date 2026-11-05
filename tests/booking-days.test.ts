@@ -10,7 +10,7 @@ import {
 import { desktopBookingSlots } from "../app/features/schedules/utils/desktop-booking.ts";
 import { bookingDateReason } from "../app/features/schedules/utils/student-booking.ts";
 
-const course = { classStartDate: null, classEndDate: null };
+const course = { classStartDate: "2020-01-01", classEndDate: "2099-12-31" };
 const now = new Date("2026-10-23T00:00:00Z");
 
 test("weekday settings support none, all and deduplicated selections; malformed input fails closed", () => {

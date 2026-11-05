@@ -15,6 +15,8 @@ import {
 } from "~/core/components/ui/select";
 import { Textarea } from "~/core/components/ui/textarea";
 
+import InlineInstructorDialog from "./inline-instructor-dialog";
+
 interface CurriculumItem {
   session: number;
   title: string;
@@ -59,6 +61,23 @@ export default function ProgramForm({
   const fetcher = useFetcher<{ error?: string }>();
   const isSubmitting = fetcher.state !== "idle";
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const instructorAddRef = useRef<HTMLButtonElement>(null);
+  const [isPublic, setIsPublic] = useState(defaultValues?.is_public ?? false);
+  const [title, setTitle] = useState(defaultValues?.title ?? "");
+  const [subtitle, setSubtitle] = useState(defaultValues?.subtitle ?? "");
+  const [instructorId, setInstructorId] = useState(
+    defaultValues?.instructor_id?.toString() ?? "",
+  );
+  const [addedInstructors, setAddedInstructors] = useState<Instructor[]>([]);
+  const [instructorDialogOpen, setInstructorDialogOpen] = useState(false);
+  const [instructorNotice, setInstructorNotice] = useState("");
+  const availableInstructors = [
+    ...instructors,
+    ...addedInstructors.filter(
+      (added) =>
+        !instructors.some((item) => item.instructor_id === added.instructor_id),
+    ),
+  ];
 
   const [defaultDuration, setDefaultDuration] = useState(
     String(defaultValues?.duration_minutes ?? 180),
@@ -134,401 +153,505 @@ export default function ProgramForm({
   };
 
   return (
-    <fetcher.Form
-      method="post"
-      action={actionUrl}
-      encType="multipart/form-data"
-      className="space-y-8"
-    >
-      {fetcher.data?.error && (
-        <p
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm"
-          role="alert"
-        >
-          {fetcher.data.error}
-        </p>
-      )}
-      <input
-        type="hidden"
-        name="booking_duration_minutes"
-        value={JSON.stringify(allowedDurations)}
-      />
-      {/* JSONB 필드를 hidden input으로 전송 */}
-      <input
-        type="hidden"
-        name="curriculum"
-        value={JSON.stringify(curriculum)}
-      />
-      {/* 기존 커버 이미지 URL (수정 모드에서 이미지 변경 없을 때) */}
-      {defaultValues?.cover_image_url && !coverImageFile && (
+    <>
+      <fetcher.Form
+        method="post"
+        action={actionUrl}
+        encType="multipart/form-data"
+        className="space-y-8"
+      >
+        {fetcher.data?.error && (
+          <p
+            className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm"
+            role="alert"
+          >
+            {fetcher.data.error}
+          </p>
+        )}
         <input
           type="hidden"
-          name="existing_cover_image_url"
-          value={defaultValues.cover_image_url}
+          name="booking_duration_minutes"
+          value={JSON.stringify(allowedDurations)}
         />
-      )}
-
-      {/* 기본 정보 섹션 */}
-      <div className="space-y-4">
-        <h3 className="border-b pb-2 text-lg font-semibold">기본 정보</h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="title">클래스명 *</Label>
-            <Input
-              id="title"
-              name="title"
-              required
-              defaultValue={defaultValues?.title}
-              placeholder="클래스 이름을 입력하세요"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="slug">URL 슬러그 *</Label>
-            <Input
-              id="slug"
-              name="slug"
-              required
-              defaultValue={defaultValues?.slug}
-              placeholder="calligraphy-beginner"
-            />
-            <p className="text-muted-foreground text-xs">
-              공개 URL: /class/[슬러그]
-            </p>
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="subtitle">부제목</Label>
-            <Input
-              id="subtitle"
-              name="subtitle"
-              defaultValue={defaultValues?.subtitle}
-              placeholder="클래스 부제목 (선택)"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">상태 *</Label>
-            <Select
-              name="status"
-              defaultValue={defaultValues?.status || "DRAFT"}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="상태 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="DRAFT">초안</SelectItem>
-                <SelectItem value="ACTIVE">활성</SelectItem>
-                <SelectItem value="ARCHIVED">보관됨</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="level">난이도</Label>
-            <Select name="level" defaultValue={defaultValues?.level || ""}>
-              <SelectTrigger>
-                <SelectValue placeholder="난이도 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="BEGINNER">초급</SelectItem>
-                <SelectItem value="INTERMEDIATE">중급</SelectItem>
-                <SelectItem value="ADVANCED">고급</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="instructor_id">담당 강사</Label>
-            <Select
-              name="instructor_id"
-              defaultValue={defaultValues?.instructor_id?.toString() || ""}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="강사 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {instructors.map((instructor) => (
-                  <SelectItem
-                    key={instructor.instructor_id}
-                    value={instructor.instructor_id.toString()}
-                  >
-                    {instructor.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-2 space-y-2">
-            <Checkbox
-              id="is_public"
-              name="is_public"
-              defaultChecked={defaultValues?.is_public}
-            />
-            <Label htmlFor="is_public" className="cursor-pointer">
-              공개 페이지로 게시 (외부 사용자 접근 가능)
-            </Label>
-          </div>
-        </div>
-      </div>
-
-      {/* 커버 이미지 섹션 */}
-      <div className="space-y-4">
-        <h3 className="border-b pb-2 text-lg font-semibold">커버 이미지</h3>
-        <div className="space-y-4">
-          {coverImagePreview ? (
-            <div className="relative inline-block">
-              <img
-                src={coverImagePreview}
-                alt="커버 이미지 미리보기"
-                className="max-h-64 max-w-md rounded-lg border object-cover"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={handleRemoveImage}
-              >
-                <XIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div
-              className="border-muted-foreground/25 hover:border-muted-foreground/50 cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <UploadIcon className="text-muted-foreground/50 mx-auto h-12 w-12" />
-              <p className="text-muted-foreground mt-2 text-sm">
-                클릭하여 이미지를 업로드하세요
-              </p>
-              <p className="text-muted-foreground/75 text-xs">
-                JPG, PNG, WebP (최대 5MB)
-              </p>
-            </div>
-          )}
+        {/* JSONB 필드를 hidden input으로 전송 */}
+        <input
+          type="hidden"
+          name="curriculum"
+          value={JSON.stringify(curriculum)}
+        />
+        {/* 기존 커버 이미지 URL (수정 모드에서 이미지 변경 없을 때) */}
+        {defaultValues?.cover_image_url && !coverImageFile && (
           <input
-            ref={fileInputRef}
-            type="file"
-            name="cover_image"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={handleFileChange}
+            type="hidden"
+            name="existing_cover_image_url"
+            value={defaultValues.cover_image_url}
           />
-        </div>
-      </div>
+        )}
 
-      {/* 수업 정보 섹션 */}
-      <div className="space-y-4">
-        <h3 className="border-b pb-2 text-lg font-semibold">수업 정보</h3>
-        <p className="text-muted-foreground text-sm">
-          수업 시간과 정원은 이 클래스의 실제 예약에 적용됩니다. 새 클래스에는
-          조직 기본값을 채우며, 저장 후 조직 기본값을 바꿔도 기존 클래스는
-          유지됩니다.
-        </p>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="location_type">수업 형태</Label>
-            <Select
-              name="location_type"
-              defaultValue={defaultValues?.location_type || "offline"}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="offline">오프라인</SelectItem>
-                <SelectItem value="online">온라인</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* 기본 정보 섹션 */}
+        <div className="space-y-4">
+          <h3 className="border-b pb-2 text-lg font-semibold">기본 정보</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="title">클래스명 *</Label>
+              <Input
+                id="title"
+                name="title"
+                required
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="클래스 이름을 입력하세요"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="duration_minutes">기본 수업 시간 (분) *</Label>
-            <Input
-              id="duration_minutes"
-              name="duration_minutes"
-              type="number"
-              min="1"
-              max="1440"
-              step="1"
-              required
-              value={defaultDuration}
-              onChange={(e) => setDefaultDuration(e.target.value)}
-              aria-describedby="program-duration-help"
-            />
-            <p
-              id="program-duration-help"
-              className="text-muted-foreground text-xs"
-            >
-              예약 시 처음 선택되는 수업 길이입니다.
+            <div className="space-y-2" hidden={!isPublic}>
+              <Label htmlFor="slug">공개 URL 슬러그 *</Label>
+              <Input
+                id="slug"
+                name="slug"
+                required={isPublic}
+                defaultValue={defaultValues?.slug}
+                placeholder="calligraphy-beginner"
+              />
+              <p className="text-muted-foreground text-xs">
+                공개 URL: /class/[슬러그]
+              </p>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="subtitle">부제목</Label>
+              <Input
+                id="subtitle"
+                name="subtitle"
+                value={subtitle}
+                onChange={(event) => setSubtitle(event.target.value)}
+                placeholder="클래스 부제목 (선택)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">상태 *</Label>
+              <Select
+                name="status"
+                defaultValue={defaultValues?.status || "DRAFT"}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="상태 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">초안</SelectItem>
+                  <SelectItem value="ACTIVE">활성</SelectItem>
+                  <SelectItem value="ARCHIVED">보관됨</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="level">난이도</Label>
+              <Select name="level" defaultValue={defaultValues?.level || ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="난이도 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BEGINNER">초급</SelectItem>
+                  <SelectItem value="INTERMEDIATE">중급</SelectItem>
+                  <SelectItem value="ADVANCED">고급</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="instructor_id">
+                  담당 강사{" "}
+                  <span className="text-muted-foreground text-xs">(선택)</span>
+                </Label>
+                <Button
+                  ref={instructorAddRef}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={() => setInstructorDialogOpen(true)}
+                >
+                  <PlusIcon className="mr-1 size-4" />
+                  강사 추가
+                </Button>
+              </div>
+              <input type="hidden" name="instructor_id" value={instructorId} />
+              <Select
+                value={instructorId || "unassigned"}
+                onValueChange={(value) => {
+                  setInstructorId(value === "unassigned" ? "" : value);
+                  setInstructorNotice("");
+                }}
+              >
+                <SelectTrigger id="instructor_id">
+                  <SelectValue placeholder="미지정">
+                    {instructorId
+                      ? (availableInstructors.find(
+                          (item) => String(item.instructor_id) === instructorId,
+                        )?.name ?? "강사 선택")
+                      : "미지정"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">미지정</SelectItem>
+                  {availableInstructors.map((instructor) => (
+                    <SelectItem
+                      key={instructor.instructor_id}
+                      value={instructor.instructor_id.toString()}
+                    >
+                      {instructor.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!availableInstructors.length && (
+                <p className="text-muted-foreground text-xs">
+                  등록된 강사가 없습니다. 강사 없이 저장하거나 지금 추가할 수
+                  있습니다.
+                </p>
+              )}
+              {instructorNotice && (
+                <p role="status" className="text-muted-foreground text-xs">
+                  {instructorNotice}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 space-y-2">
+              <Checkbox
+                id="is_public"
+                name="is_public"
+                checked={isPublic}
+                onCheckedChange={(checked) => setIsPublic(checked === true)}
+              />
+              <Label htmlFor="is_public" className="cursor-pointer">
+                공개 페이지로 게시 (외부 사용자 접근 가능)
+              </Label>
+            </div>
+            <p className="text-muted-foreground text-sm md:col-span-2">
+              외부 페이지는 상태가 ‘활성’이고 공개 설정이 켜져 있을 때
+              표시됩니다. 비공개·초안·보관 상태에서는 공개 URL로 접근할 수
+              없습니다.
             </p>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="extra_durations">추가 허용 수업 길이 (분)</Label>
-            <Input
-              id="extra_durations"
-              value={extraDurations}
-              onChange={(e) => setExtraDurations(e.target.value)}
-              placeholder="예: 60, 90, 120"
-              aria-describedby="extra-durations-help"
-            />
-            <p
-              id="extra-durations-help"
-              className="text-muted-foreground text-xs"
-            >
-              쉼표로 구분합니다. 기본 수업 시간은 자동으로 포함됩니다.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="total_sessions">총 회차</Label>
-            <Input
-              id="total_sessions"
-              name="total_sessions"
-              type="number"
-              min="1"
-              defaultValue={defaultValues?.total_sessions || 4}
-              aria-describedby="program-sessions-help"
-            />
-            <p
-              id="program-sessions-help"
-              className="text-muted-foreground text-xs"
-            >
-              클래스 소개용 회차입니다. 반복 예약은 이 횟수가 아닌 수강생의 수강
-              종료일까지 생성됩니다.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="max_capacity">수업 정원 *</Label>
-            <Input
-              id="max_capacity"
-              name="max_capacity"
-              type="number"
-              min="1"
-              max="100"
-              required
-              defaultValue={defaultValues?.max_capacity ?? 5}
-              placeholder="5"
-              aria-describedby="program-capacity-help"
-            />
-            <p
-              id="program-capacity-help"
-              className="text-muted-foreground text-xs"
-            >
-              이 클래스의 같은 시간대 수업에 참여할 수 있는 최대 인원입니다.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="price">가격 (원)</Label>
-            <Input
-              id="price"
-              name="price"
-              type="number"
-              min="0"
-              step="1000"
-              defaultValue={defaultValues?.price}
-              placeholder="0"
+        {/* 커버 이미지 섹션 */}
+        <div className="space-y-4">
+          <h3 className="border-b pb-2 text-lg font-semibold">커버 이미지</h3>
+          <div className="space-y-4">
+            {coverImagePreview ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-muted-foreground text-sm">
+                    화면 크기에 따라 이미지 가장자리가 잘립니다. 중요한 부분은
+                    중앙에 배치해 주세요.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveImage}
+                  >
+                    <XIcon className="mr-1 h-4 w-4" /> 이미지 제거
+                  </Button>
+                </div>
+                <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                  {(
+                    [
+                      ["모바일", "aspect-[390/300]"],
+                      ["PC", "aspect-[1200/400]"],
+                    ] as const
+                  ).map(([label, aspect]) => (
+                    <figure key={label} className="min-w-0 space-y-2">
+                      <figcaption className="text-sm font-medium">
+                        {label} 커버 미리보기
+                      </figcaption>
+                      <div
+                        className={`relative overflow-hidden rounded-lg bg-[#8b6f5c] ${aspect}`}
+                      >
+                        <img
+                          src={coverImagePreview}
+                          alt={`${label} 커버 미리보기`}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3 text-center text-white">
+                          <p className="max-w-full text-base font-bold break-words">
+                            {title || "클래스명"}
+                          </p>
+                          {subtitle && (
+                            <p className="max-w-full text-xs break-words">
+                              {subtitle}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="border-muted-foreground/25 hover:border-muted-foreground/50 cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <UploadIcon className="text-muted-foreground/50 mx-auto h-12 w-12" />
+                <p className="text-muted-foreground mt-2 text-sm">
+                  클릭하여 이미지를 업로드하세요
+                </p>
+                <p className="text-muted-foreground/75 text-xs">
+                  JPG, PNG, WebP (최대 5MB)
+                </p>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              name="cover_image"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="location_address">수업 장소 (오프라인)</Label>
-          <Input
-            id="location_address"
-            name="location_address"
-            defaultValue={defaultValues?.location_address}
-            placeholder="서울시 강남구 테헤란로 123, 4층"
-          />
-        </div>
-      </div>
+        {/* 수업 정보 섹션 */}
+        <div className="space-y-4">
+          <h3 className="border-b pb-2 text-lg font-semibold">수업 정보</h3>
+          <p className="text-muted-foreground text-sm">
+            수업 시간과 정원은 이 클래스의 실제 예약에 적용됩니다. 새 클래스에는
+            조직 기본값을 채우며, 저장 후 조직 기본값을 바꿔도 기존 클래스는
+            유지됩니다.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="location_type">수업 형태</Label>
+              <Select
+                name="location_type"
+                defaultValue={defaultValues?.location_type || "offline"}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="offline">오프라인</SelectItem>
+                  <SelectItem value="online">온라인</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* 클래스 소개 섹션 */}
-      <div className="space-y-4">
-        <h3 className="border-b pb-2 text-lg font-semibold">클래스 설명</h3>
-        <div className="space-y-2">
-          <Label htmlFor="description">상세 설명</Label>
-          <Textarea
-            id="description"
-            name="description"
-            defaultValue={defaultValues?.description}
-            placeholder="클래스에 대한 상세 설명을 입력하세요"
-            rows={4}
-          />
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="duration_minutes">기본 수업 시간 (분) *</Label>
+              <Input
+                id="duration_minutes"
+                name="duration_minutes"
+                type="number"
+                min="1"
+                max="1440"
+                step="1"
+                required
+                value={defaultDuration}
+                onChange={(e) => setDefaultDuration(e.target.value)}
+                aria-describedby="program-duration-help"
+              />
+              <p
+                id="program-duration-help"
+                className="text-muted-foreground text-xs"
+              >
+                예약 시 처음 선택되는 수업 길이입니다.
+              </p>
+            </div>
 
-      {/* 커리큘럼 섹션 */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b pb-2">
-          <h3 className="text-lg font-semibold">커리큘럼</h3>
+            <div className="space-y-2">
+              <Label htmlFor="extra_durations">추가 허용 수업 길이 (분)</Label>
+              <Input
+                id="extra_durations"
+                value={extraDurations}
+                onChange={(e) => setExtraDurations(e.target.value)}
+                placeholder="예: 60, 90, 120"
+                aria-describedby="extra-durations-help"
+              />
+              <p
+                id="extra-durations-help"
+                className="text-muted-foreground text-xs"
+              >
+                쉼표로 구분합니다. 기본 수업 시간은 자동으로 포함됩니다.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="total_sessions">총 회차</Label>
+              <Input
+                id="total_sessions"
+                name="total_sessions"
+                type="number"
+                min="1"
+                defaultValue={defaultValues?.total_sessions || 4}
+                aria-describedby="program-sessions-help"
+              />
+              <p
+                id="program-sessions-help"
+                className="text-muted-foreground text-xs"
+              >
+                클래스 소개용 회차입니다. 반복 예약은 이 횟수가 아닌 수강생의
+                수강 종료일까지 생성됩니다.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="max_capacity">수업 정원 *</Label>
+              <Input
+                id="max_capacity"
+                name="max_capacity"
+                type="number"
+                min="1"
+                max="100"
+                required
+                defaultValue={defaultValues?.max_capacity ?? 5}
+                placeholder="5"
+                aria-describedby="program-capacity-help"
+              />
+              <p
+                id="program-capacity-help"
+                className="text-muted-foreground text-xs"
+              >
+                이 클래스의 같은 시간대 수업에 참여할 수 있는 최대 인원입니다.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">가격 (원)</Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                min="0"
+                step="1000"
+                defaultValue={defaultValues?.price}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location_address">수업 장소 (오프라인)</Label>
+            <Input
+              id="location_address"
+              name="location_address"
+              defaultValue={defaultValues?.location_address}
+              placeholder="서울시 강남구 테헤란로 123, 4층"
+            />
+          </div>
+        </div>
+
+        {/* 클래스 소개 섹션 */}
+        <div className="space-y-4">
+          <h3 className="border-b pb-2 text-lg font-semibold">클래스 설명</h3>
+          <div className="space-y-2">
+            <Label htmlFor="description">상세 설명</Label>
+            <Textarea
+              id="description"
+              name="description"
+              defaultValue={defaultValues?.description}
+              placeholder="클래스에 대한 상세 설명을 입력하세요"
+              rows={4}
+            />
+          </div>
+        </div>
+
+        {/* 커리큘럼 섹션 */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h3 className="text-lg font-semibold">커리큘럼</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addCurriculum}
+            >
+              <PlusIcon className="mr-1 h-4 w-4" />
+              회차 추가
+            </Button>
+          </div>
+          {curriculum.map((item, index) => (
+            <div
+              key={index}
+              className="grid gap-4 rounded-lg border p-4 md:grid-cols-4"
+            >
+              <div className="space-y-2">
+                <Label>{item.session}회차</Label>
+                <Input
+                  value={item.title}
+                  onChange={(e) =>
+                    updateCurriculum(index, "title", e.target.value)
+                  }
+                  placeholder="회차 제목"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>설명</Label>
+                <Input
+                  value={item.description || ""}
+                  onChange={(e) =>
+                    updateCurriculum(index, "description", e.target.value)
+                  }
+                  placeholder="상세 설명 (선택)"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeCurriculum(index)}
+                >
+                  <TrashIcon className="text-destructive h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 제출 버튼 */}
+        <div className="flex justify-end gap-4">
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            onClick={addCurriculum}
+            onClick={() => history.back()}
           >
-            <PlusIcon className="mr-1 h-4 w-4" />
-            회차 추가
+            취소
+          </Button>
+          <Button type="submit" disabled={isSubmitting || instructorDialogOpen}>
+            {isSubmitting
+              ? "저장 중..."
+              : mode === "create"
+                ? "클래스 등록"
+                : "수정 완료"}
           </Button>
         </div>
-        {curriculum.map((item, index) => (
-          <div
-            key={index}
-            className="grid gap-4 rounded-lg border p-4 md:grid-cols-4"
-          >
-            <div className="space-y-2">
-              <Label>{item.session}회차</Label>
-              <Input
-                value={item.title}
-                onChange={(e) =>
-                  updateCurriculum(index, "title", e.target.value)
-                }
-                placeholder="회차 제목"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>설명</Label>
-              <Input
-                value={item.description || ""}
-                onChange={(e) =>
-                  updateCurriculum(index, "description", e.target.value)
-                }
-                placeholder="상세 설명 (선택)"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeCurriculum(index)}
-              >
-                <TrashIcon className="text-destructive h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 제출 버튼 */}
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" onClick={() => history.back()}>
-          취소
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting
-            ? "저장 중..."
-            : mode === "create"
-              ? "클래스 등록"
-              : "수정 완료"}
-        </Button>
-      </div>
-    </fetcher.Form>
+      </fetcher.Form>
+      {instructorDialogOpen && (
+        <InlineInstructorDialog
+          onOpenChange={setInstructorDialogOpen}
+          onCloseAutoFocus={() => instructorAddRef.current?.focus()}
+          onCreated={(instructor) => {
+            setAddedInstructors((current) => [
+              ...current.filter(
+                (item) => item.instructor_id !== instructor.instructor_id,
+              ),
+              instructor,
+            ]);
+            setInstructorId(String(instructor.instructor_id));
+            setInstructorNotice(
+              `${instructor.name} 강사를 추가하고 선택했습니다.`,
+            );
+          }}
+        />
+      )}
+    </>
   );
 }
