@@ -31,6 +31,7 @@ import {
   checkConsultSecurity,
   installConsultSecurity,
 } from "./consult-security.mjs";
+import { checkPublicCatalogSecurity } from "./public-catalog-security.mjs";
 import { checkSettingsSections } from "./settings-sections.mjs";
 import { checkStudentCourseDates } from "./student-course-dates.mjs";
 import { checkStudentLifecyclePerformance } from "./student-lifecycle-performance.mjs";
@@ -427,7 +428,7 @@ try {
   );
 
   await check(
-    "anonymous public class reads work without access to private records",
+    "legacy public class reads work before the public projection migration",
     async () => {
       await db.exec(
         "UPDATE programs SET is_public=true,instructor_id=1 WHERE program_id=1",
@@ -2213,6 +2214,25 @@ try {
     adminA,
     adminB,
     studentA,
+  });
+  await checkPublicCatalogSecurity({
+    db,
+    check,
+    asRole,
+    blocked,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+    projection: await readFile(
+      new URL("0044_public_catalog_projection.sql", migrationRoot),
+      "utf8",
+    ),
+    lockdown: await readFile(
+      new URL("0045_private_catalog_table_reads.sql", migrationRoot),
+      "utf8",
+    ),
   });
   console.log(
     `SQL security regression: ${passed} checks passed; migrations from ${fileURLToPath(migrationRoot)}`,

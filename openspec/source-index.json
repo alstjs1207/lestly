@@ -2383,6 +2383,13 @@
       ]
     },
     {
+      "path": "sql/checks/public-catalog-security.mjs",
+      "domains": [
+        "access-control",
+        "catalog"
+      ]
+    },
+    {
       "path": "sql/checks/security-concurrency.mjs",
       "domains": [
         "access-control"
@@ -2877,6 +2884,20 @@
       ]
     },
     {
+      "path": "sql/migrations/0044_public_catalog_projection.sql",
+      "domains": [
+        "access-control",
+        "catalog"
+      ]
+    },
+    {
+      "path": "sql/migrations/0045_private_catalog_table_reads.sql",
+      "domains": [
+        "access-control",
+        "catalog"
+      ]
+    },
+    {
       "path": "sql/operations/20261018_schedule_performance.sql",
       "domains": [
         "booking",
@@ -3107,6 +3128,14 @@
         "notifications",
         "platform",
         "public-service"
+      ]
+    },
+    {
+      "path": "sql/operations/20261105_apply_public_catalog_security.mjs",
+      "domains": [
+        "access-control",
+        "catalog",
+        "platform"
       ]
     },
     {
@@ -3372,6 +3401,12 @@
       "domains": [
         "access-control",
         "identity"
+      ]
+    },
+    {
+      "path": "tests/public-catalog.test.ts",
+      "domains": [
+        "catalog"
       ]
     },
     {

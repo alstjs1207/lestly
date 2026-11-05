@@ -1,0 +1,68 @@
+{
+  "at": "2026-11-05T08:49:56.442Z",
+  "anonymousOnly": true,
+  "noWrites": true,
+  "checks": [
+    {
+      "slug": "art_mask",
+      "status": 200,
+      "found": true,
+      "keys": [
+        "slug",
+        "title",
+        "subtitle",
+        "curriculum",
+        "instructor",
+        "program_id",
+        "description",
+        "max_capacity",
+        "location_type",
+        "total_sessions",
+        "cover_image_url",
+        "duration_minutes",
+        "location_address"
+      ],
+      "instructorKeys": [
+        "sns",
+        "info",
+        "name",
+        "career",
+        "photo_url"
+      ]
+    },
+    {
+      "slug": "art-mask",
+      "status": 200,
+      "found": true,
+      "keys": [
+        "slug",
+        "title",
+        "subtitle",
+        "curriculum",
+        "instructor",
+        "program_id",
+        "description",
+        "max_capacity",
+        "location_type",
+        "total_sessions",
+        "cover_image_url",
+        "duration_minutes",
+        "location_address"
+      ],
+      "instructorKeys": [
+        "sns",
+        "info",
+        "name",
+        "career",
+        "photo_url"
+      ]
+    },
+    {
+      "slug": "missing-security-check",
+      "status": 200,
+      "found": false,
+      "keys": [],
+      "instructorKeys": []
+    }
+  ]
+}

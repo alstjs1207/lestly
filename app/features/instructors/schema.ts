@@ -14,7 +14,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
 import { organizations } from "~/features/organizations/schema";
@@ -51,16 +51,6 @@ export const instructors = pgTable(
       table.instructor_id,
       table.organization_id,
     ),
-    pgPolicy("public-program-instructor-select-policy", {
-      for: "select",
-      to: [anonRole, authenticatedRole],
-      as: "permissive",
-      using: sql`EXISTS (
-        SELECT 1 FROM public.programs
-        WHERE programs.instructor_id = ${table.instructor_id}
-          AND programs.is_public = true AND programs.status = 'ACTIVE'
-      )`,
-    }),
     pgPolicy("student-select-active-program-instructors", {
       for: "select",
       to: authenticatedRole,

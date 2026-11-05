@@ -329,10 +329,26 @@ test("organization summaries use one request for embedded counts and optional no
   assert.equal(calls, 1);
 });
 
-test("public and admin program loaders select the original instructor relationship explicitly", async () => {
+test("public loader uses its projection RPC while admin loaders retain the unambiguous instructor relationship", async () => {
   let calls = 0;
   const client = mockClient(async (input, init) => {
     calls += 1;
+    if (
+      new URL(String(input)).pathname.endsWith(
+        "/rpc/get_public_program_by_slug",
+      )
+    ) {
+      assert.equal(init?.method, "POST");
+      assert.deepEqual(JSON.parse(String(init?.body)), { p_slug: "class-a" });
+      return new Response(
+        JSON.stringify({
+          program_id: 1,
+          title: "Class A",
+          instructor: { name: "Teacher" },
+        }),
+        { headers: { "content-type": "application/json" } },
+      );
+    }
     const select = new URL(String(input)).searchParams.get("select") ?? "";
     if (
       !select.includes(
@@ -363,7 +379,7 @@ test("public and admin program loaders select the original instructor relationsh
   });
   assert.equal(programs[0]?.instructor?.name, "Teacher");
   assert.equal(program?.instructor?.name, "Teacher");
-  assert.equal(publicProgram.instructor?.name, "Teacher");
+  assert.equal(publicProgram?.instructor?.name, "Teacher");
   assert.equal(calls, 3);
 });
 

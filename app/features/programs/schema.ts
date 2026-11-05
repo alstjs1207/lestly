@@ -20,7 +20,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers";
 import { instructors } from "~/features/instructors/schema";
@@ -166,12 +166,6 @@ export const programs = pgTable(
       as: "permissive",
       using: sql`is_org_admin(${table.organization_id})`,
     }),
-    // RLS Policy: Public programs are viewable by anyone (anon + authenticated)
-    pgPolicy("public-programs-select-policy", {
-      for: "select",
-      to: [anonRole, authenticatedRole],
-      as: "permissive",
-      using: sql`${table.is_public} = true AND ${table.status} = 'ACTIVE'`,
-    }),
+    // Public introductions use get_public_program_by_slug, not table-wide read policies.
   ],
 ).enableRLS();

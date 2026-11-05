@@ -184,6 +184,32 @@
               "contains": "isWorkerAuthorized"
             }
           ]
+        },
+        {
+          "id": "SEC-005",
+          "sources": [
+            "app/features/class/queries.ts",
+            "sql/migrations/0044_public_catalog_projection.sql",
+            "sql/migrations/0045_private_catalog_table_reads.sql",
+            "app/features/programs/schema.ts",
+            "app/features/instructors/schema.ts"
+          ],
+          "tests": [
+            "tests/public-catalog.test.ts",
+            "sql/checks/public-catalog-security.mjs",
+            "tests/consultations-ssr.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0044_public_catalog_projection.sql",
+              "contains": "get_public_program_by_slug"
+            },
+            {
+              "path": "sql/migrations/0045_private_catalog_table_reads.sql",
+              "contains": "REVOKE SELECT"
+            }
+          ]
         }
       ]
     },
