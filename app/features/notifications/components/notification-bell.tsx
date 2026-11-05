@@ -91,14 +91,6 @@ export function NotificationBell({
           </>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link
-            to="/admin/consultations"
-            className="text-muted-foreground justify-center text-sm"
-          >
-            상담 전체 보기
-          </Link>
-        </DropdownMenuItem>
         {notificationsEnabled && (
           <DropdownMenuItem asChild>
             <Link to="/admin/notifications" className="justify-center text-sm">
@@ -117,42 +109,37 @@ interface NotificationItemProps {
 }
 
 function NotificationItem({ notification, onRead }: NotificationItemProps) {
+  // 상담 관리 UI는 잠시 숨기고 기존 알림 표시와 읽음 처리는 유지한다.
+  const isConsultation = notification.template_type === "SYS_CONSULT_ADMIN";
+  const content = (
+    <div className="flex w-full items-start gap-2">
+      <span
+        className={cn(
+          "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+          notification.is_read ? "bg-transparent" : "bg-blue-500",
+        )}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{notification.message}</p>
+        <p className="text-muted-foreground text-xs">
+          {formatRelativeTime(notification.created_at)}
+        </p>
+      </div>
+    </div>
+  );
   return (
     <DropdownMenuItem
       className="flex cursor-pointer flex-col items-start gap-1"
       onClick={() => {
-        if (!notification.is_read) {
-          onRead();
-        }
+        if (!notification.is_read) onRead();
       }}
-      asChild
+      asChild={!isConsultation}
     >
-      <Link
-        to={
-          notification.template_type === "SYS_CONSULT_ADMIN"
-            ? notification.notification_id
-              ? `/admin/consultations/${notification.notification_id}`
-              : "/admin/consultations"
-            : "/admin/notifications"
-        }
-      >
-        <div className="flex w-full items-start gap-2">
-          <span
-            className={cn(
-              "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-              notification.is_read ? "bg-transparent" : "bg-blue-500",
-            )}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">
-              {notification.message}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              {formatRelativeTime(notification.created_at)}
-            </p>
-          </div>
-        </div>
-      </Link>
+      {isConsultation ? (
+        content
+      ) : (
+        <Link to="/admin/notifications">{content}</Link>
+      )}
     </DropdownMenuItem>
   );
 }

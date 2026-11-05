@@ -5,7 +5,6 @@ import {
   CalendarIcon,
   ClipboardCheckIcon,
   HomeIcon,
-  MessageSquareIcon,
   SettingsIcon,
   UserIcon,
   UsersIcon,
@@ -72,7 +71,6 @@ const menuItems = [
     url: "/admin/instructors",
     icon: UserIcon,
   },
-  { title: "상담 관리", url: "/admin/consultations", icon: MessageSquareIcon },
   {
     title: "알림 관리",
     url: "/admin/notifications",

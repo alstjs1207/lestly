@@ -1088,7 +1088,9 @@
             "app/features/notifications/screens/consultations.tsx",
             "app/features/notifications/screens/consultation-detail.tsx",
             "app/features/notifications/consult-validation.ts",
-            "sql/migrations/0042_secure_consultations.sql"
+            "sql/migrations/0042_secure_consultations.sql",
+            "app/features/admin/components/admin-sidebar.tsx",
+            "app/features/notifications/components/notification-bell.tsx"
           ],
           "tests": [
             "tests/consult-management.test.ts",

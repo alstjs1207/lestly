@@ -211,7 +211,11 @@ const activeAdmin = await render(adminRoute, "/admin/programs/9", {
   program: publicProgram,
   hasSchedules: true,
 });
-assert.match(activeAdmin, /href="\/class\/art_mask"/);
+assert.doesNotMatch(
+  activeAdmin,
+  /공개 설정|공개 여부|공개 URL|href="\/class\/art_mask"/,
+);
+assert.match(activeAdmin, /클래스 운영 정보/);
 for (const flags of [
   { is_public: false, status: "ACTIVE" },
   { is_public: true, status: "DRAFT" },
@@ -222,8 +226,8 @@ for (const flags of [
     hasSchedules: true,
   });
   assert.doesNotMatch(hidden, /href="\/class\/art_mask"/);
-  assert.match(hidden, /공개되지 않음/);
-  assert.match(hidden, /상태를 ‘활성’으로 설정/);
+  assert.doesNotMatch(hidden, /공개 설정|공개 URL|공개되지 않음/);
+  assert.match(hidden, /클래스 운영 정보/);
 }
 const coverEditor = await render(
   "features/admin/screens/programs/edit",
@@ -236,6 +240,15 @@ const coverEditor = await render(
 assert.match(coverEditor, /모바일 커버 미리보기/);
 assert.match(coverEditor, /PC 커버 미리보기/);
 assert.match(coverEditor, /name="existing_cover_image_url"/);
+assert.doesNotMatch(coverEditor, /공개 URL 슬러그|공개 페이지로 게시/);
+assert.match(
+  coverEditor,
+  /<input[^>]*type="hidden"[^>]*name="slug"[^>]*value="art_mask"/,
+);
+assert.match(
+  coverEditor,
+  /<input[^>]*type="hidden"[^>]*name="is_public"[^>]*value="on"/,
+);
 if (process.env.CONSULT_UI_OUTPUT) {
   const folder = process.env.CONSULT_UI_OUTPUT;
   await fs.mkdir(folder, { recursive: true });
@@ -260,5 +273,5 @@ if (process.env.CONSULT_UI_OUTPUT) {
     );
 }
 console.log(
-  "Consultation SSR passed: management/history/escaping; public CTA, optional content, social metadata, publication states and cover previews verified.",
+  "Consultation SSR passed: management/history/escaping; public CTA, optional content, social metadata, hidden admin publication settings, preserved form values and cover previews verified.",
 );

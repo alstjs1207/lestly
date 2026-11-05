@@ -3,7 +3,6 @@ import { useRef, useState } from "react";
 import { useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
-import { Checkbox } from "~/core/components/ui/checkbox";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import {
@@ -62,7 +61,6 @@ export default function ProgramForm({
   const isSubmitting = fetcher.state !== "idle";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const instructorAddRef = useRef<HTMLButtonElement>(null);
-  const [isPublic, setIsPublic] = useState(defaultValues?.is_public ?? false);
   const [title, setTitle] = useState(defaultValues?.title ?? "");
   const [subtitle, setSubtitle] = useState(defaultValues?.subtitle ?? "");
   const [instructorId, setInstructorId] = useState(
@@ -173,6 +171,13 @@ export default function ProgramForm({
           name="booking_duration_minutes"
           value={JSON.stringify(allowedDurations)}
         />
+        {/* 공개 관리 UI를 숨겨도 기존 공개 상태와 주소는 수정 시 보존한다. */}
+        <input type="hidden" name="slug" value={defaultValues?.slug ?? ""} />
+        <input
+          type="hidden"
+          name="is_public"
+          value={defaultValues?.is_public ? "on" : ""}
+        />
         {/* JSONB 필드를 hidden input으로 전송 */}
         <input
           type="hidden"
@@ -202,20 +207,6 @@ export default function ProgramForm({
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="클래스 이름을 입력하세요"
               />
-            </div>
-
-            <div className="space-y-2" hidden={!isPublic}>
-              <Label htmlFor="slug">공개 URL 슬러그 *</Label>
-              <Input
-                id="slug"
-                name="slug"
-                required={isPublic}
-                defaultValue={defaultValues?.slug}
-                placeholder="calligraphy-beginner"
-              />
-              <p className="text-muted-foreground text-xs">
-                공개 URL: /class/[슬러그]
-              </p>
             </div>
 
             <div className="space-y-2 md:col-span-2">
@@ -320,23 +311,6 @@ export default function ProgramForm({
                 </p>
               )}
             </div>
-
-            <div className="flex items-center gap-2 space-y-2">
-              <Checkbox
-                id="is_public"
-                name="is_public"
-                checked={isPublic}
-                onCheckedChange={(checked) => setIsPublic(checked === true)}
-              />
-              <Label htmlFor="is_public" className="cursor-pointer">
-                공개 페이지로 게시 (외부 사용자 접근 가능)
-              </Label>
-            </div>
-            <p className="text-muted-foreground text-sm md:col-span-2">
-              외부 페이지는 상태가 ‘활성’이고 공개 설정이 켜져 있을 때
-              표시됩니다. 비공개·초안·보관 상태에서는 공개 URL로 접근할 수
-              없습니다.
-            </p>
           </div>
         </div>
 

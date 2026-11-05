@@ -150,8 +150,17 @@ const catalog = await render(
   "/admin/programs/new",
   { instructors: [] },
 );
-const privateSlugInput = catalog.match(/<input[^>]*id="slug"[^>]*>/)?.[0] ?? "";
-assert.ok(privateSlugInput);
+const privateSlugInput =
+  catalog.match(/<input[^>]*name="slug"[^>]*>/)?.[0] ?? "";
+assert.match(privateSlugInput, /type="hidden"/);
+assert.doesNotMatch(
+  catalog,
+  /공개 URL 슬러그|공개 페이지로 게시|외부 페이지는/,
+);
+assert.match(
+  catalog,
+  /<input[^>]*type="hidden"[^>]*name="is_public"[^>]*value=""/,
+);
 assert.doesNotMatch(privateSlugInput, /required=""/);
 assert.match(catalog, /담당 강사/);
 assert.match(catalog, /미지정/);
@@ -162,8 +171,13 @@ const publicCatalog = await render(
   { instructors: [], defaults: { is_public: true, slug: "kept-Slug" } },
 );
 const publicSlugInput =
-  publicCatalog.match(/<input[^>]*id="slug"[^>]*>/)?.[0] ?? "";
-assert.match(publicSlugInput, /required=""/);
+  publicCatalog.match(/<input[^>]*name="slug"[^>]*>/)?.[0] ?? "";
+assert.match(publicSlugInput, /type="hidden"/);
+assert.doesNotMatch(publicSlugInput, /required=""/);
+assert.match(
+  publicCatalog,
+  /<input[^>]*type="hidden"[^>]*name="is_public"[^>]*value="on"/,
+);
 assert.match(publicSlugInput, /value="kept-Slug"/);
 assert.match(catalog, /이 클래스의 실제 예약에 적용/);
 assert.match(catalog, /반복 예약은 이 횟수가 아닌/);
