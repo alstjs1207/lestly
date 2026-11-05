@@ -5,7 +5,7 @@
  * Subscribes to INSERT and UPDATE events on in_app_notifications table.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useLocation } from "react-router";
 
 export interface InAppNotification {
   in_app_notification_id: number;
@@ -32,6 +32,7 @@ export function useInAppNotifications(
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const { pathname } = useLocation();
   const fetcher = useFetcher();
   const mutationFetcher = useFetcher();
 
@@ -40,12 +41,12 @@ export function useInAppNotifications(
     fetcher.load("/api/notifications");
   }, []);
 
-  // Initial load (only once)
+  // Refresh on navigation too, including the redirect after deleting a consultation.
   useEffect(() => {
     setNotifications([]);
     setUnreadCount(0);
     loadNotifications();
-  }, [organizationId, notificationsEnabled]);
+  }, [organizationId, notificationsEnabled, pathname]);
 
   // Process fetcher data
   useEffect(() => {

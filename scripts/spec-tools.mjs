@@ -215,6 +215,7 @@ export function classify(file) {
       43: ["notifications", "access-control"],
       44: ["catalog", "access-control"],
       45: ["catalog", "access-control"],
+      46: ["public-service", "notifications", "access-control"],
     };
     if (mapping[n]) return mapping[n];
     if (n <= 14)

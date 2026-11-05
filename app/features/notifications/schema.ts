@@ -225,6 +225,12 @@ export const notifications = pgTable(
       using: sql`is_org_admin(${table.organization_id}) AND ${table.type} = 'CONSULT_REQUEST'`,
       withCheck: sql`is_org_admin(${table.organization_id}) AND ${table.type} = 'CONSULT_REQUEST'`,
     }),
+    pgPolicy("org_admin_delete_consult_notifications", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`is_org_admin(${table.organization_id}) AND ${table.type} = 'CONSULT_REQUEST'`,
+    }),
     // Super admin has full access
     pgPolicy("super_admin_all_notifications", {
       for: "all",

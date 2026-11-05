@@ -27,6 +27,7 @@ import {
 } from "./cancellation-policy.mjs";
 import { checkCatalogEntry } from "./catalog-entry.mjs";
 import { checkClassBookingPolicy } from "./class-booking-policy.mjs";
+import { checkConsultDeletion } from "./consult-delete.mjs";
 import {
   checkConsultSecurity,
   installConsultSecurity,
@@ -71,6 +72,20 @@ const pushStore = loadMockedModule(
             await db.exec("ROLLBACK TO SAVEPOINT push_store_transaction");
             throw error;
           }
+        },
+      },
+    },
+  },
+);
+const consultStore = loadMockedModule(
+  new URL("../../app/features/class/consult-store.server.ts", import.meta.url),
+  {
+    "drizzle-orm": { sql: drizzleSql },
+    "~/core/db/drizzle-client.server": {
+      default: {
+        async execute(query) {
+          const { sql, params } = dialect.sqlToQuery(query);
+          return (await db.query(sql, params)).rows;
         },
       },
     },
@@ -2231,6 +2246,23 @@ try {
     ),
     lockdown: await readFile(
       new URL("0045_private_catalog_table_reads.sql", migrationRoot),
+      "utf8",
+    ),
+  });
+  await checkConsultDeletion({
+    db,
+    check,
+    asRole,
+    blocked,
+    pushStore,
+    consultStore,
+    orgA,
+    orgB,
+    adminA,
+    adminB,
+    studentA,
+    source: await readFile(
+      new URL("0046_consultation_delete.sql", migrationRoot),
       "utf8",
     ),
   });

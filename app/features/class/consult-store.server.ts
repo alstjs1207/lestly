@@ -13,10 +13,10 @@ export async function findAcceptedConsultation(
   requestId: string,
   payloadHash: string,
 ) {
-  const rows = await db.execute<{ notification_id: number }>(sql`
-    SELECT notification_id FROM public.consult_submission_keys
+  const rows = await db.execute<{ accepted: number }>(sql`
+    SELECT 1 AS accepted FROM public.consult_submission_keys
     WHERE request_id=${requestId}::uuid AND payload_hash=${payloadHash} AND expires_at>now()`);
-  return rows[0]?.notification_id ?? null;
+  return rows.length > 0;
 }
 
 export async function submitConsultation(input: {

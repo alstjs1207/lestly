@@ -1102,6 +1102,32 @@
               "contains": "requireAdminRole"
             }
           ]
+        },
+        {
+          "id": "PUB-004",
+          "sources": [
+            "app/features/notifications/screens/consultation-detail.tsx",
+            "app/features/notifications/schema.ts",
+            "app/features/class/schema.ts",
+            "app/features/class/consult-store.server.ts",
+            "sql/migrations/0046_consultation_delete.sql"
+          ],
+          "tests": [
+            "tests/consult-management.test.ts",
+            "tests/consultations-ssr.mjs",
+            "sql/checks/consult-delete.mjs"
+          ],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "sql/migrations/0046_consultation_delete.sql",
+              "contains": "org_admin_delete_consult_notifications"
+            },
+            {
+              "path": "app/features/notifications/screens/consultation-detail.tsx",
+              "contains": "confirmDelete"
+            }
+          ]
         }
       ]
     },

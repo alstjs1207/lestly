@@ -2376,6 +2376,12 @@
       ]
     },
     {
+      "path": "sql/checks/consult-delete.mjs",
+      "domains": [
+        "public-service"
+      ]
+    },
+    {
       "path": "sql/checks/consult-security.mjs",
       "domains": [
         "access-control",
@@ -2898,6 +2904,14 @@
       ]
     },
     {
+      "path": "sql/migrations/0046_consultation_delete.sql",
+      "domains": [
+        "access-control",
+        "notifications",
+        "public-service"
+      ]
+    },
+    {
       "path": "sql/operations/20261018_schedule_performance.sql",
       "domains": [
         "booking",
@@ -3111,6 +3125,13 @@
       "path": "sql/operations/20261104_apply_student_course_dates.mjs",
       "domains": [
         "platform"
+      ]
+    },
+    {
+      "path": "sql/operations/20261105_apply_consult_delete.mjs",
+      "domains": [
+        "platform",
+        "public-service"
       ]
     },
     {

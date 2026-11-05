@@ -5,15 +5,20 @@ import { requireMethod } from "../app/core/lib/guards.server.ts";
 import * as validation from "../app/features/notifications/consult-validation.ts";
 import { loadMockedModule } from "./helpers/mocked-module.ts";
 
-function setup(authorized = true, found = true) {
+function setup(authorized = true, found = true, fails = false) {
   const filters: unknown[] = [],
-    updates: unknown[] = [];
+    updates: unknown[] = [],
+    deletes: unknown[] = [];
   const chain = {
     select() {
       return chain;
     },
     eq(column: string, value: unknown) {
       filters.push([column, value]);
+      return chain;
+    },
+    delete() {
+      deletes.push(true);
       return chain;
     },
     update(value: unknown) {
@@ -23,7 +28,7 @@ function setup(authorized = true, found = true) {
     async maybeSingle() {
       return {
         data: found ? { notification_id: 12, type: "CONSULT_REQUEST" } : null,
-        error: null,
+        error: fails ? { message: "private database detail" } : null,
       };
     },
   };
@@ -33,13 +38,23 @@ function setup(authorized = true, found = true) {
       import.meta.url,
     ),
     {
+      react: {},
       "react/jsx-runtime": {},
       "react-router": {
         data: (data: unknown, init: unknown) => ({ data, init }),
+        redirect: (url: string, init: ResponseInit) =>
+          new Response(null, {
+            ...init,
+            headers: {
+              ...Object.fromEntries(new Headers(init.headers)),
+              Location: url,
+            },
+          }),
       },
       "~/core/components/ui/button": {},
       "~/core/components/ui/card": {},
       "~/core/components/ui/label": {},
+      "~/core/components/ui/dialog": {},
       "~/core/components/ui/textarea": {},
       "~/core/lib/guards.server": { requireMethod },
       "~/core/lib/supa-client.server": {
@@ -67,7 +82,7 @@ function setup(authorized = true, found = true) {
       headers: { Origin: origin },
       body: new URLSearchParams(values),
     });
-  return { route, filters, updates, request };
+  return { route, filters, updates, deletes, request };
 }
 
 test("consult detail refuses foreign origins and unauthorized users before mutation", async () => {
@@ -162,4 +177,84 @@ test("consultation phone links normalize only valid Korean telephone numbers", (
   assert.equal(validation.consultationPhone("02-123-4567"), "tel:021234567");
   for (const phone of [null, "", "javascript:alert(1)", "123", "+1 555 1234"])
     assert.equal(validation.consultationPhone(phone), undefined);
+});
+
+test("consult delete requires confirmation and scopes deletion to the authenticated organization and consultation type", async () => {
+  const s = setup();
+  const invalidRequests: Record<string, string>[] = [
+    { intent: "delete" },
+    { intent: "delete", confirmDelete: "no" },
+    { intent: "unknown" },
+  ];
+  for (const values of invalidRequests) {
+    const result = await s.route.action({
+      request: s.request(values),
+      params: { consultationId: "12" },
+    });
+    assert.equal(result.init.status, 400);
+  }
+  assert.equal(s.deletes.length, 0);
+  const result = await s.route.action({
+    request: s.request({
+      intent: "delete",
+      confirmDelete: "yes",
+      organization_id: "foreign",
+    }),
+    params: { consultationId: "12" },
+  });
+  assert.equal(result.status, 303);
+  assert.equal(result.headers.get("Location"), "/admin/consultations");
+  assert.equal(result.headers.get("Cache-Control"), "no-store");
+  assert.equal(s.deletes.length, 1);
+  assert.equal(s.updates.length, 0);
+  assert.deepEqual(s.filters, [
+    ["organization_id", "own"],
+    ["notification_id", 12],
+    ["type", "CONSULT_REQUEST"],
+  ]);
+});
+
+test("consult delete refuses foreign origins, unauthorized users, invalid IDs and missing records without claiming success", async () => {
+  const values = { intent: "delete", confirmDelete: "yes" };
+  for (const [authorized, origin] of [
+    [false, "https://lestly.test"],
+    [true, "https://evil.test"],
+  ] as const) {
+    const s = setup(authorized);
+    await assert.rejects(
+      s.route.action({
+        request: s.request(values, origin),
+        params: { consultationId: "12" },
+      }),
+    );
+    assert.equal(s.deletes.length, 0);
+  }
+  const s = setup();
+  assert.equal(
+    (
+      await s.route.action({
+        request: s.request(values),
+        params: { consultationId: "12x" },
+      })
+    ).init.status,
+    404,
+  );
+  assert.equal(s.deletes.length, 0);
+  const missing = setup(true, false);
+  assert.equal(
+    (
+      await missing.route.action({
+        request: missing.request(values),
+        params: { consultationId: "12" },
+      })
+    ).init.status,
+    404,
+  );
+  const failure = setup(true, true, true);
+  const result = await failure.route.action({
+    request: failure.request(values),
+    params: { consultationId: "12" },
+  });
+  assert.equal(result.init.status, 500);
+  assert.ok(!JSON.stringify(result).includes("private database detail"));
 });

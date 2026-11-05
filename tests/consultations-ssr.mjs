@@ -66,6 +66,7 @@ const detail = await render(
   { consultation },
 );
 assert.match(detail, /상담 상세/);
+assert.match(detail, /<button[^>]*>상담 삭제<\/button>/);
 assert.match(detail, /name="status"/);
 assert.match(detail, /name="notes"/);
 assert.match(detail, /href="tel:01012345678"/);

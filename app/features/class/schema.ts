@@ -25,9 +25,10 @@ export const consultRateLimits = pgTable(
 export const consultSubmissionKeys = pgTable("consult_submission_keys", {
   request_id: uuid().primaryKey(),
   payload_hash: text().notNull(),
-  notification_id: bigint({ mode: "number" })
-    .notNull()
-    .references(() => notifications.notification_id, { onDelete: "cascade" }),
+  notification_id: bigint({ mode: "number" }).references(
+    () => notifications.notification_id,
+    { onDelete: "set null" },
+  ),
   expires_at: timestamp({ withTimezone: true })
     .notNull()
     .default(sql`now() + interval '24 hours'`),

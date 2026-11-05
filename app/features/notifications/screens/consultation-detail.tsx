@@ -1,6 +1,7 @@
 import type { Route } from "./+types/consultation-detail";
 
-import { Link, data, useFetcher } from "react-router";
+import { useState } from "react";
+import { Link, data, redirect, useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -9,6 +10,16 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/core/components/ui/dialog";
 import { Label } from "~/core/components/ui/label";
 import { Textarea } from "~/core/components/ui/textarea";
 import { requireMethod } from "~/core/lib/guards.server";
@@ -52,6 +63,35 @@ export async function action({ request, params }: Route.ActionArgs) {
       { status: 404, headers },
     );
   const form = await request.formData();
+  const intent = form.get("intent") || "update";
+  if (intent === "delete") {
+    if (form.get("confirmDelete") !== "yes")
+      return data(
+        { error: "상담 삭제를 확인해 주세요." },
+        { status: 400, headers },
+      );
+    const { data: removed, error } = await client
+      .from("notifications")
+      .delete()
+      .eq("organization_id", organizationId)
+      .eq("notification_id", id)
+      .eq("type", "CONSULT_REQUEST")
+      .select("notification_id")
+      .maybeSingle();
+    if (error)
+      return data(
+        { error: "상담을 삭제하지 못했습니다. 다시 시도해 주세요." },
+        { status: 500, headers },
+      );
+    if (!removed)
+      return data(
+        { error: "상담을 찾을 수 없습니다." },
+        { status: 404, headers },
+      );
+    return redirect("/admin/consultations", { status: 303, headers });
+  }
+  if (intent !== "update")
+    return data({ error: "요청을 확인해 주세요." }, { status: 400, headers });
   const parsed = consultUpdateSchema.safeParse({
     status: form.get("status"),
     result: form.get("result"),
@@ -93,13 +133,65 @@ export default function ConsultationDetail({
 }: Route.ComponentProps) {
   const { consultation: item } = loaderData;
   const fetcher = useFetcher<typeof action>();
+  const deleteFetcher = useFetcher<typeof action>();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const busy = fetcher.state !== "idle" || deleteFetcher.state !== "idle";
   const phone = consultationPhone(item.recipient_phone);
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Button asChild variant="ghost">
         <Link to="/admin/consultations">← 상담 목록</Link>
       </Button>
-      <h1 className="text-xl font-bold md:text-2xl">상담 상세</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl font-bold md:text-2xl">상담 상세</h1>
+        <Dialog
+          open={deleteOpen}
+          onOpenChange={(open) => {
+            if (deleteFetcher.state === "idle") setDeleteOpen(open);
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button variant="destructive" disabled={busy}>
+              상담 삭제
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            onEscapeKeyDown={(event) => {
+              if (deleteFetcher.state !== "idle") event.preventDefault();
+            }}
+            onInteractOutside={(event) => {
+              if (deleteFetcher.state !== "idle") event.preventDefault();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>상담을 삭제하시겠습니까?</DialogTitle>
+              <DialogDescription>
+                이 상담과 연결된 종 알림이 함께 삭제됩니다. 삭제한 상담은 복구할
+                수 없습니다.
+              </DialogDescription>
+            </DialogHeader>
+            {deleteFetcher.data && "error" in deleteFetcher.data && (
+              <p role="alert" className="text-destructive text-sm">
+                {deleteFetcher.data.error}
+              </p>
+            )}
+            <deleteFetcher.Form method="post">
+              <input type="hidden" name="intent" value="delete" />
+              <input type="hidden" name="confirmDelete" value="yes" />
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={busy}>
+                    취소
+                  </Button>
+                </DialogClose>
+                <Button type="submit" variant="destructive" disabled={busy}>
+                  {deleteFetcher.state !== "idle" ? "삭제 중..." : "삭제 확인"}
+                </Button>
+              </DialogFooter>
+            </deleteFetcher.Form>
+          </DialogContent>
+        </Dialog>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle className="[overflow-wrap:anywhere] break-words">
@@ -186,7 +278,7 @@ export default function ConsultationDetail({
                   ? fetcher.data.error
                   : "저장되었습니다.")}
             </p>
-            <Button type="submit" disabled={fetcher.state !== "idle"}>
+            <Button type="submit" disabled={busy}>
               {fetcher.state !== "idle" ? "저장 중..." : "저장"}
             </Button>
           </fetcher.Form>

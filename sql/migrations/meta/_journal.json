@@ -323,6 +323,13 @@
       "when": 1793875200003,
       "tag": "0045_private_catalog_table_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793875200004,
+      "tag": "0046_consultation_delete",
+      "breakpoints": true
     }
   ]
 }
