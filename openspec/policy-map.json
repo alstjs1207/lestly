@@ -406,6 +406,25 @@
               "contains": "MAX_CATALOG_IMAGE_BYTES"
             }
           ]
+        },
+        {
+          "id": "CAT-005",
+          "sources": [
+            "app/features/class/screens/class-detail.tsx",
+            "app/features/class/components/class-footer.tsx",
+            "app/features/class/components/class-hero.tsx",
+            "app/features/class/components/class-instructor.tsx",
+            "app/features/admin/components/program-form.tsx",
+            "app/features/admin/screens/programs/detail.tsx"
+          ],
+          "tests": ["tests/consultations-ssr.mjs"],
+          "verification": "automated",
+          "anchors": [
+            {
+              "path": "app/features/class/components/class-footer.tsx",
+              "contains": "onConsult"
+            }
+          ]
         }
       ]
     },

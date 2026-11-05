@@ -63,6 +63,8 @@ export default function ProgramForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const instructorAddRef = useRef<HTMLButtonElement>(null);
   const [isPublic, setIsPublic] = useState(defaultValues?.is_public ?? false);
+  const [title, setTitle] = useState(defaultValues?.title ?? "");
+  const [subtitle, setSubtitle] = useState(defaultValues?.subtitle ?? "");
   const [instructorId, setInstructorId] = useState(
     defaultValues?.instructor_id?.toString() ?? "",
   );
@@ -196,7 +198,8 @@ export default function ProgramForm({
                 id="title"
                 name="title"
                 required
-                defaultValue={defaultValues?.title}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="클래스 이름을 입력하세요"
               />
             </div>
@@ -220,7 +223,8 @@ export default function ProgramForm({
               <Input
                 id="subtitle"
                 name="subtitle"
-                defaultValue={defaultValues?.subtitle}
+                value={subtitle}
+                onChange={(event) => setSubtitle(event.target.value)}
                 placeholder="클래스 부제목 (선택)"
               />
             </div>
@@ -328,6 +332,11 @@ export default function ProgramForm({
                 공개 페이지로 게시 (외부 사용자 접근 가능)
               </Label>
             </div>
+            <p className="text-muted-foreground text-sm md:col-span-2">
+              외부 페이지는 상태가 ‘활성’이고 공개 설정이 켜져 있을 때
+              표시됩니다. 비공개·초안·보관 상태에서는 공개 URL로 접근할 수
+              없습니다.
+            </p>
           </div>
         </div>
 
@@ -336,21 +345,55 @@ export default function ProgramForm({
           <h3 className="border-b pb-2 text-lg font-semibold">커버 이미지</h3>
           <div className="space-y-4">
             {coverImagePreview ? (
-              <div className="relative inline-block">
-                <img
-                  src={coverImagePreview}
-                  alt="커버 이미지 미리보기"
-                  className="max-h-64 max-w-md rounded-lg border object-cover"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={handleRemoveImage}
-                >
-                  <XIcon className="h-4 w-4" />
-                </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-muted-foreground text-sm">
+                    화면 크기에 따라 이미지 가장자리가 잘립니다. 중요한 부분은
+                    중앙에 배치해 주세요.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveImage}
+                  >
+                    <XIcon className="mr-1 h-4 w-4" /> 이미지 제거
+                  </Button>
+                </div>
+                <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                  {(
+                    [
+                      ["모바일", "aspect-[390/300]"],
+                      ["PC", "aspect-[1200/400]"],
+                    ] as const
+                  ).map(([label, aspect]) => (
+                    <figure key={label} className="min-w-0 space-y-2">
+                      <figcaption className="text-sm font-medium">
+                        {label} 커버 미리보기
+                      </figcaption>
+                      <div
+                        className={`relative overflow-hidden rounded-lg bg-[#8b6f5c] ${aspect}`}
+                      >
+                        <img
+                          src={coverImagePreview}
+                          alt={`${label} 커버 미리보기`}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3 text-center text-white">
+                          <p className="max-w-full text-base font-bold break-words">
+                            {title || "클래스명"}
+                          </p>
+                          {subtitle && (
+                            <p className="max-w-full text-xs break-words">
+                              {subtitle}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </figure>
+                  ))}
+                </div>
               </div>
             ) : (
               <div

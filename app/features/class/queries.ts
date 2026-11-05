@@ -40,30 +40,3 @@ export async function getPublicProgramBySlug(
 
   return data;
 }
-
-/**
- * 프로그램의 다음 스케줄 조회 (가장 가까운 미래 일정)
- */
-export async function getNextScheduleForProgram(
-  client: SupabaseClient<Database>,
-  { programId }: { programId: number },
-) {
-  const now = new Date().toISOString();
-
-  const { data, error } = await client
-    .from("schedules")
-    .select("schedule_id, start_time, end_time")
-    .is("cancelled_at", null)
-    .eq("program_id", programId)
-    .gte("start_time", now)
-    .order("start_time", { ascending: true })
-    .limit(1)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    // PGRST116: no rows returned
-    throw error;
-  }
-
-  return data;
-}

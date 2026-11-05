@@ -22,6 +22,7 @@ import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import { Textarea } from "~/core/components/ui/textarea";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getSafeHttpUrl } from "~/core/lib/web-url";
 
 import ClassCurriculum from "../components/class-curriculum";
 import ClassFooter from "../components/class-footer";
@@ -29,15 +30,43 @@ import ClassHero from "../components/class-hero";
 import ClassInstructor from "../components/class-instructor";
 import ClassLocation from "../components/class-location";
 import { getConsultConfig } from "../consult-security.server";
-import { getNextScheduleForProgram, getPublicProgramBySlug } from "../queries";
+import { getPublicProgramBySlug } from "../queries";
 
 export const meta: Route.MetaFunction = ({ data }) => {
   if (!data?.program) {
     return [{ title: "클래스를 찾을 수 없습니다" }];
   }
+  const title = `${data.program.title} | ${import.meta.env.VITE_APP_NAME || "Lestly"}`;
+  const description = (
+    [data.program.subtitle?.trim(), data.program.description?.trim()]
+      .filter(Boolean)
+      .join(" · ") || `${data.program.title} 클래스 소개와 상담 신청`
+  )
+    .replace(/\s+/g, " ")
+    .slice(0, 160);
+  const image = getSafeHttpUrl(data.program.cover_image_url);
   return [
-    { title: `${data.program.title} | ${import.meta.env.VITE_APP_NAME}` },
-    { name: "description", content: data.program.subtitle || "" },
+    { title },
+    { name: "description", content: description },
+    { property: "og:type", content: "website" },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:url", content: data.shareUrl },
+    { tagName: "link", rel: "canonical", href: data.shareUrl },
+    {
+      name: "twitter:card",
+      content: image ? "summary_large_image" : "summary",
+    },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
+    ...(image
+      ? [
+          { property: "og:image", content: image },
+          { property: "og:image:alt", content: data.program.title },
+          { name: "twitter:image", content: image },
+          { name: "twitter:image:alt", content: data.program.title },
+        ]
+      : []),
   ];
 };
 
@@ -56,19 +85,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       throw data({ message: "클래스를 찾을 수 없습니다" }, { status: 404 });
     }
 
-    // 다음 스케줄 조회
-    let nextSchedule = null;
-    try {
-      nextSchedule = await getNextScheduleForProgram(client, {
-        programId: program.program_id,
-      });
-    } catch {
-      // 스케줄이 없어도 페이지는 표시
-    }
-
     return {
       program,
-      nextSchedule,
+      shareUrl: new URL(
+        `/class/${encodeURIComponent(program.slug || slug)}`,
+        request.url,
+      ).href,
       consultEnabled: !!getConsultConfig(),
     };
   } catch (error) {
@@ -77,7 +99,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export default function ClassDetail({ loaderData }: Route.ComponentProps) {
-  const { program, nextSchedule, consultEnabled } = loaderData;
+  const { program, consultEnabled } = loaderData;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -132,6 +154,12 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
     setRequestId("");
   };
 
+  const openConsult = () => {
+    setRequestId(crypto.randomUUID());
+    setSubmitted(false);
+    setDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f0eb]">
       {/* 히어로 섹션 */}
@@ -144,35 +172,6 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
         totalSessions={program.total_sessions}
       />
 
-      {/* CTA 버튼 */}
-      <div className="relative z-10 mt-6 flex justify-center">
-        <button
-          type="button"
-          disabled={!consultEnabled}
-          onClick={() => {
-            setRequestId(crypto.randomUUID());
-            setSubmitted(false);
-            setDialogOpen(true);
-          }}
-          className="flex items-center gap-2 rounded-full bg-[#d4a574] px-8 py-3 text-lg font-semibold text-white shadow-lg transition-colors hover:bg-[#c49464] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {consultEnabled ? "상담 신청" : "상담 신청 준비 중"}
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      </div>
-
       {/* 상담 신청 Dialog */}
       <Dialog
         open={dialogOpen}
@@ -180,7 +179,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
           if (!open && fetcher.state === "idle") resetForm();
         }}
       >
-        <DialogContent className="bg-white text-gray-900 sm:max-w-md">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white text-gray-900 sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-gray-900">상담 신청</DialogTitle>
             <DialogDescription className="text-gray-600">
@@ -293,7 +292,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       </Dialog>
 
       {/* 메인 콘텐츠 */}
-      <div className="mx-auto max-w-4xl px-4 pt-12 pb-24">
+      <div className="mx-auto max-w-4xl px-4 pt-8 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pt-12">
         {/* 클래스 설명 */}
         {program.description && (
           <div className="mb-12">
@@ -309,7 +308,9 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
         )}
 
         {/* 커리큘럼 & 강사 소개 */}
-        <div className="grid gap-8 md:grid-cols-2">
+        <div
+          className={`grid gap-8 ${curriculum.length > 0 && instructor?.name ? "md:grid-cols-2" : "grid-cols-1"}`}
+        >
           {/* 커리큘럼 */}
           {curriculum.length > 0 && <ClassCurriculum curriculum={curriculum} />}
 
@@ -321,6 +322,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
               photoUrl={instructor.photo_url}
               career={instructorCareer}
               sns={instructorSns}
+              wide={curriculum.length === 0}
             />
           )}
         </div>
@@ -332,10 +334,7 @@ export default function ClassDetail({ loaderData }: Route.ComponentProps) {
       </div>
 
       {/* 하단 고정 바 */}
-      <ClassFooter
-        maxCapacity={program.max_capacity}
-        nextSchedule={nextSchedule}
-      />
+      <ClassFooter consultEnabled={consultEnabled} onConsult={openConsult} />
     </div>
   );
 }
