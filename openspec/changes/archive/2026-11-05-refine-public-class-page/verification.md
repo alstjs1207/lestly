@@ -16,4 +16,11 @@
 - 로그·이미지는 `/Users/msyu/study/output/lestly-public-page-20261105/`에 보존했다.
 
 ## Preview
-preview 커밋·푸시 후 배포/CI와 공개 URL을 확인하고 결과를 이어 기록한다.
+- 구현 커밋 `c961ef92de7009b48d1ee0567b9c78e5cd431ac8`을 origin/preview에 푸시하고 원격 SHA를 확인했다. main은 `93f4ee1e1ca148404f08b744763cc4f146649b49`로 유지됐다.
+- Vercel `dpl_Dafta9fL2zvMELY6ErcGJVkxx6oH`: READY, aliasAssigned=true, `lestly.vercel.app` 연결 확인.
+- GitHub CI [41988300954](https://github.com/alstjs1207/lestly/actions/runs/41988300954): completed/success.
+- 실제 `/class/art_mask`: HTTP 200, 390px 가로 넘침 없음, 하단 상담 버튼만 표시하고 정원·일정 문구 없음. 기존 단일 상담 Dialog가 열리고 빈 입력 제출은 비활성이다. 실제 접수는 실행하지 않았다.
+- query를 붙여 접근해도 canonical/og:url은 `https://lestly.vercel.app/class/art_mask`로 표시된다. OG 설명은 기존 부제목과 상세 설명을 반영한다.
+- preview 관리자 새 클래스 폼에서 기존 커버 입력 필드와 공개 조건 안내가 표시되는 것을 확인했다. 작성·저장은 실행하지 않았다.
+- 이번 작업의 로컬 서버 PID 53420을 종료했다. 원본 체크아웃은 유지하며 별도 작업용 폴더는 없다.
+- 이 기록의 archive 커밋은 구현 코드와 동일한 상태로 preview에 반영하고 최종 배포 완료를 확인한다.
