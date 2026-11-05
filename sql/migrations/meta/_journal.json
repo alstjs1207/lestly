@@ -302,6 +302,13 @@
       "when": 1793875200000,
       "tag": "0042_secure_consultations",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1793875200001,
+      "tag": "0043_consult_immediate_push_only",
+      "breakpoints": true
     }
   ]
 }

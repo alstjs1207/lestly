@@ -2870,6 +2870,13 @@
       ]
     },
     {
+      "path": "sql/migrations/0043_consult_immediate_push_only.sql",
+      "domains": [
+        "access-control",
+        "notifications"
+      ]
+    },
+    {
       "path": "sql/operations/20261018_schedule_performance.sql",
       "domains": [
         "booking",
@@ -3086,6 +3093,14 @@
       ]
     },
     {
+      "path": "sql/operations/20261105_apply_consult_push_immediate.mjs",
+      "domains": [
+        "notifications",
+        "platform",
+        "public-service"
+      ]
+    },
+    {
       "path": "sql/operations/20261105_apply_consult_push_security.mjs",
       "domains": [
         "access-control",
@@ -3246,6 +3261,13 @@
     {
       "path": "tests/consult-management.test.ts",
       "domains": [
+        "public-service"
+      ]
+    },
+    {
+      "path": "tests/consult-push-worker.test.ts",
+      "domains": [
+        "notifications",
         "public-service"
       ]
     },

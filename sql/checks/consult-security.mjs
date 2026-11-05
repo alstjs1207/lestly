@@ -368,7 +368,7 @@ export async function checkConsultSecurity({
     },
   );
   await check(
-    "consult deliveries are isolated from legacy workers, retry with leases and recheck revoked admin access",
+    "consult deliveries are immediate-only, isolated from all scheduled workers and recheck revoked admin access",
     async () => {
       await seed();
       const id = await submit();
@@ -397,12 +397,18 @@ export async function checkConsultSecurity({
       await pushStore.finishPushDelivery(claims[0], "PENDING", "push_http_503");
       assert.equal(
         (await db.query("SELECT status FROM push_deliveries")).rows[0].status,
-        "CONSULT_PENDING",
+        "FAILED",
       );
-      await db.exec(
-        "UPDATE push_deliveries SET next_attempt_at=now()-interval '1 second'",
+      assert.equal((await pushStore.claimPushDeliveries()).length, 0);
+      assert.equal(
+        (await pushStore.claimPushDeliveries({ notificationId: Number(id) }))
+          .length,
+        0,
       );
-      claims = await pushStore.claimPushDeliveries();
+      const secondId = await submit({ phone: "e".repeat(64) });
+      claims = await pushStore.claimPushDeliveries({
+        notificationId: Number(secondId),
+      });
       await db.query(
         "UPDATE organization_members SET state='DELETED' WHERE profile_id=$1 AND organization_id=$2",
         [adminA, orgA],
@@ -415,6 +421,18 @@ export async function checkConsultSecurity({
           )
         ).eligible,
         false,
+      );
+      await db.exec(
+        "UPDATE push_deliveries SET locked_until=now()-interval '1 second' WHERE status='CONSULT_SENDING'",
+      );
+      assert.equal((await pushStore.claimPushDeliveries()).length, 0);
+      assert.equal(
+        (
+          await pushStore.claimPushDeliveries({
+            notificationId: Number(secondId),
+          })
+        ).length,
+        0,
       );
     },
   );

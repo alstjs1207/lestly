@@ -16,15 +16,19 @@ function setup({
   attempts = 1,
   persistFailure = false,
   consult = false,
+  batchSize = 1,
+  batches = 1,
 } = {}) {
   const sent: unknown[] = [];
   const finished: { status: string; error: string | null }[] = [];
   const removed: string[] = [];
   const captured: string[] = [];
+  const abandoned: unknown[] = [];
   let claims = 0;
   const dispatcher = loadMockedModule<{
     dispatchPushQueue(): Promise<{ configured: boolean; processed: number }>;
     dispatchSchedulePush(id: number, actor: string): Promise<void>;
+    dispatchConsultPush(id: number): Promise<void>;
   }>(
     new URL(
       "../app/features/notifications/push/dispatch.server.ts",
@@ -60,7 +64,13 @@ function setup({
       "./store.server": {
         claimPushDeliveries: async () => {
           claims++;
-          return [{ delivery_id: "delivery", claim_token: "lease", attempts }];
+          return claims <= batches
+            ? Array.from({ length: batchSize }, (_, i) => ({
+                delivery_id: `delivery-${claims}-${i}`,
+                claim_token: "lease",
+                attempts,
+              }))
+            : [];
         },
         getPushDeliveryTarget: async () => ({
           eligible,
@@ -88,6 +98,9 @@ function setup({
           removed.push(id);
         },
         maintainPushQueue: async () => {},
+        failPendingConsultPush: async (id: number, reason: string) => {
+          abandoned.push({ id, reason });
+        },
       },
     },
   );
@@ -97,6 +110,7 @@ function setup({
     finished,
     removed,
     captured,
+    abandoned,
     claims: () => claims,
   };
 }
@@ -307,4 +321,31 @@ test("consultation push points to the matching detail instead of the schedule pa
   const payload = JSON.parse((state.sent[0] as any[])[1]);
   assert.equal(payload.url, "/admin/consultations/42");
   assert.equal(payload.body, "상담관리에서 확인해 주세요.");
+});
+
+test("consult push makes only immediate attempts and never queues transient failures for retry", async () => {
+  for (const status of [408, 429, 500, 503]) {
+    const state = setup({ consult: true, status });
+    await state.dispatcher.dispatchConsultPush(42);
+    assert.equal(state.sent.length, 1);
+    assert.equal(state.finished[0].status, "FAILED");
+  }
+  const offline = setup({ consult: true, configured: false });
+  await offline.dispatcher.dispatchConsultPush(42);
+  assert.equal(offline.sent.length, 0);
+  assert.deepEqual(offline.abandoned, [
+    { id: 42, reason: "push_not_configured" },
+  ]);
+});
+
+test("consult immediate push drains all device batches without retrying committed or unknown deliveries", async () => {
+  const many = setup({ consult: true, batchSize: 10, batches: 2 });
+  await many.dispatcher.dispatchConsultPush(42);
+  assert.equal(many.sent.length, 20);
+  assert.equal(many.claims(), 3);
+  const failed = setup({ consult: true, persistFailure: true });
+  await failed.dispatcher.dispatchConsultPush(42);
+  assert.equal(failed.sent.length, 1);
+  assert.equal(failed.finished.length, 0);
+  assert.deepEqual(failed.captured, ["Immediate consultation Web Push failed"]);
 });

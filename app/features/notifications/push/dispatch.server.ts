@@ -6,6 +6,7 @@ import webpush from "web-push";
 import { getPushConfig } from "./config.server";
 import {
   claimPushDeliveries,
+  failPendingConsultPush,
   finishPushDelivery,
   getPushDeliveryTarget,
   maintainPushQueue,
@@ -86,7 +87,11 @@ export async function dispatchPushQueue(scope?: PushScope) {
           status === 0 || status === 408 || status === 429 || status >= 500;
         await finishPushDelivery(
           delivery,
-          retryable && delivery.attempts < 5 ? "PENDING" : "FAILED",
+          target.event_type !== "CONSULT_REQUEST" &&
+            retryable &&
+            delivery.attempts < 5
+            ? "PENDING"
+            : "FAILED",
           status ? `push_http_${status}` : "push_network_error",
         );
       }),
@@ -100,9 +105,23 @@ export async function dispatchPushQueue(scope?: PushScope) {
 
 export async function dispatchConsultPush(notificationId: number) {
   try {
-    await dispatchPushQueue({ notificationId });
+    // Drain fresh devices in bounded batches during this request, once per device.
+    // Scheduled workers never claim consultation deliveries or retry expired leases.
+    let result;
+    do {
+      result = await dispatchPushQueue({ notificationId });
+      if (!result.configured) {
+        await failPendingConsultPush(notificationId, "push_not_configured");
+        return;
+      }
+    } while (result.processed === 10);
   } catch {
-    Sentry.captureMessage("Consultation Web Push queued for retry", "warning");
+    try {
+      await failPendingConsultPush(notificationId, "immediate_push_failed");
+    } catch {
+      /* Preserve unknown in-flight state without resending or failing the saved consultation. */
+    }
+    Sentry.captureMessage("Immediate consultation Web Push failed", "warning");
   }
 }
 

@@ -212,6 +212,7 @@ export function classify(file) {
       40: ["student-management", "booking", "recurring-schedules"],
       41: ["catalog"],
       42: ["public-service", "notifications", "access-control"],
+      43: ["notifications", "access-control"],
     };
     if (mapping[n]) return mapping[n];
     if (n <= 14)

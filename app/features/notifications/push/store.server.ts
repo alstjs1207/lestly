@@ -103,9 +103,10 @@ export async function claimPushDeliveries(scope?: PushScope) {
           scope
             ? "notificationId" in scope
               ? sql`AND e.notification_id = ${scope.notificationId} AND e.event_type = 'CONSULT_REQUEST'`
-              : sql`AND e.schedule_id = ${scope.scheduleId} AND e.actor_profile_id = ${scope.actorProfileId}::uuid`
-            : sql``
+              : sql`AND e.schedule_id = ${scope.scheduleId} AND e.actor_profile_id = ${scope.actorProfileId}::uuid AND e.event_type <> 'CONSULT_REQUEST'`
+            : sql`AND e.event_type <> 'CONSULT_REQUEST'`
         }
+        ${scope && "notificationId" in scope ? sql`AND d.status = 'CONSULT_PENDING' AND d.attempts = 0` : sql``}
       ORDER BY d.next_attempt_at LIMIT ${scope ? 10 : 25}
       FOR UPDATE OF d SKIP LOCKED
     )
@@ -161,12 +162,22 @@ export async function finishPushDelivery(
   status: string,
   error: string | null = null,
 ) {
-  await db.execute(sql`UPDATE public.push_deliveries SET status = CASE WHEN status='CONSULT_SENDING' AND ${status}='PENDING' THEN 'CONSULT_PENDING' ELSE ${status} END,
+  await db.execute(sql`UPDATE public.push_deliveries SET status = CASE WHEN status='CONSULT_SENDING' AND ${status}='PENDING' THEN 'FAILED' ELSE ${status} END,
     last_error = ${error}, locked_until = NULL,
     next_attempt_at = now() + make_interval(secs => ${Math.min(3600, 30 * 2 ** delivery.attempts)}),
     sent_at = CASE WHEN ${status} = 'SENT' THEN now() ELSE sent_at END
     WHERE delivery_id = ${delivery.delivery_id}::uuid AND claim_token = ${delivery.claim_token}::uuid
       AND status IN ('SENDING','CONSULT_SENDING')`);
+}
+
+export async function failPendingConsultPush(
+  notificationId: number,
+  reason: string,
+) {
+  await db.execute(sql`UPDATE public.push_deliveries d SET status = 'FAILED', last_error = ${reason}
+    FROM public.push_events e WHERE e.event_id = d.event_id
+      AND e.notification_id = ${notificationId} AND e.event_type = 'CONSULT_REQUEST'
+      AND d.status = 'CONSULT_PENDING' AND d.attempts = 0`);
 }
 
 export async function removeExpiredPushSubscription(subscriptionId: string) {

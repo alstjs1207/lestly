@@ -872,7 +872,8 @@
             "tests/push-routes.test.ts",
             "tests/push-client.test.ts",
             "sql/checks/security-regression.mjs",
-            "sql/checks/consult-security.mjs"
+            "sql/checks/consult-security.mjs",
+            "tests/consult-push-worker.test.ts"
           ],
           "verification": "automated",
           "anchors": [
